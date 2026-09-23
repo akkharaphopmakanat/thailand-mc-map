@@ -46,10 +46,10 @@ class View3D {
   /**
    * @param {object} THREE
    * @param {object} o  {canvas, wrap, atlas, cells, world (2D terrain, used as top texture),
-   *                    backdrop (2D ASEAN canvas, used for colours), onHover, onClick}
+   *                    backdrops ([{data, canvas}] world and ASEAN, canvases used for colours), onHover, onClick}
    */
-  constructor(THREE, { canvas, wrap, atlas, cells, world, backdrop, blocks, onHover, onClick }) {
-    Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, world, backdrop, blocks, onHover, onClick });
+  constructor(THREE, { canvas, wrap, atlas, cells, world, backdrops = [], blocks, onHover, onClick }) {
+    Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, world, backdrops, blocks, onHover, onClick });
     const { W, H } = atlas.map;
     this.W = W; this.H = H;
     this.SC = .04 / atlas.map.S;                     // blocks per 0.04° (camera and icon sizes scale with it)
@@ -59,7 +59,7 @@ class View3D {
     this.layers = { mainRoads: true, mediumRoads: true, rails: true, rivers: true, streams: false };
     this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
     this.orbit = { ...this.home };
-    this.maxDist = atlas.asean ? 2400 * this.SC : 900 * this.SC;
+    this.maxDist = atlas.world ? 40000 * this.SC : atlas.asean ? 2400 * this.SC : 900 * this.SC;
     // camera distance (blocks) where the level of detail steps 1→2→4→8; in chunk units so the
     // on-screen face count stays about the same whatever the block size
     this.lodDist = [2 * CHUNK, 5 * CHUNK, 11 * CHUNK];
@@ -529,62 +529,68 @@ class View3D {
   }
 
   /**
-   * All ASEAN around Thailand as coarse block columns (0.2°, every 4th backdrop block), coloured
-   * from the 2D backdrop and raised to real elevation. Blocks inside the detailed Thailand
-   * window are left out. Also sets this.bounds (world x/z extent the camera may pan over).
+   * Low-detail backdrops as coarse block columns (every 4th backdrop block: 1° for the world,
+   * 0.2° for the ASEAN region), coloured from their 2D canvases and raised to real elevation.
+   * Each leaves out the area a finer layer covers (the world skips the ASEAN box, the ASEAN
+   * region skips the detailed Thailand window). Also sets this.bounds (x/z the camera may pan over).
    */
   _buildBackdrop() {
     const { T, W, H, atlas } = this;
-    const map = atlas.map, A = atlas.asean;
+    const map = atlas.map;
+    for (const m of this.backMeshes || []) { this.scene.remove(m.mesh); m.geo.dispose(); }
+    this.backMeshes = [];
     this.bounds = [-W / 2, -H / 2, W / 2, H / 2];
-    if (this.backMesh) { this.scene.remove(this.backMesh); this.backGeo.dispose(); this.backMesh = null; }
-    if (!A || !this.backdrop) return;
-    const D = 4, S = A.S * D;                                  // 0.2° columns
-    const w = Math.floor(A.W / D), h = Math.floor(A.H / D);
     const X = lon => (lon - map.lon0) / map.S - W / 2, Z = lat => (map.lat1 - lat) / map.S - H / 2;
-    this.bounds = [X(A.lon0), Z(A.lat1), X(A.lon0 + w * S), Z(A.lat1 - h * S)];
-    const colours = this.backdrop.getContext('2d').getImageData(0, 0, A.W, A.H).data;
-    const inside = (r, c) => {
-      const lon = A.lon0 + (c + .5) * S, lat = A.lat1 - (r + .5) * S;
-      return lon > map.lon0 && lon < map.lon0 + map.W * map.S && lat < map.lat1 && lat > map.lat1 - map.H * map.S;
-    };
-    const ht = new Int16Array(w * h);
-    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
-      const k = (r * D + (D >> 1)) * A.W + c * D + (D >> 1);
-      const e = A.elev ? A.elev[k] : 0;
-      ht[r * w + c] = A.grid[k] === 0 ? -Math.max(1, Math.round(Math.sqrt(Math.max(-e, 1)) / 5)) : Math.max(1, Math.round(e / this.metresPerBlock));
+    const thai = [map.lon0, map.lat1 - map.H * map.S, map.lon0 + map.W * map.S, map.lat1];
+    const box = a => [a.lon0, a.lat1 - a.H * a.S, a.lon0 + a.W * a.S, a.lat1];
+    const inBox = (b, lon, lat) => b && lon > b[0] && lon < b[2] && lat > b[1] && lat < b[3];
+    this.backQuads = 0;
+    for (const { data: A, canvas } of this.backdrops) {
+      const hole = A === atlas.world && atlas.asean ? box(atlas.asean) : thai;
+      const D = 4, S = A.S * D;
+      const w = Math.floor(A.W / D), h = Math.floor(A.H / D);
+      const bx = [X(A.lon0), Z(A.lat1), X(A.lon0 + w * S), Z(A.lat1 - h * S)];
+      this.bounds = [Math.min(this.bounds[0], bx[0]), Math.min(this.bounds[1], bx[1]), Math.max(this.bounds[2], bx[2]), Math.max(this.bounds[3], bx[3])];
+      const colours = canvas.getContext('2d').getImageData(0, 0, A.W, A.H).data;
+      const inside = (r, c) => inBox(hole, A.lon0 + (c + .5) * S, A.lat1 - (r + .5) * S);
+      const ht = new Int16Array(w * h);
+      for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+        const k = (r * D + (D >> 1)) * A.W + c * D + (D >> 1);
+        const e = A.elev ? A.elev[k] : 0;
+        ht[r * w + c] = A.grid[k] === 0 ? -Math.max(1, Math.round(Math.sqrt(Math.max(-e, 1)) / 5)) : Math.max(1, Math.round(e / this.metresPerBlock));
+      }
+      const pos = [], clr = [];
+      const quad = (v, k, f) => {
+        pos.push(...v);
+        const r = colours[k * 4] / 255 * f, g = colours[k * 4 + 1] / 255 * f, b = colours[k * 4 + 2] / 255 * f;
+        for (let i = 0; i < 4; i++) clr.push(r, g, b);
+      };
+      const at = (r, c) => (r < 0 || c < 0 || r >= h || c >= w || inside(r, c)) ? MIN_Y : ht[r * w + c];
+      for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+        if (inside(r, c)) continue;
+        const k = (r * D + (D >> 1)) * A.W + c * D + (D >> 1), y = ht[r * w + c];
+        const x0 = X(A.lon0 + c * S), x1 = X(A.lon0 + (c + 1) * S), z0 = Z(A.lat1 - r * S), z1 = Z(A.lat1 - (r + 1) * S);
+        quad([x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0], k, 1);
+        const walls = [
+          [at(r - 1, c), .8, lo => [x1, lo, z0, x1, y, z0, x0, y, z0, x0, lo, z0]],
+          [at(r + 1, c), .8, lo => [x0, lo, z1, x0, y, z1, x1, y, z1, x1, lo, z1]],
+          [at(r, c - 1), .62, lo => [x0, lo, z0, x0, y, z0, x0, y, z1, x0, lo, z1]],
+          [at(r, c + 1), .62, lo => [x1, lo, z1, x1, y, z1, x1, y, z0, x1, lo, z0]],
+        ];
+        for (const [hn, f, v] of walls) if (hn < y) quad(v(Math.max(hn, MIN_Y)), k, f * .75);
+      }
+      const n = pos.length / 12, idx = new Uint32Array(n * 6);
+      for (let q = 0; q < n; q++) { const v = q * 4, o = q * 6; idx[o] = v; idx[o + 1] = v + 1; idx[o + 2] = v + 2; idx[o + 3] = v; idx[o + 4] = v + 2; idx[o + 5] = v + 3; }
+      const geo = new T.BufferGeometry();
+      geo.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3));
+      geo.setAttribute('color', new T.BufferAttribute(new Float32Array(clr), 3));
+      geo.setIndex(new T.BufferAttribute(idx, 1));
+      geo.computeBoundingSphere();
+      const mesh = new T.Mesh(geo, this.sideMat);
+      this.scene.add(mesh);
+      this.backMeshes.push({ mesh, geo });
+      this.backQuads += n;
     }
-    const pos = [], clr = [];
-    const quad = (v, k, f) => {
-      pos.push(...v);
-      const r = colours[k * 4] / 255 * f, g = colours[k * 4 + 1] / 255 * f, b = colours[k * 4 + 2] / 255 * f;
-      for (let i = 0; i < 4; i++) clr.push(r, g, b);
-    };
-    const at = (r, c) => (r < 0 || c < 0 || r >= h || c >= w) ? MIN_Y : inside(r, c) ? MIN_Y : ht[r * w + c];
-    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
-      if (inside(r, c)) continue;
-      const k = (r * D + (D >> 1)) * A.W + c * D + (D >> 1), y = ht[r * w + c];
-      const x0 = X(A.lon0 + c * S), x1 = X(A.lon0 + (c + 1) * S), z0 = Z(A.lat1 - r * S), z1 = Z(A.lat1 - (r + 1) * S);
-      quad([x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0], k, 1);
-      const walls = [
-        [at(r - 1, c), .8, lo => [x1, lo, z0, x1, y, z0, x0, y, z0, x0, lo, z0]],
-        [at(r + 1, c), .8, lo => [x0, lo, z1, x0, y, z1, x1, y, z1, x1, lo, z1]],
-        [at(r, c - 1), .62, lo => [x0, lo, z0, x0, y, z0, x0, y, z1, x0, lo, z1]],
-        [at(r, c + 1), .62, lo => [x1, lo, z1, x1, y, z1, x1, y, z0, x1, lo, z0]],
-      ];
-      for (const [hn, f, v] of walls) if (hn < y) quad(v(Math.max(hn, MIN_Y)), k, f * .75);
-    }
-    const n = pos.length / 12, idx = new Uint32Array(n * 6);
-    for (let q = 0; q < n; q++) { const v = q * 4, o = q * 6; idx[o] = v; idx[o + 1] = v + 1; idx[o + 2] = v + 2; idx[o + 3] = v; idx[o + 4] = v + 2; idx[o + 5] = v + 3; }
-    const geo = new T.BufferGeometry();
-    geo.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3));
-    geo.setAttribute('color', new T.BufferAttribute(new Float32Array(clr), 3));
-    geo.setIndex(new T.BufferAttribute(idx, 1));
-    geo.computeBoundingSphere();
-    this.backGeo = geo;
-    this.backMesh = new T.Mesh(geo, this.sideMat);
-    this.scene.add(this.backMesh);
-    this.backQuads = n;
   }
 
   /* ---------------- selection highlight ---------------- */
@@ -907,6 +913,8 @@ class View3D {
     // fog follows the camera distance so the whole of ASEAN can be seen when zoomed out
     this.scene.fog.near = this.orbit.dist * 1.1;
     this.scene.fog.far = this.orbit.dist * 3.2 + 200;
+    const far = Math.max(3000 * this.SC, this.orbit.dist * 4);
+    if (Math.abs(this.camera.far - far) > far * .1) { this.camera.far = far; this.camera.updateProjectionMatrix(); }
     this._updateLOD();
     this._updateDetail();
     this.renderer.render(this.scene, this.camera);

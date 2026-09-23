@@ -1,7 +1,7 @@
 // Loads data/map.json, every data/provinces/<slug>/province.json, and (on demand)
 // each province's districts.json and subdistricts.json.
 import { decodeRows } from './rle.js';
-import { decodeAsean } from './asean.js';
+import { decodeBackdrop } from './backdrop.js';
 
 async function json(url) {
   const res = await fetch(url);
@@ -11,17 +11,18 @@ async function json(url) {
 
 /**
  * @param {(done: number, total: number) => void} [onProgress]
- * @returns {Promise<object>} {map, grid, provinces, rivers, elev, roads, streams, asean}
+ * @returns {Promise<object>} {map, grid, provinces, rivers, elev, roads, streams, asean, world}
  */
 export async function loadAtlas(onProgress = () => {}) {
   const [map, blocks] = await Promise.all([
     json('data/map.json'),
     json('data/blocks.json').catch(() => null),
   ]);
-  const aseanJson = map.asean || null, rivers = blocks?.rivers || null;
-  const [elevation, aseanElev] = await Promise.all([
+  const rivers = blocks?.rivers || null;
+  const [elevation, aseanElev, worldElev] = await Promise.all([
     map.elevation ? loadElevation(map.elevation).catch(() => null) : null,
-    aseanJson?.elevation ? loadElevation(aseanJson.elevation).catch(() => null) : null,
+    map.asean ? loadElevation(map.asean.elevation).catch(() => null) : null,
+    map.world ? loadElevation(map.world.elevation).catch(() => null) : null,
   ]);
   const grid = decodeRows(map.rows, map.W, map.H, map.chars, { '.': -1, ',': -2 });
   let done = 0;
@@ -45,7 +46,9 @@ export async function loadAtlas(onProgress = () => {}) {
   }
   return {
     map, grid, provinces, rivers, elev: elevation,
-    asean: aseanJson ? decodeAsean(aseanJson, aseanElev) : null,
+    // low-detail backdrops: the ASEAN region and the whole world
+    asean: map.asean ? decodeBackdrop(map.asean, aseanElev) : null,
+    world: map.world ? decodeBackdrop(map.world, worldElev) : null,
     // per-block OSM layers: roads 1 local, 2–3 medium, 4 large, 5 railway; water 1 small, 2 main river
     roads: blocks ? decodeRows(blocks.roads, blocks.W, blocks.H, '012345', { '.': 0 }) : null,
     streams: blocks ? decodeRows(blocks.water, blocks.W, blocks.H, '0123', { '.': 0 }) : null,   // 1 small, 2 main river, 3 lake

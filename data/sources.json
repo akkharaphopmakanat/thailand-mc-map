@@ -37,7 +37,7 @@
       "author": "Mapzen / Linux Foundation; includes SRTM and GMTED (NASA/USGS), ETOPO1 (NOAA) and other public sources",
       "url": "https://registry.opendata.aws/terrain-tiles/",
       "license": "Public data; attribution to the underlying sources required (see the dataset's attribution page)",
-      "used_for": "Mean land elevation and sea depth per block in data/elevation.png, and the ASEAN backdrop (data/asean_elevation.png)"
+      "used_for": "Mean elevation and sea depth: Thailand (data/elevation.png), detailed ASEAN / Hong Kong / Macau tiles (data/tiles), and the ASEAN and world backdrops"
     },
     {
       "id": "otop",
@@ -67,7 +67,7 @@
       "author": "Natural Earth (naturalearthdata.com)",
       "url": "https://www.naturalearthdata.com/downloads/50m-cultural-vectors/",
       "license": "Public domain",
-      "used_for": "Land vs sea outside Thailand, and the ASEAN backdrop countries (data/map.json 'asean')"
+      "used_for": "Land vs sea outside Thailand, the ASEAN and world backdrops (data/map.json 'asean' and 'world'), and countries in the detailed tiles (data/tiles)"
     },
     {
       "id": "osm",

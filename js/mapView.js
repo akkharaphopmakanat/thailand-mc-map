@@ -3,9 +3,10 @@
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite } from './sprites.js';
 import { railTile, maskAt, blockTexture } from './pieces.js';
-import { aseanRect, countryAt } from './asean.js';
+import { backdropRect, countryAt, labelPoint } from './backdrop.js';
 
-const MAX_SCALE = 24;   // screen px per world px (a 0.005° block is 1 world px)
+const MAX_SCALE = 24;          // screen px per world px (a 0.005° block is 1 world px)
+const TILE_MIN_SCALE = .45;    // below this the 5.5 km ASEAN backdrop is as sharp as the screen
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export class MapView {
@@ -15,15 +16,18 @@ export class MapView {
    * @param {HTMLElement} o.wrap
    * @param {object} o.atlas   {map, grid, provinces}
    * @param {object} o.world   {canvas, paths}
-   * @param {HTMLCanvasElement} [o.backdrop]  ASEAN backdrop (see asean.js)
+   * @param {{data, canvas}[]} [o.backdrops]  low-detail world and ASEAN backdrops (see backdrop.js)
+   * @param {object} [o.tiles]   detailed ASEAN / Hong Kong / Macau tiles (see backdrop.js)
    * @param {object} [o.cells]   block classification (world.js) for close-up textures
    * @param {(pick: object|null, e: PointerEvent) => void} o.onHover
    * @param {(pick: object) => void} o.onClick
    */
-  constructor({ canvas, wrap, atlas, world, backdrop, cells, onHover, onClick }) {
-    Object.assign(this, { canvas, wrap, atlas, world, backdrop, cells, onHover, onClick });
+  constructor({ canvas, wrap, atlas, world, backdrops = [], tiles = null, cells, onHover, onClick }) {
+    Object.assign(this, { canvas, wrap, atlas, world, backdrops, tiles, cells, onHover, onClick });
     this.blocks = null;   // block texture atlas, set once loaded (see setBlockAtlas)
-    this.backRect = atlas.asean ? aseanRect(atlas.asean, atlas.map) : null;
+    for (const bd of backdrops) bd.rect = backdropRect(bd.data, atlas.map);
+    this.backRect = atlas.asean ? backdropRect(atlas.asean, atlas.map) : null;
+    this.worldRect = atlas.world ? backdropRect(atlas.world, atlas.map) : this.backRect;
     this.ctx = canvas.getContext('2d');
     this.view = { x: 0, y: 0, s: .3 };
     this.cw = 0; this.ch = 0; this.dpr = 1; this.fitS = .3;
@@ -57,7 +61,7 @@ export class MapView {
     const keep = this.view.s;
     const fit = this.fitView();
     if (first) Object.assign(this.view, fit);
-    else this.view.s = Math.max(keep, this.fitS * .8);
+    else this.view.s = Math.max(keep, this.minS);
     this.dirty = true;
   }
 
@@ -70,6 +74,8 @@ export class MapView {
       ? Math.min(this.ch / this.backRect[3], this.cw / (this.backRect[2] * .55)) * .98
       : Math.min(this.cw / (W * B), this.ch / (H * B)) * .96;
     this.fitS = s;
+    // zooming out may go as far as the whole world
+    this.minS = this.worldRect ? Math.min(this.ch / this.worldRect[3], this.cw / this.worldRect[2]) * .9 : s * .8;
     return { s, x: this.cw / 2 - cx * s, y: this.ch / 2 - cy * s };
   }
 
@@ -81,7 +87,7 @@ export class MapView {
   zoomAt(f, sx, sy) {
     this.tween = null;
     const v = this.view;
-    const ns = Math.max(this.fitS * .8, Math.min(MAX_SCALE, v.s * f));
+    const ns = Math.max(this.minS, Math.min(MAX_SCALE, v.s * f));
     const k = ns / v.s;
     v.x = sx - (sx - v.x) * k; v.y = sy - (sy - v.y) * k; v.s = ns;
     this.dirty = true;
@@ -112,8 +118,8 @@ export class MapView {
     const wx = (sx - this.view.x) / this.view.s, wy = (sy - this.view.y) / this.view.s;
     const c = Math.floor(wx / B), r = Math.floor(wy / B);
     if (c < 0 || r < 0 || c >= W || r >= H) {
-      const country = this.atlas.asean ? countryAt(this.atlas.asean, this.atlas.map, wx, wy) : '';
-      return country ? { r, c, v: -3, province: -1, district: -1, country } : null;
+      const country = this._country(wx, wy);
+      return { r, c, v: country ? -3 : -1, province: -1, district: -1, country };
     }
     const v = this.atlas.grid[r * W + c];
     let province = v >= 0 ? v : -1, district = -1;
@@ -122,8 +128,17 @@ export class MapView {
       // the district raster is finer than the block grid, so trust it near borders
       if (district >= 0) province = this.selected;
     }
-    const country = v < 0 && this.atlas.asean ? countryAt(this.atlas.asean, this.atlas.map, wx, wy) : '';
+    const country = v < 0 ? this._country(wx, wy) : '';
     return { r, c, v, province, district, country };
+  }
+
+  /** Country name at a world-pixel point from the finest layer that covers it. */
+  _country(wx, wy) {
+    const t = this.tiles?.at(wx, wy);
+    if (t?.country) return t.country.name;
+    const { asean, world, map } = this.atlas;
+    const c = (asean && countryAt(asean, map, wx, wy)) || (world && countryAt(world, map, wx, wy));
+    return c ? c.name : '';
   }
 
   /* ---------------- input ---------------- */
@@ -145,7 +160,7 @@ export class MapView {
       if (pinch && pts.size >= 2) {
         const [a, b] = [...pts.values()];
         const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        const ns = Math.max(this.fitS * .8, Math.min(MAX_SCALE, pinch.s * d / pinch.d)), k = ns / pinch.s;
+        const ns = Math.max(this.minS, Math.min(MAX_SCALE, pinch.s * d / pinch.d)), k = ns / pinch.s;
         Object.assign(this.view, { s: ns, x: mx - (pinch.mx - pinch.vx) * k, y: my - (pinch.my - pinch.vy) * k });
         this.dirty = true;
         return;
@@ -263,10 +278,23 @@ export class MapView {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#28409a';
     ctx.fillRect(0, 0, cw, ch);
-    if (this.backdrop) {                                  // all ASEAN, lower detail
-      const [bx, by, bw, bh] = this.backRect;
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(this.backdrop, view.x + bx * s, view.y + by * s, bw * s, bh * s);
+    for (const b of this.backdrops) {                     // whole world, then the ASEAN region (lower detail)
+      const [bx, by, bw, bh] = b.rect;
+      ctx.imageSmoothingEnabled = bw * s < b.canvas.width;
+      ctx.drawImage(b.canvas, view.x + bx * s, view.y + by * s, bw * s, bh * s);
+    }
+    // Detailed 550 m tiles for the rest of ASEAN, Hong Kong and Macau, once zoomed in enough
+    if (this.tiles?.index && s >= TILE_MIN_SCALE) {
+      const x0 = -view.x / s, y0 = -view.y / s, x1 = (cw - view.x) / s, y1 = (ch - view.y) / s;
+      const thai = [0, 0, map.W * B, map.H * B];
+      for (const [tx, ty] of this.tiles.visible(x0, y0, x1, y1)) {
+        const [rx, ry, rw, rh] = this.tiles.rect(tx, ty);
+        if (rx >= thai[0] && ry >= thai[1] && rx + rw <= thai[2] && ry + rh <= thai[3]) continue;   // covered by Thailand's map
+        const t = this.tiles.get(tx, ty);
+        if (!t) continue;
+        ctx.imageSmoothingEnabled = s < 1;
+        ctx.drawImage(t.canvas, view.x + rx * s, view.y + ry * s, rw * s, rh * s);
+      }
     }
     ctx.imageSmoothingEnabled = s < 1;
     ctx.imageSmoothingQuality = 'medium';
@@ -322,14 +350,24 @@ export class MapView {
       const [sx, sy] = this._w2s((lon - map.lon0) / map.S * B, (map.lat1 - lat) / map.S * B);
       this._text(txt, sx, sy, 'rgba(235,240,255,.72)', 'rgba(0,0,0,.45)');
     }
-    const A = atlas.asean;
-    if (A) {
-      ctx.font = '600 15px "Pixelify Sans", monospace';
-      for (const c of A.countries) {
-        if (c.code === 'THA' || !c.anchor) continue;
-        const lon = A.lon0 + (c.anchor[1] + .5) * A.S, lat = A.lat1 - (c.anchor[0] + .5) * A.S;
-        const [sx, sy] = this._w2s((lon - map.lon0) / map.S * B, (map.lat1 - lat) / map.S * B);
-        this._text(c.name.toUpperCase(), sx, sy, 'rgba(255,255,255,.85)', 'rgba(0,0,0,.6)');
+    // Country names: ASEAN / Hong Kong / Macau from the ASEAN backdrop; the rest of the world
+    // from the world backdrop, more of them as you zoom in
+    ctx.font = '600 15px "Pixelify Sans", monospace';
+    const labelled = new Set(['THA']);
+    if (atlas.asean) for (const c of atlas.asean.countries) {
+      if (!c.detail || labelled.has(c.code) || !c.anchor || c.cells < 3) continue;
+      labelled.add(c.code);
+      const [sx, sy] = this._w2s(...labelPoint(atlas.asean, map, c));
+      this._text(c.name.toUpperCase(), sx, sy, 'rgba(255,255,255,.9)', 'rgba(0,0,0,.6)');
+    }
+    if (atlas.world) {
+      const maxRank = s < .02 ? 2 : s < .06 ? 3 : s < .2 ? 5 : 9;
+      ctx.font = '600 13px "Pixelify Sans", monospace';
+      for (const c of atlas.world.countries) {
+        if (labelled.has(c.code) || c.labelrank > maxRank || !c.anchor || c.cells < 6) continue;
+        const [sx, sy] = this._w2s(...labelPoint(atlas.world, map, c));
+        if (sx < -80 || sy < -20 || sx > cw + 80 || sy > ch + 20) continue;
+        this._text(c.name.toUpperCase(), sx, sy, 'rgba(225,225,225,.7)', 'rgba(0,0,0,.55)');
       }
     }
 

@@ -3,7 +3,8 @@ import { h2 } from './noise.js';
 import { loadAtlas, loadDistricts, loadSubdistricts } from './data.js';
 import { classifyCells, renderWorld, LAYERS } from './world.js';
 import { createView3D } from './view3d.js';
-import { renderAsean } from './asean.js';
+import { renderBackdrop, TileLayer } from './backdrop.js';
+
 import { buildDistrictLayer } from './districts.js';
 import { MapView } from './mapView.js';
 import { Inventory } from './inventory.js';
@@ -58,8 +59,12 @@ const handlers = {
     else select(pick.province, false);
   },
 };
-const backdrop = atlas.asean ? renderAsean(atlas.asean) : null;
-const map = new MapView({ canvas: $('map'), wrap: $('mapWrap'), atlas, world, backdrop, cells, ...handlers });
+// low-detail backdrops, drawn world first, then the ASEAN region on top
+const backdrops = [atlas.world, atlas.asean].filter(Boolean).map(b => ({ data: b, canvas: renderBackdrop(b) }));
+const tiles = new TileLayer(atlas.map);
+const map = new MapView({ canvas: $('map'), wrap: $('mapWrap'), atlas, world, backdrops, tiles, cells, ...handlers });
+tiles.onLoad = () => { map.dirty = true; };
+tiles.init().then(() => { map.dirty = true; });      // detailed tiles are optional (not in the artifact)
 makeBlockAtlas().then(b => map.setBlockAtlas(b)).catch(() => {});   // textures for the close-up 2D view
 map.layers = { ...layers };
 let view3d = null;   // created on first switch to 3D
@@ -122,7 +127,7 @@ $('mode').onclick = async () => {
     if (!view3d) {
       btn.disabled = true; btn.textContent = 'Loading…';
       try {
-        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, world, backdrop, ...handlers });
+        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, world, backdrops, ...handlers });
       } catch (err) {
         btn.disabled = false; btn.textContent = '3D';
         $('hint').textContent = `3D view unavailable: ${err.message}`;

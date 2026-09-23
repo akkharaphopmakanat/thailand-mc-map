@@ -44,7 +44,7 @@ export function renderF3(el, atlas, pick, layer) {
   const lines = ['ThaiCraft Atlas · 77 provinces · 928 districts'];
   if (pick) {
     const lat = map.lat1 - (pick.r + .5) * map.S, lon = map.lon0 + (pick.c + .5) * map.S;
-    lines.push(`Lat ${Math.abs(lat).toFixed(2)}° ${lat < 0 ? 'S' : 'N'}  Lon ${lon.toFixed(2)}° E`);
+    lines.push(`Lat ${Math.abs(lat).toFixed(2)}° ${lat < 0 ? 'S' : 'N'}  Lon ${Math.abs(lon).toFixed(2)}° ${lon < 0 ? 'W' : 'E'}`);
     const inside = pick.r >= 0 && pick.c >= 0 && pick.r < map.H && pick.c < map.W;
     const e = inside ? atlas.elev?.[pick.r * map.W + pick.c] : null;
     if (e != null) lines.push(e < 0 && pick.v === -1 ? `Depth: ${-e} m` : `Elevation: ${Math.max(e, 0)} m`);

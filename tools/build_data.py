@@ -10,7 +10,9 @@ data/sprites.json; this script never touches them. It (re)writes:
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
   data/elevation.png                          mean height (m) per map block, land and sea (R*256+G-32768)
   data/blocks.json                            per-block roads, railways, rivers (OpenStreetMap), river labels, reservoirs
-  data/map.json 'asean' + asean_elevation.png lower-detail backdrop of all ASEAN (0.05° blocks)
+  data/map.json 'asean' + asean_elevation.png lower-detail backdrop of the ASEAN region (0.05° blocks)
+  data/map.json 'world' + world_elevation.png low-detail backdrop of the whole world (0.25° blocks)
+  data/tiles/<tx>_<ty>.png + index.json       detailed 550 m tiles for ASEAN, Hong Kong, Macau (2° each)
   js/textures.js                              block textures (assets/textures, CC BY-SA 3.0) as data URLs
 
 Sources (downloaded into tools/.cache on first run):
@@ -19,7 +21,8 @@ Sources (downloaded into tools/.cache on first run):
   pds.json      Thai admin names       github.com/kongvut/thai-province-data (MIT)
   terrarium/    elevation tiles, z8    AWS Terrain Tiles (Mapzen terrarium encoding)
   ne_10m_lakes.geojson  reservoirs    Natural Earth lakes (public domain)
-  ne_50m_admin_0_countries.geojson  neighbouring countries (land vs sea outside Thailand)
+  ne_50m_admin_0_countries.geojson  neighbouring countries (land vs sea outside Thailand, backdrops)
+  ne_10m_admin_0_countries.geojson  countries and coastlines for the detailed tiles
   thailand-latest.osm.pbf  roads, rail, rivers   OpenStreetMap via Geofabrik (ODbL); read with
                          pyosmium: pip install --target tools/.cache/pylib osmium
   otop_*.csv, CDD_OPC_*.csv  OTOP     Community Development Department open data (data.go.th)
@@ -41,6 +44,7 @@ SOURCES = {
     'pds.json': 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json',
     'ne_10m_lakes.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_lakes.geojson',
     'ne_50m_admin_0_countries.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson',
+    'ne_10m_admin_0_countries.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson',
     'thailand-latest.osm.pbf': 'https://download.geofabrik.de/asia/thailand-latest.osm.pbf',
     # OTOP producer register (province, district, sub-district per producer) and the
     # OTOP Product Champion star ratings (product, producer, province, category, stars)
@@ -135,76 +139,148 @@ def build_elevation():
 # ---------------------------------------------------------------- ASEAN backdrop
 AS = 0.05                                        # backdrop block size (~5.5 km)
 A_LON0, A_LON1, A_LAT0, A_LAT1 = 92.0, 141.5, -11.2, 28.8
-ASEAN = [('THA', 'Thailand'), ('MMR', 'Myanmar'), ('LAO', 'Laos'), ('KHM', 'Cambodia'), ('VNM', 'Vietnam'),
-         ('MYS', 'Malaysia'), ('SGP', 'Singapore'), ('IDN', 'Indonesia'), ('PHL', 'Philippines'),
-         ('BRN', 'Brunei'), ('TLS', 'Timor-Leste')]
-OTHER_LAND = 20
 
 
-def build_asean():
-    """Country per 0.05° block over all ASEAN (0 sea, 1–11 ASEAN country, 20 other land), mean
-    elevation as a PNG, and one label point per country."""
+def build_backdrop(key, lon0, lon1, lat0, lat1, step, zoom, png):
+    """Country per block over a lon/lat box ('.' sea, one symbol per country), mean elevation as
+    a PNG (metres = R*256 + G - 32768) and a label point per country; stored as map.json[key]."""
     import numpy as np
     from PIL import Image
-    W = round((A_LON1 - A_LON0) / AS); H = round((A_LAT1 - A_LAT0) / AS)
+    W = round((lon1 - lon0) / step); H = round((lat1 - lat0) / step)
     grid = [[-1] * W for _ in range(H)]
-    index = {a3: i + 1 for i, (a3, _) in enumerate(ASEAN)}
+    countries = []
     for f in source('ne_50m_admin_0_countries.geojson')['features']:
         if not f['geometry']:
             continue
         polys = polygons(f['geometry'])
         x0, y0, x1, y1 = bbox(polys)
-        if x1 < A_LON0 or x0 > A_LON1 or y1 < A_LAT0 or y0 > A_LAT1:
+        if x1 < lon0 or x0 > lon1 or y1 < lat0 or y0 > lat1:
             continue
-        code = index.get(f['properties'].get('ADM0_A3'), OTHER_LAND)
-        for r, a, b in raster_spans(polys, A_LON0, A_LAT1, AS, W, H):
-            grid[r][a:b + 1] = [code] * (b - a + 1)
-    # label point per ASEAN country (deep inside, near the centroid)
-    idx_grid = [[v - 1 if 1 <= v <= len(ASEAN) else -1 for v in row] for row in grid]
-    anc, cells = anchors(idx_grid, W, H, len(ASEAN))
-    # elevation from zoom-5 terrain tiles (~5 km pixels)
-    z = 5
-    tx0, ty0 = [int(v) for v in tile_xy(A_LAT1, A_LON0, z)]
-    tx1, ty1 = [int(v) for v in tile_xy(A_LAT0, A_LON1, z)]
+        p = f['properties']
+        i = len(countries)
+        countries.append({'code': p.get('ADM0_A3'), 'name': p.get('NAME') or p.get('ADMIN'),
+                          'labelrank': p.get('LABELRANK') or 9, 'detail': p.get('ADM0_A3') in DETAIL})
+        for r, a, b in raster_spans(polys, lon0, lat1, step, W, H):
+            grid[r][a:b + 1] = [i] * (b - a + 1)
+    anc, cells = anchors(grid, W, H, len(countries))
+    for c, a, n in zip(countries, anc, cells):
+        c['anchor'], c['cells'] = a, n
+    heights = elevation_grid(lon0, lat1, W, H, step, zoom, lat0=lat0, lon1=lon1)
+    v = heights + 32768
+    Image.fromarray(np.stack([(v >> 8).astype(np.uint8), (v & 255).astype(np.uint8), np.zeros_like(v, dtype=np.uint8)], -1), 'RGB') \
+        .save(os.path.join(DATA, png), optimize=True)
+    sym = lambda i: '.' if i < 0 else chr(0x100 + i)          # one Unicode symbol per country
+    path = os.path.join(DATA, 'map.json')
+    with open(path, encoding='utf-8') as f:
+        m = json.load(f)
+    m[key] = {'W': W, 'H': H, 'S': step, 'lon0': lon0, 'lat1': lat1, 'countries': countries,
+              'symbol_base': 0x100, 'elevation': {'file': png, 'encoding': 'metres = R * 256 + G - 32768'},
+              'rows': [rle(''.join(sym(v) for v in row)) for row in grid]}
+    dump(path, m)
+    print(f'{key} backdrop (map.json): {W}x{H} blocks, {len(countries)} countries')
+
+
+def elevation_grid(lon0, lat1, W, H, step, zoom, lat0=None, lon1=None):
+    """Mean elevation (int metres) on a W×H lon/lat grid from terrarium tiles at `zoom`."""
+    import numpy as np
+    from PIL import Image
+    lat0 = lat1 - H * step if lat0 is None else lat0
+    lon1 = lon0 + W * step if lon1 is None else lon1
+    n = 2 ** zoom
+    clampl = lambda y: max(-85.0, min(85.0, y))
+    tx0, ty0 = [int(v) for v in tile_xy(clampl(lat1), lon0, zoom)]
+    tx1, ty1 = [int(v) for v in tile_xy(clampl(lat0), min(lon1, 179.999), zoom)]
     mosaic = np.zeros(((ty1 - ty0 + 1) * 256, (tx1 - tx0 + 1) * 256), dtype=np.float32)
     tdir = os.path.join(CACHE, 'terrarium')
     os.makedirs(tdir, exist_ok=True)
     for ty in range(ty0, ty1 + 1):
         for tx in range(tx0, tx1 + 1):
-            path = os.path.join(tdir, f'{z}_{tx}_{ty}.png')
+            path = os.path.join(tdir, f'{zoom}_{tx}_{ty}.png')
             if not os.path.exists(path):
-                urllib.request.urlretrieve(TILE_URL.format(z=z, x=tx, y=ty), path)
+                urllib.request.urlretrieve(TILE_URL.format(z=zoom, x=tx, y=ty), path)
             px = np.asarray(Image.open(path).convert('RGB'), dtype=np.float32)
             mosaic[(ty - ty0) * 256:(ty - ty0 + 1) * 256, (tx - tx0) * 256:(tx - tx0 + 1) * 256] = \
                 px[..., 0] * 256 + px[..., 1] + px[..., 2] / 256 - 32768
     k = 2
-    lats = A_LAT1 - (np.arange(H * k) + .5) * AS / k
-    lons = A_LON0 + (np.arange(W * k) + .5) * AS / k
-    n = 2 ** z
+    lats = np.clip(lat1 - (np.arange(H * k) + .5) * step / k, -85, 85)
+    lons = lon0 + (np.arange(W * k) + .5) * step / k
     py = np.clip((((1 - np.arcsinh(np.tan(np.radians(lats))) / np.pi) / 2 * n - ty0) * 256).astype(int), 0, mosaic.shape[0] - 1)
     pxs = np.clip((((lons + 180) / 360 * n - tx0) * 256).astype(int), 0, mosaic.shape[1] - 1)
     heights = np.round(mosaic[np.ix_(py, pxs)].reshape(H, k, W, k).mean(axis=(1, 3))).astype(np.int32)
     # remove one-row spikes (bad rows in the source tiles show up as lines)
     up, down = np.roll(heights, 1, 0), np.roll(heights, -1, 0)
     spike = (np.abs(heights - up) > 300) & (np.abs(heights - down) > 300) & (np.abs(up - down) < 300)
-    heights = np.where(spike, (up + down) // 2, heights)
-    v = heights + 32768
-    Image.fromarray(np.stack([(v >> 8).astype(np.uint8), (v & 255).astype(np.uint8), np.zeros_like(v, dtype=np.uint8)], -1), 'RGB') \
-        .save(os.path.join(DATA, 'asean_elevation.png'), optimize=True)
-    chars = '.' + ''.join(chr(0x41 + i) for i in range(len(ASEAN))) + ','   # A.. = ASEAN countries, ',' = other land
-    sym = {-1: '.', OTHER_LAND: ','} | {i + 1: chr(0x41 + i) for i in range(len(ASEAN))}
-    path = os.path.join(DATA, 'map.json')
-    with open(path, encoding='utf-8') as f:
-        m = json.load(f)
-    m['asean'] = {
-        'W': W, 'H': H, 'S': AS, 'lon0': A_LON0, 'lat1': A_LAT1,
-        'countries': [{'code': a3, 'name': name, 'anchor': anc[i]} for i, (a3, name) in enumerate(ASEAN)],
-        'symbols': {'.': 'sea', ',': 'other land', **{chr(0x41 + i): a3 for i, (a3, _) in enumerate(ASEAN)}},
-        'elevation': {'file': 'asean_elevation.png', 'encoding': 'metres = R * 256 + G - 32768'},
-        'rows': [rle(''.join(sym[v] for v in row)) for row in grid],
-    }
-    dump(path, m)
-    print(f'asean backdrop (map.json): {W}x{H} blocks, {sum(cells)} ASEAN land blocks')
+    return np.where(spike, (up + down) // 2, heights)
+
+
+# Countries shown in full detail: ASEAN plus Hong Kong and Macau
+DETAIL = {'THA', 'MMR', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP', 'IDN', 'PHL', 'BRN', 'TLS', 'HKG', 'MAC'}
+
+
+# ---------------------------------------------------------------- detailed tiles
+TILE_DEG = 2.0                                   # tile size in degrees (400 × 400 blocks of 0.005°)
+
+
+def build_tiles(only_missing=False):
+    """Detailed 0.005° tiles over the ASEAN box for every 2° tile touching a detail country
+    (ASEAN, Hong Kong, Macau). Each tile is a lossless RGB PNG in data/tiles/<tx>_<ty>.png:
+    elevation = R * 256 + G - 32768 metres, B = country (0 sea, 1 + index into index.json
+    'countries'). data/tiles/index.json lists the tiles."""
+    import numpy as np
+    from PIL import Image
+    tdir = os.path.join(DATA, 'tiles')
+    os.makedirs(tdir, exist_ok=True)
+    feats = []
+    for f in source('ne_10m_admin_0_countries.geojson')['features']:          # 1:10m coastlines for 550 m blocks
+        if not f['geometry']:
+            continue
+        polys = polygons(f['geometry'])
+        x0, y0, x1, y1 = bbox(polys)
+        if x1 < A_LON0 or x0 > A_LON1 or y1 < A_LAT0 or y0 > A_LAT1:
+            continue
+        p = f['properties']
+        feats.append((p.get('ADM0_A3'), p.get('NAME') or p.get('ADMIN'), polys, (x0, y0, x1, y1)))
+    countries = [{'code': a3, 'name': name, 'detail': a3 in DETAIL} for a3, name, _, _ in feats]
+    N = round(TILE_DEG / S)
+    cols, rows = round((A_LON1 - A_LON0) / TILE_DEG), round((A_LAT1 - A_LAT0) / TILE_DEG)
+    tiles = []
+    for ty in range(rows):
+        for tx in range(cols):
+            lon0, lat1 = A_LON0 + tx * TILE_DEG, A_LAT1 - ty * TILE_DEG
+            lon1, lat0 = lon0 + TILE_DEG, lat1 - TILE_DEG
+            hits = [(i, f) for i, f in enumerate(feats)
+                    if not (f[3][2] < lon0 or f[3][0] > lon1 or f[3][3] < lat0 or f[3][1] > lat1)]
+            if not any(f[0] in DETAIL for _, f in hits):
+                continue
+            grid = np.zeros((N, N), dtype=np.uint8)
+            detail_cells = 0
+            for i, (a3, _, polys, _) in hits:
+                for r, a, b in raster_spans(polys, lon0, lat1, S, N, N):
+                    grid[r, a:b + 1] = i + 1
+                    if a3 in DETAIL:
+                        detail_cells += b - a + 1
+            if not detail_cells:
+                continue
+            tiles.append([tx, ty])
+            out = os.path.join(tdir, f'{tx}_{ty}.png')
+            if only_missing and os.path.exists(out):
+                continue
+            h = elevation_grid(lon0, lat1, N, N, S, TILE_Z) + 32768
+            Image.fromarray(np.stack([(h >> 8).astype(np.uint8), (h & 255).astype(np.uint8), grid], -1), 'RGB').save(out, optimize=True)
+            print(f'  tile {tx}_{ty} ({lon0:.0f}°E {lat1:.0f}°N): {detail_cells} detailed blocks', flush=True)
+    dump(os.path.join(tdir, 'index.json'), {
+        'S': S, 'size': N, 'deg': TILE_DEG, 'lon0': A_LON0, 'lat1': A_LAT1, 'cols': cols, 'rows': rows,
+        'encoding': 'RGB PNG: metres = R * 256 + G - 32768; B = 0 sea or 1 + country index',
+        'countries': countries, 'tiles': tiles})
+    print(f'tiles: {len(tiles)} detailed 2° tiles')
+
+
+def build_asean():
+    build_backdrop('asean', A_LON0, A_LON1, A_LAT0, A_LAT1, AS, 5, 'asean_elevation.png')
+
+
+def build_world():
+    build_backdrop('world', -180.0, 180.0, -60.0, 84.0, 0.25, 3, 'world_elevation.png')
 
 
 # ---------------------------------------------------------------- block textures
@@ -1063,6 +1139,8 @@ def main():
     grid, foreign = build_map(th, slugs)
     heights = build_elevation()
     build_asean()
+    build_world()
+    build_tiles()
     build_textures()
     labels = build_transport(len(grid[0]), len(grid))
     build_rivers(labels)
