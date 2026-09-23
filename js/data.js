@@ -15,7 +15,7 @@ async function json(url) {
 export async function loadAtlas(onProgress = () => {}) {
   const [map, elevation, roads] = await Promise.all([
     json('data/map.json'),
-    json('data/elevation.json').catch(() => null),
+    loadElevation().catch(() => null),
     json('data/roads.json').catch(() => null),
   ]);
   const grid = decodeRows(map.rows, map.W, map.H, map.chars, { '.': -1, ',': -2 });
@@ -38,14 +38,17 @@ export async function loadAtlas(onProgress = () => {}) {
       if (r > b[3]) b[3] = r;
     }
   }
-  return { map, grid, provinces, roads, elev: elevation ? decodeInt16(elevation.data) : null };
+  return { map, grid, provinces, roads, elev: elevation };
 }
 
-/** base64 little-endian int16 → Int16Array (metres per block, negative = sea depth). */
-function decodeInt16(b64) {
-  const bin = atob(b64);
-  const out = new Int16Array(bin.length >> 1);
-  for (let i = 0; i < out.length; i++) out[i] = (bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8)) << 16 >> 16;
+/** data/elevation.bin: int16 little-endian metres per block (negative = sea depth). */
+async function loadElevation() {
+  const meta = await json('data/elevation.json');
+  const res = await fetch(`data/${meta.file}`);
+  if (!res.ok) throw new Error(`elevation ${res.status}`);
+  const buf = await res.arrayBuffer();
+  const view = new DataView(buf), out = new Int16Array(buf.byteLength >> 1);
+  for (let i = 0; i < out.length; i++) out[i] = view.getInt16(i * 2, true);
   return out;
 }
 

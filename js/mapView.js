@@ -3,7 +3,7 @@
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite } from './sprites.js';
 
-const MAX_SCALE = 6;
+const MAX_SCALE = 12;   // screen px per world px (a 0.01° block is 2 world px)
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export class MapView {

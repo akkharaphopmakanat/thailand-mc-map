@@ -5,10 +5,10 @@ Hand-written content lives in data/provinces/<slug>/province.json (including
 optional `district_items` landmarks keyed by district English name) and
 data/sprites.json; this script never touches them. It (re)writes:
 
-  data/map.json                               province block grid for the whole country (0.02° blocks)
+  data/map.json                               province block grid for the whole country (0.01° blocks)
   data/provinces/<slug>/districts.json        amphoe / khet raster + names
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
-  data/elevation.json                         mean height (m) per map block, land and sea
+  data/elevation.json + elevation.bin         mean height (m) per map block, land and sea (int16 LE)
   data/roads.json                             highways and roads as world-pixel polylines
 
 Sources (downloaded into tools/.cache on first run):
@@ -21,7 +21,7 @@ Sources (downloaded into tools/.cache on first run):
 
 Usage: python3 tools/build_data.py
 """
-import base64, json, math, os, re, sys, urllib.request
+import json, math, os, re, sys, urllib.request
 from collections import deque
 from difflib import SequenceMatcher
 
@@ -43,8 +43,8 @@ SOURCES = {
     'CDD_OPC_2024.csv': 'https://logi.cdd.go.th/opendata_cdd/2024/CDD_OPC_2024.csv',
 }
 
-# Country grid: 0.02° blocks (~2.2 km)
-S = 0.02
+# Country grid: 0.01° blocks (~1.1 km)
+S = 0.01
 LON0, LON1, LAT0, LAT1 = 97.2, 105.8, 5.4, 20.6
 # Symbols used to encode province indices in map.json rows ('.' sea, ',' foreign land, '~' RLE marker)
 CHARS = [chr(c) for c in range(0x21, 0x7f) if chr(c) not in '"\\`\'$~.,-'][:77]
@@ -69,7 +69,7 @@ def source(name):
 
 # ---------------------------------------------------------------- elevation
 TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
-TILE_Z = 8  # ~0.6 km pixels, averaged down to 0.02° blocks
+TILE_Z = 8  # ~0.6 km pixels, averaged down to 0.01° blocks
 
 
 def tile_xy(lat, lon, z):
@@ -80,7 +80,7 @@ def tile_xy(lat, lon, z):
 
 
 def build_elevation():
-    """Mean elevation (metres, negative = sea depth) per 0.02° block, written as base64 int16."""
+    """Mean elevation (metres, negative = sea depth) per 0.01° block, written as raw int16 LE."""
     import numpy as np
     from PIL import Image
     W = round((LON1 - LON0) / S); H = round((LAT1 - LAT0) / S)
@@ -111,17 +111,18 @@ def build_elevation():
     fine = mosaic[np.ix_(py, px_)]
     blocks = fine.reshape(H, k, W, k).mean(axis=(1, 3))
     heights = np.round(blocks).astype('<i2')
+    with open(os.path.join(DATA, 'elevation.bin'), 'wb') as f:
+        f.write(heights.tobytes())
     dump(os.path.join(DATA, 'elevation.json'), {
-        'W': W, 'H': H, 'unit': 'm', 'encoding': 'int16le-base64', 'source': 'terrarium',
+        'W': W, 'H': H, 'unit': 'm', 'encoding': 'int16le', 'file': 'elevation.bin', 'source': 'terrarium',
         'min': int(heights.min()), 'max': int(heights.max()),
-        'data': base64.b64encode(heights.tobytes()).decode('ascii'),
     })
     print(f'elevation.json: {heights.min()} .. {heights.max()} m')
     return heights.astype(int).tolist()
 
 
 # ---------------------------------------------------------------- roads
-PX_PER_DEG = 200  # world pixels per degree: B / S in js/config.js and map.json (4 px per 0.02° block)
+PX_PER_DEG = 200  # world pixels per degree: B / S in js/config.js and map.json (2 px per 0.01° block)
 
 
 def simplify(pts, tol):
@@ -352,8 +353,9 @@ def assign_districts(adm2, grid, ref_names):
                     votes[grid[gr][gc]] = votes.get(grid[gr][gc], 0) + 1
         if not votes:  # tiny shape: nearest province block to its bbox centre
             cr, cc = int((LAT1 - (y0 + y1) / 2) / S), int(((x0 + x1) / 2 - LON0) / S)
-            best = min(((abs(r - cr) + abs(c - cc), grid[r][c]) for r in range(max(cr - 6, 0), min(cr + 7, H))
-                        for c in range(max(cc - 6, 0), min(cc + 7, W)) if grid[r][c] >= 0), default=(0, -1))
+            rad = max(6, round(0.25 / S))  # search ~0.25° around it
+            best = min(((abs(r - cr) + abs(c - cc), grid[r][c]) for r in range(max(cr - rad, 0), min(cr + rad + 1, H))
+                        for c in range(max(cc - rad, 0), min(cc + rad + 1, W)) if grid[r][c] >= 0), default=(0, -1))
             owner.append(best[1])
         else:
             total = sum(votes.values())

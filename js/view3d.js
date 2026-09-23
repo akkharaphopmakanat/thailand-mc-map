@@ -1,4 +1,6 @@
 // 3D voxel view: every map block becomes a column at its real elevation.
+// The map is split into chunks; chunks near the camera are drawn at full detail and
+// farther ones with 2× or 4× bigger blocks (like a render distance), built on demand.
 // three.js is loaded from cdnjs the first time the 3D mode is opened.
 import { B } from './config.js';
 import { KIND } from './world.js';
@@ -10,8 +12,11 @@ const SKY = 0x8fb8ff;
 const MIN_Y = -16;                                 // bottom of the world slab
 const SHADE = { top: 1, ns: .8, ew: .62 };         // Minecraft-style face brightness
 const DIRT = [134, 96, 67], LOG = [102, 76, 44];
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CHUNK = 64;                                  // full-detail blocks per chunk side
+const LODS = [1, 2, 4];                            // block size multiplier per level of detail
+const BUILD_BUDGET_MS = 10;                        // chunk building time per frame
 const MAX_DPR = 1.5;                               // cap render resolution for a steady frame rate
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let threePromise = null;
 function loadThree() {
@@ -44,10 +49,10 @@ class View3D {
     this.metresPerBlock = 40;
     this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1;
     this.active = false; this.tween = null;
-    // orbit camera around a ground target (block coordinates, centred on the map)
     this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
     this.orbit = { ...this.home };
     this.maxDist = 900 * this.SC;
+    this.lodDist = [38 * this.SC, 105 * this.SC];    // camera distance where LOD 1→2 and 2→4
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR));
@@ -56,7 +61,14 @@ class View3D {
     this.scene.fog = new THREE.Fog(SKY, 260 * this.SC, 900 * this.SC);
     this.camera = new THREE.PerspectiveCamera(50, 1, .5, 3000 * this.SC);
 
-    this._buildTerrain();
+    const tex = new THREE.CanvasTexture(world.canvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+    this.topMat = new THREE.MeshBasicMaterial({ map: tex, vertexColors: true, side: THREE.DoubleSide });
+    this.sideMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+
+    this._prepare();
     this._buildWater();
     this._buildIcons();
     this._bindInput();
@@ -64,26 +76,73 @@ class View3D {
     this.resize();
   }
 
-  /* ---------------- terrain ---------------- */
-  /** Column height in blocks for block k at the current vertical scale. */
+  /* ---------------- height field and levels of detail ---------------- */
+  /** Column height in blocks for full-detail block k at the current vertical scale. */
   _height(k) {
     const e = this.cells.elev[k];
-    if (this.cells.kind[k] === KIND.WATER) return -Math.max(1, Math.round(Math.sqrt(-e) / 5));   // coarse seabed steps: fewer faces
+    if (this.cells.kind[k] === KIND.WATER) return -Math.max(1, Math.round(Math.sqrt(-e) / 5));
     return Math.max(1, Math.round(e / this.metresPerBlock));
   }
 
-  _buildTerrain() {
-    const { T, W, H, cells, atlas } = this;
-    const { kind, col } = cells;
-    const grid = atlas.grid;
+  /** Heights for every block, one down-sampled grid per LOD, and the chunk table (coarsest level built). */
+  _prepare() {
+    const { W, H, cells } = this;
     const N = W * H;
     const hb = this.hb = new Int16Array(N);
     for (let k = 0; k < N; k++) hb[k] = this._height(k);
-    const at = (r, c) => (r < 0 || c < 0 || r >= H || c >= W) ? MIN_Y : hb[r * W + c];
+    this.lod = {};
+    for (const L of LODS) {
+      const w = Math.ceil(W / L), h = Math.ceil(H / L);
+      const height = new Int16Array(w * h), rep = new Int32Array(w * h);
+      for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+        let sum = 0, n = 0;
+        for (let y = r * L; y < Math.min(H, r * L + L); y++) for (let x = c * L; x < Math.min(W, c * L + L); x++) { sum += hb[y * W + x]; n++; }
+        const k = Math.min(H - 1, r * L + (L >> 1)) * W + Math.min(W - 1, c * L + (L >> 1));
+        const water = cells.kind[k] === KIND.WATER;
+        let v = Math.round(sum / n);
+        v = water ? Math.min(v, -1) : Math.max(v, 1);
+        height[r * w + c] = v; rep[r * w + c] = k;
+      }
+      this.lod[L] = { L, w, h, height, rep };
+    }
+    for (const c of this.chunks?.values() || []) for (const m of Object.values(c.meshes)) if (m) this._dispose(m);
+    this.chunks = new Map();
+    this.nx = Math.ceil(W / CHUNK); this.nz = Math.ceil(H / CHUNK);
+    for (let j = 0; j < this.nz; j++) for (let i = 0; i < this.nx; i++) {
+      const chunk = { i, j, meshes: {}, shown: 0,
+        cx: (i + .5) * CHUNK - W / 2, cz: (j + .5) * CHUNK - H / 2 };
+      this.chunks.set(j * this.nx + i, chunk);
+      this._show(chunk, LODS[LODS.length - 1]);
+    }
+  }
 
-    // Two meshes: land tops textured with the 2D terrain canvas (roads, borders, grass detail),
-    // and walls + seabed in flat vertex colours. Neighbouring faces with the same height and
-    // look are merged into strips to keep the vertex count down.
+  /** Build the meshes for one chunk at one level of detail. */
+  _buildChunk(chunk, L) {
+    const { T, W, H, cells, atlas } = this;
+    const { kind, col } = cells;
+    const grid = atlas.grid;
+    const hb = this.hb;
+    const G = this.lod[L];
+    const per = CHUNK / L;
+    const c0 = chunk.i * per, r0 = chunk.j * per;
+    const c1 = Math.min(G.w, c0 + per), r1 = Math.min(G.h, r0 + per);
+    const cw = c1 - c0;
+    const ht = (r, c) => G.height[r * G.w + c];
+    const rep = (r, c) => G.rep[r * G.w + c];
+    // Neighbour height for a wall. Inside the chunk use the same LOD; across the chunk edge
+    // use the lowest full-detail block along that edge, so neighbours drawn at a different
+    // LOD never leave a gap.
+    const neighbour = (r, c, dr, dc) => {
+      const rr = r + dr, cc = c + dc;
+      if (rr < 0 || cc < 0 || rr >= G.h || cc >= G.w) return MIN_Y;
+      if (rr >= r0 && rr < r1 && cc >= c0 && cc < c1) return ht(rr, cc);
+      let m = Infinity;
+      if (dr) { const y = dr < 0 ? r * L - 1 : Math.min(H - 1, (r + 1) * L); for (let x = c * L; x < Math.min(W, c * L + L); x++) m = Math.min(m, hb[y * W + x]); }
+      else { const x = dc < 0 ? c * L - 1 : Math.min(W - 1, (c + 1) * L); for (let y = r * L; y < Math.min(H, r * L + L); y++) m = Math.min(m, hb[y * W + x]); }
+      return Math.min(m, ht(rr, cc));
+    };
+    const X = c => Math.min(W, c * L) - W / 2, Z = r => Math.min(H, r * L) - H / 2;
+
     const count = [0, 0];
     let buf = null;
     const quad = (m, v, rgb, f, uv) => {
@@ -99,57 +158,50 @@ class View3D {
     const WHITE = [255, 255, 255];
     const isLeafy = kd => kd === KIND.TREE || kd === KIND.FOREIGN_TREE;
     const isGrassy = kd => kd === KIND.GRASS || kd === KIND.PADDY || kd === KIND.FOREIGN;
-    const topRGB = k => kind[k] === KIND.WATER
-      ? (hb[k] > -3 ? [196, 182, 132] : [128, 124, 118])        // sand shallows, gravel deeper
+    const topRGB = (k, h) => kind[k] === KIND.WATER
+      ? (h > -3 ? [196, 182, 132] : [128, 124, 118])            // sand shallows, gravel deeper
       : [col[k * 3], col[k * 3 + 1], col[k * 3 + 2]];
-    const sideRGB = k => kind[k] === KIND.WATER ? [150, 140, 110] : isGrassy(kind[k]) ? DIRT : topRGB(k);
-
-    // Wall between block k (height h) and a lower neighbour at height hn, as strips of `len` blocks.
-    // wallVerts(lo, hi) gives the quad corners for the whole strip.
-    const wall = (k, hn, f, wallVerts) => {
-      const h = hb[k], kd = kind[k], jit = .95 + h2(k, 1, 17) * .1;
+    const wall = (r, c, hn, f, verts) => {
+      const k = rep(r, c), h = ht(r, c), kd = kind[k], jit = .95 + h2(k, 1, 17) * .1;
+      const side = kd === KIND.WATER ? [150, 140, 110] : isGrassy(kd) ? DIRT : topRGB(k, h);
       if ((isGrassy(kd) || isLeafy(kd)) && h - hn >= 1) {
         const lip = isLeafy(kd) ? .6 : .2;
-        quad(1, wallVerts(h - lip, h), topRGB(k), f * jit);
-        quad(1, wallVerts(hn, h - lip), isLeafy(kd) ? LOG : sideRGB(k), f * jit);
+        quad(1, verts(h - lip, h), topRGB(k, h), f * jit);
+        quad(1, verts(hn, h - lip), isLeafy(kd) ? LOG : side, f * jit);
       } else {
-        quad(1, wallVerts(hn, h), sideRGB(k), f * jit);
+        quad(1, verts(hn, h), side, f * jit);
       }
     };
-    // Cells merge into a strip when they look identical: same height, kind, province and neighbour height
-    const sameLook = (a, b) => hb[a] === hb[b] && kind[a] === kind[b] && grid[a] === grid[b];
+    const same = (r, a, b) => ht(r, a) === ht(r, b) && kind[rep(r, a)] === kind[rep(r, b)] && grid[rep(r, a)] === grid[rep(r, b)];
+    const sameCol = (c, a, b) => ht(a, c) === ht(b, c) && kind[rep(a, c)] === kind[rep(b, c)] && grid[rep(a, c)] === grid[rep(b, c)];
+    const topQuad = new Int32Array(cw * (r1 - r0)).fill(-1);
 
     const pass = () => {
       count[0] = count[1] = 0;
-      // Rows: tops, north and south walls
-      for (let r = 0; r < H; r++) {
-        const z0 = r - H / 2, z1 = z0 + 1;
-        // tops
-        for (let c = 0; c < W;) {
-          const k = r * W + c;
+      for (let r = r0; r < r1; r++) {
+        const z0 = Z(r), z1 = Z(r + 1);
+        for (let c = c0; c < c1;) {                          // tops, merged along the row
           let e = c + 1;
-          while (e < W && sameLook(r * W + e, k)) e++;
-          const h = hb[k], x0 = c - W / 2, x1 = e - W / 2;
-          const topV = [x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0];
-          if (kind[k] === KIND.WATER) {
-            quad(1, topV, topRGB(k), 1);
-          } else {
-            const u0 = c / W, u1 = e / W, v0 = 1 - r / H, v1 = 1 - (r + 1) / H;
-            const tq = quad(0, topV, WHITE, 1, [u0, v0, u0, v1, u1, v1, u1, v0]);
-            if (buf) for (let i = c; i < e; i++) this._topQuad[r * W + i] = tq;
+          while (e < c1 && same(r, e, c)) e++;
+          const k = rep(r, c), h = ht(r, c), x0 = X(c), x1 = X(e);
+          const v = [x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0];
+          if (kind[k] === KIND.WATER) quad(1, v, topRGB(k, h), 1);
+          else {
+            const u0 = (x0 + W / 2) / W, u1 = (x1 + W / 2) / W, v0 = 1 - (z0 + H / 2) / H, v1 = 1 - (z1 + H / 2) / H;
+            const q = quad(0, v, WHITE, 1, [u0, v0, u0, v1, u1, v1, u1, v0]);
+            if (buf) for (let i = c; i < e; i++) topQuad[(r - r0) * cw + (i - c0)] = q;
           }
           c = e;
         }
-        // north (dr = -1) and south (dr = +1) walls
-        for (const [dr, f] of [[-1, SHADE.ns], [1, SHADE.ns]]) {
+        for (const dr of [-1, 1]) {                          // north / south walls
           const z = dr < 0 ? z0 : z1;
-          for (let c = 0; c < W;) {
-            const k = r * W + c, hn = at(r + dr, c);
+          for (let c = c0; c < c1;) {
+            const hn = neighbour(r, c, dr, 0);
             let e = c + 1;
-            while (e < W && sameLook(r * W + e, k) && at(r + dr, e) === hn) e++;
-            if (hn < hb[k]) {
-              const xa = c - W / 2, xb = e - W / 2;
-              wall(k, hn, f, dr < 0
+            while (e < c1 && same(r, e, c) && neighbour(r, e, dr, 0) === hn) e++;
+            if (hn < ht(r, c)) {
+              const xa = X(c), xb = X(e);
+              wall(r, c, hn, SHADE.ns, dr < 0
                 ? (lo, hi) => [xb, lo, z, xb, hi, z, xa, hi, z, xa, lo, z]
                 : (lo, hi) => [xa, lo, z, xa, hi, z, xb, hi, z, xb, lo, z]);
             }
@@ -157,17 +209,16 @@ class View3D {
           }
         }
       }
-      // Columns: west and east walls
-      for (let c = 0; c < W; c++) {
-        for (const [dc, f] of [[-1, SHADE.ew], [1, SHADE.ew]]) {
-          const x = (dc < 0 ? c : c + 1) - W / 2;
-          for (let r = 0; r < H;) {
-            const k = r * W + c, hn = at(r, c + dc);
+      for (let c = c0; c < c1; c++) {                        // west / east walls, merged down the column
+        for (const dc of [-1, 1]) {
+          const x = dc < 0 ? X(c) : X(c + 1);
+          for (let r = r0; r < r1;) {
+            const hn = neighbour(r, c, 0, dc);
             let e = r + 1;
-            while (e < H && sameLook(e * W + c, k) && at(e, c + dc) === hn) e++;
-            if (hn < hb[k]) {
-              const za = r - H / 2, zb = e - H / 2;
-              wall(k, hn, f, dc < 0
+            while (e < r1 && sameCol(c, e, r) && neighbour(e, c, 0, dc) === hn) e++;
+            if (hn < ht(r, c)) {
+              const za = Z(r), zb = Z(e);
+              wall(r, c, hn, SHADE.ew, dc < 0
                 ? (lo, hi) => [x, lo, za, x, hi, za, x, hi, zb, x, lo, zb]
                 : (lo, hi) => [x, lo, zb, x, hi, zb, x, hi, za, x, lo, za]);
             }
@@ -179,12 +230,10 @@ class View3D {
     pass();
     const mk = (n, uv) => ({ n, pos: new Float32Array(n * 12), clr: new Float32Array(n * 12), uv: uv ? new Float32Array(n * 8) : null });
     buf = [mk(count[0], true), mk(count[1], false)];
-    this._topQuad = new Int32Array(N).fill(-1);
     pass();
-    this._tops = buf[0];
-    this._baseClr = buf[0].clr.slice();
 
-    const geometry = (b) => {
+    const group = new T.Group();
+    const geos = buf.map(b => {
       const idx = new Uint32Array(b.n * 6);
       for (let q = 0; q < b.n; q++) {
         const v = q * 4, o = q * 6;
@@ -195,36 +244,106 @@ class View3D {
       geo.setAttribute('color', b.attr = new T.BufferAttribute(b.clr, 3));
       if (b.uv) geo.setAttribute('uv', new T.BufferAttribute(b.uv, 2));
       geo.setIndex(new T.BufferAttribute(idx, 1));
+      geo.computeBoundingSphere();
       return geo;
-    };
-    if (!this.topMat) {
-      const tex = new T.CanvasTexture(this.world.canvas);
-      tex.magFilter = T.NearestFilter;
-      tex.minFilter = T.LinearMipmapLinearFilter;
-      tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-      this.topMat = new T.MeshBasicMaterial({ map: tex, vertexColors: true, side: T.DoubleSide });
-      this.sideMat = new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide });
-    }
-    for (const m of this.meshes || []) { this.scene.remove(m); m.userData.geo.dispose(); }
-    this.meshes = [[buf[0], this.topMat], [buf[1], this.sideMat]].map(([b, mat]) => {
-      const geo = geometry(b);
-      const mesh = new T.Mesh(geo, mat);
-      mesh.userData.geo = geo;
-      this.scene.add(mesh);
-      return mesh;
     });
-    this.quadCount = count[0] + count[1];
-    this._applyHighlight();
+    group.add(new T.Mesh(geos[0], this.topMat), new T.Mesh(geos[1], this.sideMat));
+    return { L, group, geos, tops: buf[0], base: buf[0].clr.slice(), topQuad,
+      r0, r1, c0, c1, cw, quads: count[0] + count[1], hl: '' };
+  }
+
+  _dispose(mesh) {
+    this.scene.remove(mesh.group);
+    for (const g of mesh.geos) g.dispose();
+  }
+
+  /** Make level L the visible mesh for a chunk (building it now if needed). */
+  _show(chunk, L) {
+    if (!chunk.meshes[L]) { chunk.meshes[L] = this._buildChunk(chunk, L); this.scene.add(chunk.meshes[L].group); }
+    for (const [lv, m] of Object.entries(chunk.meshes)) if (m) m.group.visible = +lv === L;
+    chunk.shown = L;
+    this._highlight(chunk.meshes[L]);
+  }
+
+  /** Pick each chunk's level from camera distance; build missing levels within a time budget. */
+  _updateLOD() {
+    const p = this.camera.position;
+    const want = [];
+    for (const chunk of this.chunks.values()) {
+      const d = Math.hypot(chunk.cx - p.x, chunk.cz - p.z, p.y * .6);
+      const L = d < this.lodDist[0] ? 1 : d < this.lodDist[1] ? 2 : 4;
+      chunk.dist = d;
+      if (chunk.shown !== L) {
+        if (chunk.meshes[L]) this._show(chunk, L);
+        else want.push([d, chunk, L]);
+      }
+    }
+    want.sort((a, b) => a[0] - b[0]);
+    const t0 = performance.now();
+    for (const [, chunk, L] of want) {
+      if (performance.now() - t0 > BUILD_BUDGET_MS) break;
+      this._show(chunk, L);
+    }
+    // Free detailed meshes of chunks that are now far away
+    for (const chunk of this.chunks.values()) {
+      for (const L of [1, 2]) {
+        const m = chunk.meshes[L];
+        if (m && chunk.shown !== L && chunk.dist > this.lodDist[L === 1 ? 0 : 1] * 1.6) { this._dispose(m); chunk.meshes[L] = null; }
+      }
+    }
   }
 
   _buildWater() {
     const { T, W, H } = this;
-    const geo = new T.PlaneGeometry(W + 400, H + 400);
+    const geo = new T.PlaneGeometry(W + 400 * this.SC, H + 400 * this.SC);
     geo.rotateX(-Math.PI / 2);
     const mat = new T.MeshBasicMaterial({ color: 0x3f76e4, transparent: true, opacity: .62, depthWrite: false });
     this.water = new T.Mesh(geo, mat);
     this.water.position.y = .15;
     this.scene.add(this.water);
+  }
+
+  /* ---------------- selection highlight ---------------- */
+  /** Tint the tops of the selected province (and focused district) yellow in one chunk mesh. */
+  _highlight(mesh) {
+    const sel = this.selected;
+    const key = `${sel}:${this.dFocus}:${this.layer ? this.layer.slug : ''}`;
+    if (mesh.hl === key) return;
+    const { W, atlas } = this;
+    const L = mesh.L;
+    const b = sel >= 0 ? atlas.provinces[sel].bb : null;
+    const touches = b && b[2] >= mesh.c0 * L && b[0] < mesh.c1 * L && b[3] >= mesh.r0 * L && b[1] < mesh.r1 * L;
+    const clr = mesh.tops.clr;
+    if (!touches && !mesh.tinted) { mesh.hl = key; return; }
+    clr.set(mesh.base);
+    mesh.tinted = false;
+    if (touches) {
+      const G = this.lod[L], done = new Set();
+      for (let r = mesh.r0; r < mesh.r1; r++) for (let c = mesh.c0; c < mesh.c1; c++) {
+        const q = mesh.topQuad[(r - mesh.r0) * mesh.cw + (c - mesh.c0)];
+        const k = G.rep[r * G.w + c];
+        if (q < 0 || done.has(q) || atlas.grid[k] !== sel) continue;
+        done.add(q);
+        mesh.tinted = true;
+        const fr = (k / W) | 0, fc = k % W;
+        const mix = this.layer && this.dFocus >= 0 && this.layer.hit((fc + .5) * B, (fr + .5) * B) === this.dFocus ? .7 : .3;
+        const o = q * 12;
+        for (let i = 0; i < 12; i += 3) {
+          clr[o + i] = clr[o + i] * (1 - mix) + 1.15 * mix;
+          clr[o + i + 1] = clr[o + i + 1] * (1 - mix) + 1.1 * mix;
+          clr[o + i + 2] = clr[o + i + 2] * (1 - mix) + .45 * mix;
+        }
+      }
+    }
+    mesh.tops.attr.needsUpdate = true;
+    mesh.hl = key;
+  }
+
+  _applyHighlight() {
+    for (const chunk of this.chunks.values()) {
+      const m = chunk.meshes[chunk.shown];
+      if (m) this._highlight(m);
+    }
   }
 
   /* ---------------- icons ---------------- */
@@ -304,35 +423,8 @@ class View3D {
 
   setVerticalScale(metresPerBlock) {
     this.metresPerBlock = metresPerBlock;
-    this._buildTerrain();
+    this._prepare();
     this._placeIcons();
-  }
-
-  /** Tint the tops of the selected province (and focused district) yellow. */
-  _applyHighlight() {
-    if (!this._tops) return;
-    const { W, atlas, _tops: tops, _baseClr: base, _topQuad: tq } = this;
-    const clr = tops.clr;
-    clr.set(base);
-    const sel = this.selected;
-    const done = new Set();
-    if (sel >= 0) {
-      const b = atlas.provinces[sel].bb;
-      for (let r = b[1]; r <= b[3]; r++) for (let c = b[0]; c <= b[2]; c++) {
-        const k = r * W + c;
-        if (atlas.grid[k] !== sel || tq[k] < 0 || done.has(tq[k])) continue;
-        done.add(tq[k]);
-        let mix = .3;
-        if (this.layer && this.dFocus >= 0 && this.layer.hit((c + .5) * B, (r + .5) * B) === this.dFocus) mix = .7;
-        const o = tq[k] * 12;
-        for (let i = 0; i < 12; i += 3) {
-          clr[o + i] = clr[o + i] * (1 - mix) + 1.15 * mix;
-          clr[o + i + 1] = clr[o + i + 1] * (1 - mix) + 1.1 * mix;
-          clr[o + i + 2] = clr[o + i + 2] * (1 - mix) + .45 * mix;
-        }
-      }
-    }
-    tops.attr.needsUpdate = true;
   }
 
   /* ---------------- camera ---------------- */
@@ -386,7 +478,7 @@ class View3D {
   }
 
   /* ---------------- picking ---------------- */
-  /** Ray-march the height field under a screen point. */
+  /** Ray-march the full-detail height field under a screen point. */
   pick(sx, sy) {
     const T = this.T;
     const ndc = new T.Vector2(sx / this.cw * 2 - 1, -(sy / this.ch) * 2 + 1);
@@ -394,7 +486,7 @@ class View3D {
     ray.setFromCamera(ndc, this.camera);
     const o = ray.ray.origin, d = ray.ray.direction;
     const { W, H } = this;
-    for (let t = 0; t < 2500 * this.SC; t += .35) {
+    for (let t = 0; t < 3000 * this.SC; t += Math.max(.35, t * .0015)) {
       const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
       const c = Math.floor(x + W / 2), r = Math.floor(z + H / 2);
       if (c < 0 || r < 0 || c >= W || r >= H) { if (y < MIN_Y) return null; continue; }
@@ -510,6 +602,7 @@ class View3D {
     this.icons.forEach((s, i) => { s.position.y = s.userData.base + bob(i); });
     this.districtIcons.forEach((s, i) => { s.position.y = s.userData.base + bob(i) * .6; });
     this._updateCamera();
+    this._updateLOD();
     this.renderer.render(this.scene, this.camera);
     requestAnimationFrame(tt => this._loop(tt));
   }

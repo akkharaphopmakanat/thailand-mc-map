@@ -85,8 +85,8 @@ export function renderWorld(atlas, cells = classifyCells(atlas)) {
       const gx = c * B + x, gy = r * B + y;
       let n = .93 + h2(gx, gy, 3) * .14;
       if (kd === K.GRASS || kd === K.FOREIGN) { if (h2(gx, gy, 4) < .1) n *= .84; }
-      else if (kd === K.TREE || kd === K.FOREIGN_TREE) { n = .78 + h2(gx >> 1, gy >> 1, 8) * .4; if (x === 0 || y === 0) n *= .9; }
-      else if (kd === K.STONE) n = .82 + h2(gx >> 1, gy, 9) * .32;
+      else if (kd === K.TREE || kd === K.FOREIGN_TREE) { n = .78 + h2(gx, gy, 8) * .4; if (B >= 4 && (x === 0 || y === 0)) n *= .9; }
+      else if (kd === K.STONE) n = .82 + h2(gx, gy, 9) * .32;
       else if (kd === K.PADDY) n = (gy % 3 === 0) ? .8 : 1.02 + h2(gx, gy, 3) * .06;
       else if (kd === K.WATER) { n = .97 + h2(gx, gy, 3) * .06; if (h2(gx >> 2, gy, 12) < .018) n = 1.18; }
       const o = (gy * PW + gx) * 4;
