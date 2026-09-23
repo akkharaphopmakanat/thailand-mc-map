@@ -139,4 +139,38 @@ export class ProvincePanel {
   highlightDistrict(k) {
     this.el.querySelectorAll('.drow').forEach(b => b.classList.toggle('hl', +b.dataset.k === k));
   }
+
+  /**
+   * Card for a state / province / region of another detailed country: item, lore, and its
+   * districts. `onArea(area)` selects another area, `onFly(area)` flies the map to it.
+   */
+  showArea(area, { onArea, onFly }) {
+    this.p = null; this.d = null;
+    const c = area.country;
+    const term = c.term[0].toUpperCase() + c.term.slice(1);
+    const districts = c.districts.filter(d => d.area === area.id).map(d => d.name).sort();
+    this.el.innerHTML = `
+      <div class="sel">
+        <div class="slot big" aria-hidden="true"><img src="${spriteFromRows(`c:${c.code}:${area.id}`, area.item.sprite).url}" alt=""></div>
+        <div>
+          <h2 class="sel-name">${esc(area.name.en)}</h2>
+          <div class="sel-th">${esc(area.name.local && area.name.local !== area.name.en ? area.name.local + ' · ' : '')}${esc(c.name.en)}</div>
+          <div class="sel-item">Iconic item: <b>${esc(area.item.name)}</b></div>
+        </div>
+      </div>
+      <p class="lore">${esc(area.lore)}</p>
+      <div class="meta">
+        <span class="tag">${esc(term)} of ${esc(c.name.en)}</span>
+        <span class="tag">${area.blocks} blocks</span>
+      </div>
+      <div class="nb"><div class="nb-label">Other ${esc(c.term)}s of ${esc(c.name.en)}</div><div class="chips">${
+        c.areas.filter(a => a !== area).map(a => `<button class="chip" data-a="${a.id}"><img src="${spriteFromRows(`c:${c.code}:${a.id}`, a.item.sprite).url}" alt="">${esc(a.name.en)}</button>`).join('')}</div></div>
+      <div class="sel-actions"><button class="mcbtn" data-act="fly">Fly to ${esc(area.name.en)}</button></div>
+      <section class="dist" aria-label="Districts">
+        <div class="dist-head"><h3>Districts</h3><span class="count">${districts.length}</span></div>
+        <ul class="tlist">${districts.map(n => `<li>${esc(n)}</li>`).join('') || '<li>No district data</li>'}</ul>
+      </section>`;
+    this.el.querySelectorAll('.chip').forEach(b => b.onclick = () => onArea(c.areas[+b.dataset.a - 1]));
+    this.el.querySelector('[data-act="fly"]').onclick = () => onFly(area);
+  }
 }

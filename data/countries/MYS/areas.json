@@ -1,0 +1,187 @@
+{
+  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName. tools/build_data.py merges this into data/countries/MYS.json.",
+  "code": "MYS",
+  "name": {
+    "en": "Malaysia",
+    "local": "Malaysia"
+  },
+  "term": "state",
+  "areas": {
+    "Johor": {
+      "name": {
+        "en": "Johor",
+        "local": "Johor"
+      },
+      "item": {
+        "name": "Pineapple",
+        "sprite": "pineapple"
+      },
+      "lore": "Malaysia's pineapple heartland around Pontian, at the southern tip of the peninsula; the causeway crosses to Singapore."
+    },
+    "Kedah": {
+      "name": {
+        "en": "Kedah",
+        "local": "Kedah"
+      },
+      "item": {
+        "name": "Rice",
+        "sprite": "rice"
+      },
+      "lore": "The 'Rice Bowl of Malaysia', with paddy plains around Alor Setar and the islands of Langkawi offshore."
+    },
+    "Kelantan": {
+      "name": {
+        "en": "Kelantan",
+        "local": "Kelantan"
+      },
+      "item": {
+        "name": "Wau Bulan Kite",
+        "sprite": "wau"
+      },
+      "lore": "Home of the wau bulan, the moon kite on the 50 sen coin, flown at kite festivals on the east coast."
+    },
+    "Malacca": {
+      "name": {
+        "en": "Melaka",
+        "local": "Melaka"
+      },
+      "item": {
+        "name": "A Famosa Gate",
+        "sprite": "wall"
+      },
+      "lore": "UNESCO old port city; the Porta de Santiago gate of the Portuguese fort A Famosa still stands."
+    },
+    "Negeri Sembilan": {
+      "name": {
+        "en": "Negeri Sembilan",
+        "local": "Negeri Sembilan"
+      },
+      "item": {
+        "name": "Minangkabau Roof",
+        "sprite": "minangRoof"
+      },
+      "lore": "Minangkabau heritage: curved, horn-shaped roofs like the Istana Lama at Seri Menanti."
+    },
+    "Pahang": {
+      "name": {
+        "en": "Pahang",
+        "local": "Pahang"
+      },
+      "item": {
+        "name": "Tea",
+        "sprite": "tea"
+      },
+      "lore": "Tea terraces of the Cameron Highlands, plus Taman Negara, one of the oldest rainforests in the world."
+    },
+    "Penang": {
+      "name": {
+        "en": "Pulau Pinang",
+        "local": "Pulau Pinang"
+      },
+      "item": {
+        "name": "Char Kway Teow",
+        "sprite": "bowl"
+      },
+      "lore": "Street food capital: char kway teow and the street art and shophouses of George Town (UNESCO)."
+    },
+    "Perak": {
+      "name": {
+        "en": "Perak",
+        "local": "Perak"
+      },
+      "item": {
+        "name": "Tin Ore",
+        "sprite": "tinOre"
+      },
+      "lore": "The Kinta Valley once produced much of the world's tin; Ipoh grew rich on it."
+    },
+    "Perlis": {
+      "name": {
+        "en": "Perlis",
+        "local": "Perlis"
+      },
+      "item": {
+        "name": "Harumanis Mango",
+        "sprite": "mango"
+      },
+      "lore": "Malaysia's smallest state, famous for the sweet Harumanis mango."
+    },
+    "Sabah": {
+      "name": {
+        "en": "Sabah",
+        "local": "Sabah"
+      },
+      "item": {
+        "name": "Mount Kinabalu",
+        "sprite": "mountain"
+      },
+      "lore": "Mount Kinabalu (4,095 m), the highest peak in Malaysia, and Borneo's orangutans and reefs."
+    },
+    "Sarawak": {
+      "name": {
+        "en": "Sarawak",
+        "local": "Sarawak"
+      },
+      "item": {
+        "name": "Hornbill",
+        "sprite": "hornbill"
+      },
+      "lore": "The 'Land of the Hornbills', with the Mulu caves and longhouses along its rivers."
+    },
+    "Selangor": {
+      "name": {
+        "en": "Selangor",
+        "local": "Selangor"
+      },
+      "item": {
+        "name": "Firefly Bush",
+        "sprite": "fireflies"
+      },
+      "lore": "Fireflies glow along the Selangor River at Kuala Selangor; Batu Caves is here too."
+    },
+    "Terengganu": {
+      "name": {
+        "en": "Terengganu",
+        "local": "Terengganu"
+      },
+      "item": {
+        "name": "Sea Turtle",
+        "sprite": "turtle"
+      },
+      "lore": "Turtles nest on its beaches, and the Perhentian and Redang islands lie offshore."
+    },
+    "Kuala Lumpur": {
+      "name": {
+        "en": "Kuala Lumpur",
+        "local": "Kuala Lumpur"
+      },
+      "item": {
+        "name": "Twin Towers",
+        "sprite": "twinTowers"
+      },
+      "lore": "The capital, with the Petronas Twin Towers joined by their skybridge."
+    },
+    "Putrajaya": {
+      "name": {
+        "en": "Putrajaya",
+        "local": "Putrajaya"
+      },
+      "item": {
+        "name": "Pink Dome",
+        "sprite": "pinkDome"
+      },
+      "lore": "The planned administrative capital; the rose-tinted dome of Putra Mosque rises over the lake."
+    },
+    "Labuan": {
+      "name": {
+        "en": "Labuan",
+        "local": "Labuan"
+      },
+      "item": {
+        "name": "Oil Pumpjack",
+        "sprite": "pumpjack"
+      },
+      "lore": "Island territory off Borneo and an offshore oil and gas hub."
+    }
+  }
+}

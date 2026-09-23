@@ -1,7 +1,9 @@
 // Everything outside Thailand's own map, in Minecraft-map style:
 // - low-detail backdrops of the whole world (0.25°, ~27 km blocks) and the ASEAN region (0.05°, ~5.5 km);
 //   countries marked `detail` (ASEAN, Hong Kong, Macau) in full colour, the rest dimmer;
-// - detailed 550 m tiles (2° × 2°) for ASEAN, Hong Kong and Macau, streamed as the map pans and zooms.
+// - detailed 550 m tiles (2° × 2°) for ASEAN, Hong Kong and Macau, streamed as the map pans and zooms;
+// - the countries brought up to Thailand's level (Sprint 2 on): their states / provinces / regions
+//   with iconic items, and districts, which tile blocks refer to (tile country value + district id).
 import { B } from './config.js';
 import { h2, vn } from './noise.js';
 import { decodeRows } from './rle.js';
@@ -84,9 +86,15 @@ export function labelPoint(a, map, country) {
 const CACHE = 48;                                         // decoded tiles kept in memory
 
 export class TileLayer {
-  /** @param {object} map  data/map.json (for the world-pixel frame) */
-  constructor(map) {
+  /**
+   * @param {object} map        data/map.json (for the world-pixel frame)
+   * @param {Countries} [countries]  countries with districts, roads… in the tiles (Countries, below)
+   */
+  constructor(map, countries = null) {
     this.map = map;
+    this.countries = countries;
+    this.layers = { mainRoads: true, mediumRoads: true, rails: true, rivers: true, streams: false };
+    this.selected = null;           // {country, area} to highlight
     this.index = null;
     this.cache = new Map();                               // key -> {canvas, elev, country}
     this.loading = new Set();
@@ -134,24 +142,63 @@ export class TileLayer {
   async _load(tx, ty, key) {
     this.loading.add(key);
     try {
-      const res = await fetch(`data/tiles/${key}.png`);
-      if (!res.ok) throw new Error(res.status);
-      const bmp = await createImageBitmap(await res.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
-      const n = bmp.width;
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = n;
-      const x = cv.getContext('2d', { willReadFrequently: true });
-      x.drawImage(bmp, 0, 0);
-      const px = x.getImageData(0, 0, n, n).data;
+      const [px, lay] = await Promise.all([pixels(`data/tiles/${key}.png`), pixels(`data/tiles/${key}.a.png`).catch(() => null)]);
+      const n = Math.round(Math.sqrt(px.length / 4));
       const elev = new Int16Array(n * n), country = new Uint8Array(n * n);
       for (let i = 0; i < n * n; i++) { elev[i] = px[i * 4] * 256 + px[i * 4 + 1] - 32768; country[i] = px[i * 4 + 2]; }
-      const tile = { tx, ty, n, elev, country, canvas: cv };
-      paintTile(tile, this.index);
+      // optional layers: district (R * 256 + G), road | water << 3 (B)
+      let district = null, road = null, water = null;
+      if (lay) {
+        district = new Uint16Array(n * n); road = new Uint8Array(n * n); water = new Uint8Array(n * n);
+        for (let i = 0; i < n * n; i++) { district[i] = lay[i * 4] * 256 + lay[i * 4 + 1]; road[i] = lay[i * 4 + 2] & 7; water[i] = lay[i * 4 + 2] >> 3; }
+      }
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = n;
+      const tile = { tx, ty, n, elev, country, district, road, water, canvas: cv };
+      paintTile(tile, this.index, this.layers, this.countries);
       this.cache.set(key, tile);
       while (this.cache.size > CACHE) this.cache.delete(this.cache.keys().next().value);
       this.onLoad();
     } catch { /* missing tile: the backdrop shows through */ }
     this.loading.delete(key);
+  }
+
+  /** Layers changed: repaint the tiles in memory. */
+  setLayers(layers) {
+    this.layers = { ...layers };
+    for (const t of this.cache.values()) paintTile(t, this.index, this.layers, this.countries);
+  }
+
+  /** Highlight an area ({country, area}) or nothing. */
+  setSelected(sel) {
+    this.selected = sel;
+    for (const t of this.cache.values()) t.overlay = null;
+  }
+
+  /** Yellow tint + outline over the selected area's blocks in a tile (cached), or null. */
+  overlay(t) {
+    const sel = this.selected;
+    if (!sel || !t.district) return null;
+    const key = `${sel.country.code}:${sel.area.id}`;
+    if (t.overlay?.key === key) return t.overlay.canvas;
+    const n = t.n, cv = document.createElement('canvas');
+    cv.width = cv.height = n;
+    const x = cv.getContext('2d'), img = x.createImageData(n, n), px = img.data;
+    const cval = sel.country.tileCountry, dists = sel.country.districts;
+    const inArea = i => t.country[i] === cval && t.district[i] && dists[t.district[i] - 1]?.area === sel.area.id;
+    let any = false;
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const i = r * n + c;
+      if (!inArea(i)) continue;
+      any = true;
+      const edge = (c > 0 && !inArea(i - 1)) || (c < n - 1 && !inArea(i + 1)) || (r > 0 && !inArea(i - n)) || (r < n - 1 && !inArea(i + n));
+      const o = i * 4;
+      if (edge) { px[o] = 255; px[o + 1] = 255; px[o + 2] = 85; px[o + 3] = 255; }
+      else { px[o] = 255; px[o + 1] = 255; px[o + 2] = 160; px[o + 3] = 50; }
+    }
+    x.putImageData(img, 0, 0);
+    t.overlay = { key, canvas: any ? cv : null };
+    return t.overlay.canvas;
   }
 
   /** Country (index.json entry) and elevation at a world-pixel point, if its tile is loaded. */
@@ -163,13 +210,31 @@ export class TileLayer {
     const t = this.cache.get(`${tx}_${ty}`);
     if (!t) return null;
     const c = Math.floor((fx - tx) * t.n), r = Math.floor((fy - ty) * t.n), i = r * t.n + c;
-    return { country: t.country[i] ? I.countries[t.country[i] - 1] : null, elevation: t.elev[i] };
+    const found = t.district && this.countries ? this.countries.lookup(t.country[i], t.district[i]) : null;
+    return { country: t.country[i] ? I.countries[t.country[i] - 1] : null, elevation: t.elev[i], ...(found ? { detail: found } : {}) };
   }
 }
 
-/** Paint a decoded tile into its canvas, one pixel per 550 m block. */
-export function paintTile(t, I) {
-  const { n, elev, country, canvas } = t;
+/** RGBA pixels of a PNG (no colour conversion, so values stay exact). */
+async function pixels(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(res.status);
+  const bmp = await createImageBitmap(await res.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+  const cv = document.createElement('canvas');
+  cv.width = bmp.width; cv.height = bmp.height;
+  const x = cv.getContext('2d', { willReadFrequently: true });
+  x.drawImage(bmp, 0, 0);
+  return x.getImageData(0, 0, bmp.width, bmp.height).data;
+}
+
+const ROAD_RGB = { 2: [150, 122, 70], 3: [150, 122, 70], 4: [128, 128, 130] };
+
+/**
+ * Paint a decoded tile into its canvas, one pixel per 550 m block: terrain, then (where the tile
+ * has layers) rivers and lakes, roads and railways, and district / area borders.
+ */
+export function paintTile(t, I, layers = {}, countries = null) {
+  const { n, elev, country, canvas, district, road, water } = t;
   const x = canvas.getContext('2d');
   const img = x.createImageData(n, n), px = img.data;
   const level = i => Math.floor(Math.max(elev[i], 0) / 40);
@@ -192,10 +257,65 @@ export function paintTile(t, I) {
       const detail = I.countries[v - 1]?.detail;
       if (!detail) { const g = (rgb[0] + rgb[1] + rgb[2]) / 3; rgb = rgb.map(q => (q * .7 + g * .3) * .62); }
       if (r > 0 && country[i - n]) { const a = level(i) + (tree ? 1 : 0), b = level(i - n); rgb = rgb.map(q => q * (a > b ? 1.12 : a < b ? .84 : 1)); }
+      if (water) {                                        // rivers and lakes
+        const w = water[i];
+        if (w >= 2 ? layers.rivers : w === 1 && layers.streams) rgb = [58, 104, 214];
+      }
+      if (road) {                                         // roads (main stone, medium dirt path) and rails
+        const rd = road[i];
+        const on = rd === 5 ? layers.rails : rd === 4 ? layers.mainRoads : (rd === 2 || rd === 3) && layers.mediumRoads;
+        if (on) rgb = rd === 5 ? ((gc + gr) & 1 ? [176, 176, 184] : [104, 80, 52]) : ROAD_RGB[rd];
+      }
+      if (district && countries) {                        // district borders (thin), area borders (darker)
+        const d = district[i], dr = c + 1 < n ? district[i + 1] : d, dd = r + 1 < n ? district[i + n] : d;
+        if (d && ((dr && dr !== d) || (dd && dd !== d))) {
+          const ds = countries.byTile.get(v)?.districts;
+          const area = ds?.[d - 1]?.area, other = (dr && dr !== d ? ds?.[dr - 1]?.area : ds?.[dd - 1]?.area);
+          rgb = rgb.map(q => q * (area !== other ? .5 : .78));
+        }
+      }
       if ((c + 1 < n && country[i + 1] && country[i + 1] !== v) || (r + 1 < n && country[i + n] && country[i + n] !== v)) rgb = rgb.map(q => q * .45);
     }
     const f = tree ? .78 + h2(gc, gr, 8) * .4 : .93 + h2(gc, gr, 3) * .14, o = i * 4;
     px[o] = Math.min(255, rgb[0] * f); px[o + 1] = Math.min(255, rgb[1] * f); px[o + 2] = Math.min(255, rgb[2] * f); px[o + 3] = 255;
   }
   x.putImageData(img, 0, 0);
+}
+
+/* ---------------- detailed countries ---------------- */
+export class Countries {
+  constructor(map) {
+    this.map = map;
+    this.list = [];                 // [{code, name, term, tileCountry, areas, districts}]
+    this.byTile = new Map();        // tile country value -> country
+  }
+
+  async init() {
+    try {
+      const idx = await (await fetch('data/countries/index.json')).json();
+      this.list = await Promise.all(idx.countries.map(async c => {
+        const full = await (await fetch(`data/countries/${c.code}.json`)).json();
+        for (const a of full.areas) a.country = full;
+        for (const d of full.districts) d.country = full;
+        return full;
+      }));
+      for (const c of this.list) this.byTile.set(c.tileCountry, c);
+    } catch { this.list = []; }
+    return this.list;
+  }
+
+  /** Area and district for a tile block: country value (tile B channel) + district id (1-based). */
+  lookup(tileCountry, districtId) {
+    const c = this.byTile.get(tileCountry);
+    if (!c || !districtId) return null;
+    const d = c.districts[districtId - 1];
+    return d ? { country: c, district: d, area: c.areas[d.area - 1] } : null;
+  }
+
+  /** World-pixel position of an area's label point. */
+  anchor(area) {
+    if (!area.anchor) return null;
+    const m = this.map, k = B / m.S;
+    return [(area.anchor[0] - m.lon0) * k, (m.lat1 - area.anchor[1]) * k];
+  }
 }

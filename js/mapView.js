@@ -1,7 +1,7 @@
 // Canvas map: camera, pan/zoom/pinch input, picking, and drawing of terrain, highlights,
 // district borders, item icons and labels.
 import { B, MAP_LABELS } from './config.js';
-import { itemSprite } from './sprites.js';
+import { itemSprite, spriteFromRows } from './sprites.js';
 import { railTile, maskAt, blockTexture } from './pieces.js';
 import { backdropRect, countryAt, labelPoint } from './backdrop.js';
 
@@ -49,6 +49,14 @@ export class MapView {
   setDistrictHover(k) { if (k !== this.dHover) { this.dHover = k; this.dirty = true; } }
   setDistrictFocus(k) { this.dFocus = k; this.dirty = true; }
   setBlockAtlas(blocks) { this.blocks = blocks; this.dirty = true; }
+
+  /** Fly to a state / region of another detailed country. */
+  focusArea(area) {
+    const C = this.tiles?.countries, p = C?.anchor(area);
+    if (!p) return;
+    const size = Math.max(Math.sqrt(area.blocks || 1600) * 1.2, 40);        // world px across, roughly
+    this.focusBox(p[0] - size, p[1] - size, p[0] + size, p[1] + size, 1.2, 4);
+  }
 
   /* ---------------- camera ---------------- */
   resize() {
@@ -119,7 +127,8 @@ export class MapView {
     const c = Math.floor(wx / B), r = Math.floor(wy / B);
     if (c < 0 || r < 0 || c >= W || r >= H) {
       const country = this._country(wx, wy);
-      return { r, c, v: country ? -3 : -1, province: -1, district: -1, country };
+      const detail = this.tiles?.at(wx, wy)?.detail || null;       // state / district of another detailed country
+      return { r, c, v: country ? -3 : -1, province: -1, district: -1, country, detail };
     }
     const v = this.atlas.grid[r * W + c];
     let province = v >= 0 ? v : -1, district = -1;
@@ -129,7 +138,8 @@ export class MapView {
       if (district >= 0) province = this.selected;
     }
     const country = v < 0 ? this._country(wx, wy) : '';
-    return { r, c, v, province, district, country };
+    const detail = v < 0 ? this.tiles?.at(wx, wy)?.detail || null : null;
+    return { r, c, v, province, district, country, detail };
   }
 
   /** Country name at a world-pixel point from the finest layer that covers it. */
@@ -177,7 +187,8 @@ export class MapView {
       const pk = this.pick(e.offsetX, e.offsetY);
       this.setHover(pk ? pk.province : -1);
       this.setDistrictHover(pk ? pk.district : -1);
-      cv.classList.toggle('over', !!pk && pk.province >= 0);
+      if ((pk?.detail?.area || null) !== this.foreignHover) { this.foreignHover = pk?.detail?.area || null; this.dirty = true; }
+      cv.classList.toggle('over', !!pk && (pk.province >= 0 || !!pk.detail));
       this.onHover(pk, e);
     });
     const end = e => {
@@ -188,7 +199,7 @@ export class MapView {
         cv.classList.remove('dragging');
         if (wasClick && e.type === 'pointerup') {
           const pk = this.pick(e.offsetX, e.offsetY);
-          if (pk && pk.province >= 0) this.onClick(pk);
+          if (pk && (pk.province >= 0 || pk.detail)) this.onClick(pk);
         }
         down = null;
       } else if (pts.size === 1) {
@@ -286,19 +297,20 @@ export class MapView {
     // Detailed 550 m tiles for the rest of ASEAN, Hong Kong and Macau, once zoomed in enough
     if (this.tiles?.index && s >= TILE_MIN_SCALE) {
       const x0 = -view.x / s, y0 = -view.y / s, x1 = (cw - view.x) / s, y1 = (ch - view.y) / s;
-      const thai = [0, 0, map.W * B, map.H * B];
       for (const [tx, ty] of this.tiles.visible(x0, y0, x1, y1)) {
         const [rx, ry, rw, rh] = this.tiles.rect(tx, ty);
-        if (rx >= thai[0] && ry >= thai[1] && rx + rw <= thai[2] && ry + rh <= thai[3]) continue;   // covered by Thailand's map
         const t = this.tiles.get(tx, ty);
         if (!t) continue;
         ctx.imageSmoothingEnabled = s < 1;
         ctx.drawImage(t.canvas, view.x + rx * s, view.y + ry * s, rw * s, rh * s);
+        const hl = this.tiles.overlay(t);                                   // selected state / region
+        if (hl) { ctx.imageSmoothingEnabled = false; ctx.drawImage(hl, view.x + rx * s, view.y + ry * s, rw * s, rh * s); }
       }
     }
     ctx.imageSmoothingEnabled = s < 1;
     ctx.imageSmoothingQuality = 'medium';
-    ctx.drawImage(world.canvas, view.x, view.y, map.W * B * s, map.H * B * s);
+    // Thailand's own detailed map, masked to Thailand (neighbours come from the layers below)
+    ctx.drawImage(world.thaiCanvas || world.canvas, view.x, view.y, map.W * B * s, map.H * B * s);
 
     // Close up: block textures, then connected Minecraft rail pieces
     const blockPx = s * B;
@@ -420,6 +432,26 @@ export class MapView {
       }
     };
     if (!zoomedOut) for (const i of this.order) if (i !== hov && i !== sel) drawIcon(i, false);
+    // Iconic items of the other detailed countries' states / regions
+    const C = this.tiles?.countries;
+    if (C && !zoomedOut) for (const country of C.list) for (const a of country.areas) {
+      const p = C.anchor(a);
+      if (!p) continue;
+      const [sx, sy] = this._w2s(p[0], p[1]);
+      if (sx < -60 || sy < -60 || sx > cw + 60 || sy > ch + 60) continue;
+      const big = this.foreignHover === a || this.foreignSelected === a;
+      if (!big && Math.sqrt(a.blocks) * s < 14) continue;          // too small on screen: icons would pile up
+      const sz = Math.round(big ? base * 1.45 : base);
+      const bob = reduced ? 0 : Math.sin(t / 520 + a.id * 2.3) * Math.max(1, sz * .06);
+      ctx.fillStyle = 'rgba(0,0,0,.32)';
+      ctx.beginPath(); ctx.ellipse(sx, sy + sz * .42, sz * .34, sz * .1, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(spriteFromRows(`c:${country.code}:${a.id}`, a.item.sprite).canvas, Math.round(sx - sz / 2), Math.round(sy - sz / 2 - sz * .12 + bob), sz, sz);
+      if (showNames || big) {
+        ctx.font = `600 ${big ? 14 : 12}px "Pixelify Sans", monospace`;
+        this._text(a.name.en, sx, Math.round(sy + sz * .56 + 8), big ? '#ffff55' : '#fff');
+      }
+    }
     if (hov >= 0 && hov !== sel) drawIcon(hov, true);
     if (sel >= 0 && !districtIcons) drawIcon(sel, true);
   }

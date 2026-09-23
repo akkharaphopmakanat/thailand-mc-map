@@ -52,7 +52,7 @@ js/
   inventory.js              creative-inventory grid with region tabs and search
   panel.js                  selected province card + district/tambon browser
   ui.js                     Minecraft tooltip, F3 debug overlay, credits panel (from data/sources.json)
-  backdrop.js               world + ASEAN backdrops, and the streamed detailed ASEAN / HK / Macau tiles
+  backdrop.js               world + ASEAN backdrops, streamed detailed tiles, other detailed countries
   textures.js               block textures as data URLs [generated from assets/textures]
 data/
   sources.json              data references and credits
@@ -61,6 +61,9 @@ data/
   world_elevation.png       world backdrop elevation (grid in map.json 'world')        [generated]
   tiles/<tx>_<ty>.png       detailed 550 m tiles for ASEAN / HK / Macau: elevation + country  [generated]
   tiles/index.json          tile list and country table                                [generated]
+  tiles/<tx>_<ty>.a.png     per-tile layers for detailed countries: district, road, water  [generated]
+  countries/<ISO>/areas.json  iconic item per state / region (hand-written)             [hand-written]
+  countries/<ISO>.json      areas, items, label points, districts                      [generated]
   elevation.png             real mean elevation / sea depth per block (R*256+G-32768)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
   map.json                  Thai block grid (0.005° ≈ 550 m), anchors, neighbours, ASEAN + world backdrops  [generated]
@@ -68,7 +71,9 @@ data/
     province.json           name, region, item + sprite, description, district_items  [hand-written]
     districts.json          district raster, names and each district's item           [generated]
     subdistricts.json       tambon names + postcodes, keyed by district id            [generated]
-tools/build_data.py         regenerates the [generated] files
+tools/build_data.py         regenerates the [generated] files (Thailand, backdrops, tiles)
+tools/build_countries.py    brings other countries up to Thailand's level (areas, districts, OSM layers)
+tools/screenshot.py         headless Chrome screenshots of the page
 ```
 
 ## Editing a province
@@ -97,6 +102,27 @@ in the province file, keyed by the district's English name as it appears in `dis
 `sprite` is any id from `data/sprites.json` or any province's `item.id`. The few
 districts with no rated OTOP products use their landmark, or else an item chosen from
 their real average elevation, coastline and region.
+
+## Other countries
+
+Countries are brought up to Thailand's level one sprint at a time (see
+[docs/ROADMAP.md](docs/ROADMAP.md)). So far: **Malaysia** (16 states, 159 districts),
+**Singapore** (5 regions, 55 planning areas) and **Brunei** (4 districts, 38 mukims), each with
+an iconic item per state / region / district, borders, roads, railways, rivers and lakes. Pick
+a country above the inventory; hover or click the map to inspect.
+
+Hand-written items live in `data/countries/<ISO>/areas.json` (keyed by the geoBoundaries ADM1
+name). Build a country group with:
+
+```sh
+python3 tools/build_countries.py MYS SGP BRN
+```
+
+It writes `data/countries/<ISO>.json`, `data/countries/index.json` and per-tile layers
+`data/tiles/<tx>_<ty>.a.png` (district id, road / railway / river / lake codes).
+
+`tools/screenshot.py` captures the page in headless Chrome (optionally after running some
+JavaScript against `window.atlasApp`), handy for release notes.
 
 ## Rebuilding the data
 

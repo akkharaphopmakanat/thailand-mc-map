@@ -133,7 +133,21 @@ export function renderWorld(atlas, cells = classifyCells(atlas), layers = LAYERS
   }
   wx.putImageData(img, 0, 0);
 
-  return { canvas, ctx: wx, paths: into?.paths || provincePaths(map, grid, provinces.length) };
+  // 2D copy with only Thailand's blocks opaque, so neighbours come from the backdrop / tiles
+  const thai = into?.thaiCanvas || document.createElement('canvas');
+  thai.width = W * B; thai.height = H * B;
+  const tx = thai.getContext('2d');
+  const mask = tx.createImageData(W * B, H * B), mp = mask.data;
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    if (grid[r * W + c] < 0) continue;
+    for (let y = 0; y < B; y++) for (let x = 0; x < B; x++) mp[((r * B + y) * PW + c * B + x) * 4 + 3] = 255;
+  }
+  tx.putImageData(mask, 0, 0);
+  tx.globalCompositeOperation = 'source-in';
+  tx.drawImage(canvas, 0, 0);
+  tx.globalCompositeOperation = 'source-over';
+
+  return { canvas, thaiCanvas: thai, ctx: wx, paths: into?.paths || provincePaths(map, grid, provinces.length) };
 }
 
 // Block colours for the per-block layers, Minecraft style

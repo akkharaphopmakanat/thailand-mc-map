@@ -1,0 +1,55 @@
+{
+  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName. tools/build_data.py merges this into data/countries/BRN.json.",
+  "code": "BRN",
+  "name": {
+    "en": "Brunei",
+    "local": "Brunei Darussalam"
+  },
+  "term": "district",
+  "areas": {
+    "Brunei-Muara": {
+      "name": {
+        "en": "Brunei-Muara",
+        "local": "Brunei-Muara"
+      },
+      "item": {
+        "name": "Gold Dome",
+        "sprite": "goldDome"
+      },
+      "lore": "Bandar Seri Begawan: the gold dome of the Omar Ali Saifuddien Mosque and the water village Kampong Ayer."
+    },
+    "Belait": {
+      "name": {
+        "en": "Belait",
+        "local": "Belait"
+      },
+      "item": {
+        "name": "Oil Pumpjack",
+        "sprite": "pumpjack"
+      },
+      "lore": "Oil country: the Billionth Barrel Monument at Seria marks where Brunei's oil began."
+    },
+    "Tutong": {
+      "name": {
+        "en": "Tutong",
+        "local": "Tutong"
+      },
+      "item": {
+        "name": "Lily Pad",
+        "sprite": "lilypad"
+      },
+      "lore": "Tasek Merimbun, the largest natural lake in Brunei, ringed by peat swamp forest."
+    },
+    "Temburong": {
+      "name": {
+        "en": "Temburong",
+        "local": "Temburong"
+      },
+      "item": {
+        "name": "Spruce Sapling",
+        "sprite": "tree"
+      },
+      "lore": "Ulu Temburong National Park: untouched rainforest and a canopy walk above it."
+    }
+  }
+}

@@ -3,14 +3,15 @@ import { h2 } from './noise.js';
 import { loadAtlas, loadDistricts, loadSubdistricts } from './data.js';
 import { classifyCells, renderWorld, LAYERS } from './world.js';
 import { createView3D } from './view3d.js';
-import { renderBackdrop, TileLayer } from './backdrop.js';
+import { renderBackdrop, TileLayer, Countries } from './backdrop.js';
 
 import { buildDistrictLayer } from './districts.js';
 import { MapView } from './mapView.js';
 import { Inventory } from './inventory.js';
 import { ProvincePanel } from './panel.js';
-import { Tooltip, provinceTip, districtTip, renderF3, renderCredits } from './ui.js';
+import { Tooltip, provinceTip, districtTip, areaTip, esc, renderF3, renderCredits } from './ui.js';
 import { railTile, N, S, makeBlockAtlas } from './pieces.js';
+import { spriteFromRows } from './sprites.js';
 
 const $ = id => document.getElementById(id);
 
@@ -41,11 +42,13 @@ const { provinces } = atlas;
 const tooltip = new Tooltip($('tip'));
 let selected = -1;
 let layer = null;
+let areaSelected = null;    // selected state / region of another detailed country
 
 const handlers = {
   onHover(pick, e) {
     renderF3($('f3'), atlas, pick, layer);
     panel.highlightDistrict(pick && layer && pick.province === selected ? pick.district : -1);
+    if (pick?.detail && e.pointerType === 'mouse') return tooltip.show(areaTip(pick.detail, 'Click to inspect'), e.clientX, e.clientY);
     if (!pick || pick.province < 0 || e.pointerType !== 'mouse') return tooltip.hide();
     const p = provinces[pick.province];
     if (layer && pick.province === selected && pick.district >= 0) {
@@ -55,16 +58,19 @@ const handlers = {
     }
   },
   onClick(pick) {
+    if (pick.detail) return selectArea(pick.detail.area, false);
     if (pick.province === selected && layer && pick.district >= 0) selectDistrict(pick.district, false);
     else select(pick.province, false);
   },
 };
 // low-detail backdrops, drawn world first, then the ASEAN region on top
 const backdrops = [atlas.world, atlas.asean].filter(Boolean).map(b => ({ data: b, canvas: renderBackdrop(b) }));
-const tiles = new TileLayer(atlas.map);
+const countries = new Countries(atlas.map);
+const tiles = new TileLayer(atlas.map, countries);
 const map = new MapView({ canvas: $('map'), wrap: $('mapWrap'), atlas, world, backdrops, tiles, cells, ...handlers });
 tiles.onLoad = () => { map.dirty = true; };
-tiles.init().then(() => { map.dirty = true; });      // detailed tiles are optional (not in the artifact)
+// detailed tiles and the other detailed countries are optional (not in the artifact)
+countries.init().then(() => tiles.init()).then(() => { tiles.setLayers(layers); map.dirty = true; buildCountryTabs(); });
 makeBlockAtlas().then(b => map.setBlockAtlas(b)).catch(() => {});   // textures for the close-up 2D view
 map.layers = { ...layers };
 let view3d = null;   // created on first switch to 3D
@@ -87,6 +93,7 @@ const panel = new ProvincePanel($('selPanel'), {
 });
 
 async function select(i, fly = true) {
+  clearArea();
   selected = i;
   layer = null;
   const p = provinces[i];
@@ -164,6 +171,65 @@ if (document.fonts) document.fonts.ready.then(() => { map.dirty = true; });
 
 select(provinces.findIndex(p => p.slug === 'bangkok'), false);
 
+// small handle for tools/screenshot.py and debugging in the console
+window.atlasApp = { map, tiles, countries, select, selectArea, showCountry };
+
+/* ---------- other detailed countries (Sprint 2 on) ---------- */
+function selectArea(area, fly = true) {
+  areaSelected = area;
+  selected = -1; layer = null;
+  map.setSelected(-1);
+  map.foreignSelected = area;
+  tiles.setSelected({ country: area.country, area });
+  map.dirty = true;
+  panel.showArea(area, { onArea: a => selectArea(a), onFly: a => map.focusArea(a) });
+  if (fly) map.focusArea(area);
+}
+function clearArea() {
+  if (!areaSelected) return;
+  areaSelected = null;
+  map.foreignSelected = null;
+  tiles.setSelected(null);
+  map.dirty = true;
+}
+/** Country picker above the inventory: Thailand's provinces or another country's areas. */
+function buildCountryTabs() {
+  const bar = $('countryTabs');
+  if (!countries.list.length) { bar.hidden = true; return; }
+  bar.hidden = false;
+  const all = [{ code: 'THA', name: { en: 'Thailand' } }, ...countries.list];
+  bar.innerHTML = all.map(c => `<button class="ctab" data-c="${c.code}" aria-pressed="${c.code === 'THA'}">${esc(c.name.en)}</button>`).join('');
+  bar.querySelectorAll('.ctab').forEach(b => b.onclick = () => {
+    bar.querySelectorAll('.ctab').forEach(x => x.setAttribute('aria-pressed', x === b));
+    showCountry(b.dataset.c);
+  });
+}
+function showCountry(code) {
+  const thai = code === 'THA';
+  $('tabs').hidden = !thai;
+  $('q').hidden = !thai;
+  if (thai) { inventory.render(); return; }
+  const c = countries.list.find(x => x.code === code);
+  $('invTitle').textContent = `${c.name.en} · ${c.areas.length} ${c.term}s`;
+  $('invCount').textContent = '';
+  const grid = $('grid');
+  grid.innerHTML = '';
+  const total = Math.max(27, Math.ceil(c.areas.length / 9) * 9);
+  for (let n = 0; n < total; n++) {
+    const a = c.areas[n];
+    const s = document.createElement(a ? 'button' : 'div');
+    s.className = 'slot';
+    if (a) {
+      s.setAttribute('aria-label', `${a.name.en}: ${a.item.name}`);
+      s.innerHTML = `<img src="${spriteFromRows(`c:${c.code}:${a.id}`, a.item.sprite).url}" alt="">`;
+      s.onclick = () => selectArea(a);
+      s.onmouseenter = e => tooltip.show(`<div class="t-name">${esc(a.name.en)}</div><div class="t-th">${esc(c.name.en)}</div><div class="t-item">✦ ${esc(a.item.name)}</div>`, e.clientX, e.clientY);
+      s.onmouseleave = () => tooltip.hide();
+    }
+    grid.appendChild(s);
+  }
+}
+
 /* ---------- map layers ---------- */
 $('railIcon').style.backgroundImage = `url(${railTile(N | S).toDataURL()})`;
 function loadLayers() {
@@ -181,6 +247,7 @@ document.querySelectorAll('#layers input').forEach(box => {
       map.layers = { ...layers };
       map.dirty = true;
       view3d?.setLayers(layers);
+      tiles.setLayers(layers);
       $('layers').classList.remove('busy');
     }));
   });

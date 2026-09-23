@@ -1,0 +1,66 @@
+{
+  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName. tools/build_data.py merges this into data/countries/SGP.json.",
+  "code": "SGP",
+  "name": {
+    "en": "Singapore",
+    "local": "Singapura"
+  },
+  "term": "region",
+  "areas": {
+    "CENTRAL REGION": {
+      "name": {
+        "en": "Central Region",
+        "local": "Central Region"
+      },
+      "item": {
+        "name": "Merlion",
+        "sprite": "merlion"
+      },
+      "lore": "The Merlion spouts water at Marina Bay, below the city skyline."
+    },
+    "EAST REGION": {
+      "name": {
+        "en": "East Region",
+        "local": "East Region"
+      },
+      "item": {
+        "name": "Elytra",
+        "sprite": "elytra"
+      },
+      "lore": "Changi Airport, one of the busiest hubs in Asia, and East Coast Park."
+    },
+    "NORTH REGION": {
+      "name": {
+        "en": "North Region",
+        "local": "North Region"
+      },
+      "item": {
+        "name": "Monkey",
+        "sprite": "monkey"
+      },
+      "lore": "Mandai: Singapore Zoo and the rainforest parks around it; the causeway starts at Woodlands."
+    },
+    "NORTH-EAST REGION": {
+      "name": {
+        "en": "North-East Region",
+        "local": "North-East Region"
+      },
+      "item": {
+        "name": "Bumboat",
+        "sprite": "longtail"
+      },
+      "lore": "Bumboats cross to Pulau Ubin, the island village that still looks like old Singapore."
+    },
+    "WEST REGION": {
+      "name": {
+        "en": "West Region",
+        "local": "West Region"
+      },
+      "item": {
+        "name": "Skyscraper",
+        "sprite": "tower"
+      },
+      "lore": "Jurong: the Jurong Lake District, industry on Jurong Island and the country's universities."
+    }
+  }
+}

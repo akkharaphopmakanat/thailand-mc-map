@@ -64,6 +64,12 @@ body{
 }
 .f3 span{background:rgba(80,80,80,.62);padding:1px 4px;text-shadow:2px 2px 0 var(--text-shadow);white-space:nowrap}
 .f3 .th{font-family:var(--thai);font-size:12px}
+/* country picker */
+.ctabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.ctab{font:inherit;font-size:13px;cursor:pointer;color:#fff;text-shadow:1px 1px 0 #3f3f3f;
+  background:#727272;border:2px solid #000;box-shadow:inset 2px 2px 0 #a9a9a9,inset -2px -2px 0 #3d3d3d;padding:3px 8px}
+.ctab[aria-pressed="true"]{background:#5f7a4a;box-shadow:inset 2px 2px 0 #8fb070,inset -2px -2px 0 #34472a}
+.ctab:focus-visible{outline:2px solid var(--yellow);outline-offset:1px}
 /* layer toggles */
 .layers{
   position:absolute;right:10px;top:10px;margin:0;padding:6px 10px 8px;

@@ -1,0 +1,31 @@
+{
+  "countries": [
+    {
+      "code": "MYS",
+      "name": {
+        "en": "Malaysia",
+        "local": "Malaysia"
+      },
+      "term": "state",
+      "tileCountry": 2
+    },
+    {
+      "code": "SGP",
+      "name": {
+        "en": "Singapore",
+        "local": "Singapura"
+      },
+      "term": "region",
+      "tileCountry": 25
+    },
+    {
+      "code": "BRN",
+      "name": {
+        "en": "Brunei",
+        "local": "Brunei Darussalam"
+      },
+      "term": "district",
+      "tileCountry": 11
+    }
+  ]
+}

@@ -71,12 +71,12 @@
     },
     {
       "id": "osm",
-      "title": "OpenStreetMap: roads, railways and rivers",
+      "title": "OpenStreetMap: roads, railways, rivers and lakes (Thailand; Malaysia, Singapore, Brunei)",
       "author": "© OpenStreetMap contributors, extract by Geofabrik",
       "url": "https://www.openstreetmap.org/copyright",
-      "download": "https://download.geofabrik.de/asia/thailand.html",
+      "download": "https://download.geofabrik.de/asia.html",
       "license": "ODbL 1.0: data/blocks.json road and water layers are a derived database under the same licence",
-      "used_for": "Main roads (motorway, trunk), medium roads (primary, secondary), railways, rivers and river labels, rasterised per 0.005° block in data/blocks.json and data/rivers.json"
+      "used_for": "Roads, railways, rivers, river labels and lakes: Thailand in data/blocks.json, other countries in the tile layers data/tiles/*.a.png"
     },
     {
       "id": "textures",
@@ -85,6 +85,15 @@
       "url": "https://github.com/minetest/minetest_game",
       "license": "CC BY-SA 3.0 (share-alike: js/textures.js and derived textures stay CC BY-SA 3.0)",
       "used_for": "16×16 block textures (grass, dirt, stone, sand, gravel, leaves, water…) in the close-up 2D view and near chunks in 3D"
+    },
+    {
+      "id": "gb-mys-sgp-brn",
+      "title": "geoBoundaries ADM1 / ADM2: Malaysia, Singapore, Brunei",
+      "author": "geoBoundaries (William & Mary geoLab); sources: OpenStreetMap / Wambacher (MYS ADM1), citypopulation.de (MYS ADM2), Urban Redevelopment Authority (SGP), Wikimedia Commons (BRN)",
+      "url": "https://www.geoboundaries.org/",
+      "license": "MYS ADM1 ODbL · MYS ADM2 CC BY 3.0 · SGP ADM1 ODbL · SGP ADM2 Singapore Open Data Licence · BRN public domain",
+      "citation": "Runfola, D. et al. (2020) geoBoundaries: A global database of political administrative boundaries. PLoS ONE 15(4): e0231866.",
+      "used_for": "States / regions / districts and their districts (mukims, planning areas) in data/countries and the tile layers (data/tiles/*.a.png)"
     }
   ],
   "fonts": [
