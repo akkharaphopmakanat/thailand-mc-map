@@ -46,6 +46,20 @@
       "url": "https://www.naturalearthdata.com/downloads/10m-cultural-vectors/roads/",
       "license": "Public domain",
       "used_for": "Highways (stone path) and roads (dirt path) in data/roads.json, drawn in 2D and on 3D block tops"
+    },
+    {
+      "id": "otop",
+      "title": "OTOP Product Champion selection (การคัดเลือกสุดยอดหนึ่งตำบลหนึ่งผลิตภัณฑ์ไทย) and OTOP producer register (ทะเบียนผู้ประกอบการ OTOP)",
+      "author": "Community Development Department (กรมการพัฒนาชุมชน), via data.go.th",
+      "url": "https://data.go.th/dataset/cdd_opc",
+      "download": [
+        "https://logi.cdd.go.th/opendata_cdd/2025/CDD_OPC_2025.csv",
+        "https://logi.cdd.go.th/opendata_cdd/2024/CDD_OPC_2024.csv",
+        "https://logi.cdd.go.th/opendata_cdd/2026/CDD_otop_own_2026.csv",
+        "https://logi.cdd.go.th/opendata_cdd/2025/CDD_otop_own_2025.csv"
+      ],
+      "license": "Open Data Common (data.go.th)",
+      "used_for": "Each district's OTOP item: rated products are linked to districts through the producer register, grouped into product types, and the most distinctive type is shown. Only product names, types and star ratings are published; producer names are not."
     }
   ],
   "fonts": [
@@ -70,7 +84,7 @@
   ],
   "notes": [
     "Trees and rice paddies are generated for looks; elevation is real but averaged over 2.2 km blocks.",
-    "District landmark items are hand-picked for well-known districts; the rest are chosen from real elevation, coastline and region.",
+    "District items come from OTOP product data; hand-picked landmarks are shown alongside, and terrain is used only where a district has no rated OTOP products.",
     "Province items, pixel sprites and descriptions are original to this project.",
     "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft."
   ]

@@ -17,6 +17,7 @@ Sources (downloaded into tools/.cache on first run):
   pds.json      Thai admin names       github.com/kongvut/thai-province-data (MIT)
   terrarium/    elevation tiles, z8    AWS Terrain Tiles (Mapzen terrarium encoding)
   ne_10m_roads.geojson  roads          Natural Earth 1:10m roads (public domain)
+  otop_*.csv, CDD_OPC_*.csv  OTOP     Community Development Department open data (data.go.th)
 
 Usage: python3 tools/build_data.py
 """
@@ -34,6 +35,12 @@ SOURCES = {
     'adm2.geojson': 'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson',
     'pds.json': 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json',
     'ne_10m_roads.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_roads.geojson',
+    # OTOP producer register (province, district, sub-district per producer) and the
+    # OTOP Product Champion star ratings (product, producer, province, category, stars)
+    'otop_2026.csv': 'https://logi.cdd.go.th/opendata_cdd/2026/CDD_otop_own_2026.csv',
+    'otop_2025.csv': 'https://logi.cdd.go.th/opendata_cdd/2025/CDD_otop_own_2025.csv',
+    'CDD_OPC_2025.csv': 'https://logi.cdd.go.th/opendata_cdd/2025/CDD_OPC_2025.csv',
+    'CDD_OPC_2024.csv': 'https://logi.cdd.go.th/opendata_cdd/2024/CDD_OPC_2024.csv',
 }
 
 # Country grid: 0.02° blocks (~2.2 km)
@@ -46,13 +53,17 @@ DIRS4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
 NAME_FIXES = {6008: 'Tha Tako', 6011: 'Lat Yao'}
 
 
-def source(name):
+def cached(name):
     path = os.path.join(CACHE, name)
     if not os.path.exists(path):
         os.makedirs(CACHE, exist_ok=True)
         print('downloading', name, '...', file=sys.stderr)
         urllib.request.urlretrieve(SOURCES[name], path)
-    with open(path, encoding='utf-8') as f:
+    return path
+
+
+def source(name):
+    with open(cached(name), encoding='utf-8') as f:
         return json.load(f)
 
 
@@ -377,6 +388,141 @@ def match_names(geo_names, ref):
     return out
 
 
+# ---------------------------------------------------------------- OTOP products
+# Product types matched against the Thai product name, most specific first:
+# (id, regex, English item name, sprite)
+OTOP_TYPES = [
+    ('fiber', r'เชือกกล้วย|ใยกล้วย|กาบกล้วย|ใยสับปะรด|เส้นใย', 'Woven Basket', 'kratip'),
+    ('dried_banana', r'กล้วยตาก|กล้วยอบ', 'Dried Banana', 'banana'),
+    ('banana', r'กล้วย', 'Banana Snack', 'banana'),
+    ('coffee', r'กาแฟ', 'Coffee', 'coffee'),
+    ('tea', r'^ชา|ชา(เขียว|ดำ|อู่หลง|ใบ|มะรุม|ตะไคร้|กุหลาบ|ดอก|ไทย|สมุนไพร|หม่อน)|ใบชา', 'Tea', 'tea'),
+    ('rice_cracker', r'ข้าวแต๋น|ข้าวเกรียบ|ข้าวพอง|ข้าวตัง', 'Rice Cracker', 'cookie'),
+    ('rice', r'ข้าว(หอม|กล้อง|สาร|ไรซ์|เหนียว|เจ้า|ฮาง|ซ้อมมือ|มะลิ|หอมมะลิ|สังข์หยด|ก่ำ|ไร)|ข้าว\s', 'Rice', 'rice'),
+    ('honey', r'น้ำผึ้ง|ผึ้ง', 'Honey Bottle', 'honeyBottle'),
+    ('mushroom', r'เห็ด', 'Mushroom', 'mushroom'),
+    ('silk', r'ไหม', 'Silk', 'silk'),
+    ('indigo', r'คราม|ม่อฮ่อม|หม้อห้อม|หม้อฮ่อม', 'Indigo Cloth', 'indigoShirt'),
+    ('bag', r'กระเป๋า', 'Bag', 'bundle'),
+    ('cloth', r'ผ้า|บาติก|ฝ้าย|มัดย้อม|ขาวม้า|เสื้อ|ซิ่น', 'Woven Cloth', 'cloth'),
+    ('basket', r'จักสาน|สาน|ตะกร้า|กระติ๊บ|กระติบ|เสื่อ|หวาย|กระจูด|ผักตบ', 'Woven Basket', 'kratip'),
+    ('pottery', r'ดินเผา|ปั้น|เซรามิ|โอ่ง|แจกัน|เบญจรงค์|ศิลาดล|ดินเผา', 'Pottery', 'jar'),
+    ('jewelry', r'เครื่องเงิน|เครื่องประดับ|สร้อย|แหวน|ต่างหู|กำไล|ไข่มุก|มุก|พลอย|ทองเหลือง|เงินแท้', 'Jewelry', 'ring'),
+    ('soap', r'สบู่|แชมพู|ครีม|โลชั่น|เซรั่ม|สครับ|ลิป', 'Soap', 'soap'),
+    ('herbal', r'สมุนไพร|ยาหม่อง|น้ำมันนวด|ลูกประคบ|ยาดม|น้ำมันเหลือง|บาล์ม|กระชาย|ขมิ้น|ฟ้าทะลาย', 'Herbal Potion', 'potion'),
+    ('chili', r'น้ำพริก|พริกแกง|เครื่องแกง|แจ่ว|พริก', 'Chili Paste', 'chili'),
+    ('sauce', r'ซอส|น้ำจิ้ม|น้ำปลา|น้ำบูดู|บูดู', 'Sauce', 'sauce'),
+    ('shrimp', r'กะปิ|กุ้ง', 'Shrimp', 'shrimp'),
+    ('fish', r'ปลา|หมึก|ปู', 'Fish', 'fish'),
+    ('pork', r'แหนม|ไส้กรอก|หมูยอ|กุนเชียง|ไส้อั่ว|หมู|เนื้อ|แคบ', 'Sausage', 'sausage'),
+    ('mango', r'มะม่วง', 'Mango', 'mango'),
+    ('durian', r'ทุเรียน', 'Durian', 'durian'),
+    ('longan', r'ลำไย', 'Longan', 'longan'),
+    ('coconut', r'มะพร้าว', 'Coconut', 'coconut'),
+    ('pineapple', r'สับปะรด|สัปปะรด', 'Pineapple', 'pineapple'),
+    ('tamarind', r'มะขาม', 'Tamarind', 'tamarind'),
+    ('pomelo', r'ส้มโอ', 'Pomelo', 'pomelo'),
+    ('orange', r'ส้ม(?!ตำ)|มะนาว', 'Citrus', 'orange'),
+    ('berries', r'สตรอ|ลิ้นจี่|มังคุด|เงาะ|มัลเบอร์รี่|หม่อน|ผลไม้', 'Fruit', 'berries'),
+    ('sugar', r'น้ำตาล|ตาลโตนด', 'Palm Sugar', 'palmSugar'),
+    ('salt', r'เกลือ', 'Salt', 'salt'),
+    ('liquor', r'สุรา|ไวน์|กระแช่|สาโท|เหล้า|ข้าวหมาก', 'Rice Wine', 'bottle'),
+    ('noodles', r'เส้น|ก๋วยเตี๋ยว|ขนมจีน|หมี่', 'Noodles', 'bowl'),
+    ('snack', r'ขนม|คุกกี้|เค้ก|ทองม้วน|ข้าวต้มมัด|กาละแม|กระยาสารท|ถั่ว|เปี๊ยะ|ทองหยอด|ทองพับ|บราวนี่|เบเกอรี่|โรตี|งา', 'Snack', 'cookie'),
+    ('flowers', r'ดอกไม้|มาลัย', 'Flowers', 'tulip'),
+    ('candle', r'เทียน|ธูป', 'Candle', 'candle'),
+    ('umbrella', r'ร่ม', 'Umbrella', 'umbrella'),
+    ('knife', r'มีด|ดาบ|จอบ|เสียม', 'Iron Blade', 'sword'),
+    ('bamboo', r'ไผ่', 'Bamboo', 'sugarCane'),
+    ('wood', r'(?<!ผล)ไม้|แกะสลัก', 'Wood Carving', 'oakLog'),
+]
+# Fallback by OTOP category when no keyword matches
+OTOP_CATEGORY = [
+    (r'เครื่องดื่ม', ('drink', 'Juice Bottle', 'bottle')),
+    (r'อาหาร', ('food', 'Local Food', 'bowl')),
+    (r'ผ้า', ('cloth', 'Woven Cloth', 'cloth')),
+    (r'สมุนไพร', ('herbal', 'Herbal Potion', 'potion')),
+    (r'ของใช้|ของตกแต่ง|ของที่ระลึก', ('craft', 'Handicraft', 'kratip')),
+]
+STAR_WEIGHT = {5: 5, 4: 4, 3: 2, 2: 1, 1: .5}
+
+
+def thai_key(s):
+    """Normalise a Thai admin name for matching (drop prefixes and spaces)."""
+    s = re.sub(r'\s+', '', s or '')
+    return re.sub(r'^(อำเภอ|อ\.|กิ่งอำเภอ|จังหวัด|จ\.)', '', s)
+
+
+def otop_type(product, category):
+    for tid, rx, en, spr in OTOP_TYPES:
+        if re.search(rx, product):
+            return tid, en, spr, 1.0
+    for rx, (tid, en, spr) in OTOP_CATEGORY:
+        if re.search(rx, category):
+            return tid, en, spr, .5   # generic types count half
+    return 'craft', 'Handicraft', 'kratip', .5
+
+
+def build_otop():
+    """(province_th, district_th) -> best OTOP product type for that district.
+
+    Products (OTOP Product Champion ratings) are linked to a district through the producer
+    register, matched on province + producer name. Producer names are never written out.
+    """
+    import csv
+    def rows(name):
+        with open(cached(name), encoding='utf-8-sig', errors='replace') as f:
+            r = csv.reader(f)
+            next(r)
+            yield from r
+    register = {}
+    for name in ('otop_2026.csv', 'otop_2025.csv'):
+        for r in rows(name):
+            if len(r) >= 4:
+                register.setdefault((thai_key(r[0]), thai_key(r[3])), (thai_key(r[1]), r[2].strip()))
+    products, seen = {}, set()
+    for name in ('CDD_OPC_2025.csv', 'CDD_OPC_2024.csv'):
+        for r in rows(name):
+            if len(r) < 5 or not r[0].strip():
+                continue
+            product, producer, prov, cat = r[0].strip(), thai_key(r[1]), thai_key(r[2]), r[3].strip()
+            if (product, producer) in seen:
+                continue
+            seen.add((product, producer))
+            loc = register.get((prov, producer))
+            if not loc:
+                continue
+            stars = int(re.sub(r'\D', '', r[4]) or 0)
+            products.setdefault((prov, loc[0]), []).append((product, stars, cat, loc[1]))
+    # Score each type by star-weighted count x rarity nationwide (TF-IDF style), so a district
+    # is labelled by what is distinctive about it rather than by clothing, which is everywhere.
+    typed = {key: [(otop_type(pr, cat), pr, st, tb) for pr, st, cat, tb in items] for key, items in products.items()}
+    nationwide = {}
+    for items in typed.values():
+        for (tid, *_), *_ in items:
+            nationwide[tid] = nationwide.get(tid, 0) + 1
+    total = sum(nationwide.values())
+    idf = {tid: math.log(total / n) for tid, n in nationwide.items()}
+    best = {}
+    for key, items in typed.items():
+        score, members = {}, {}
+        for (tid, en, spr, w), product, stars, tambon in items:
+            score[tid] = score.get(tid, 0) + STAR_WEIGHT.get(stars, .5) * w
+            members.setdefault(tid, (en, spr, []))[2].append((stars, product, tambon))
+        # need at least two products (or the only type) to be the district's signature
+        for tid in score:
+            n = len(members[tid][2])
+            score[tid] *= idf[tid] * (1 if n >= 2 or len(score) == 1 else .4)
+        tid = max(score, key=score.get)
+        en, spr, group = members[tid]
+        stars, product, tambon = max(group, key=lambda g: (g[0], -len(g[1])))
+        tambon = re.sub(r'^(ตำบล|ต\.)', '', tambon)
+        best[key] = {'type': tid, 'name': en, 'sprite': spr, 'example': product, 'stars': stars,
+                     'tambon': tambon, 'count': len(group), 'total': len(items)}
+    print(f'otop: {sum(len(v) for v in products.values())} products linked to {len(best)} districts')
+    return best
+
+
 # ---------------------------------------------------------------- district items
 # Terrain-derived icons for districts without a hand-picked landmark in province.json.
 REGION_FARM = {
@@ -389,8 +535,15 @@ REGION_FARM = {
 }
 
 
-def district_item(name, slug, region, curated, stats):
-    """Pick {name, sprite, note, kind} for one district."""
+def district_item(name, slug, region, curated, stats, otop=None):
+    """Pick {name, sprite, note, kind} for one district: its OTOP product type, else a
+    hand-picked landmark, else an item from terrain."""
+    if otop:
+        star = f"{otop['stars']}★ " if otop['stars'] else ''
+        return {'name': otop['name'], 'sprite': otop['sprite'], 'kind': 'otop',
+                'note': f"OTOP: {otop['count']} of {otop['total']} rated products here are {otop['name'].lower()}. "
+                        f"Example: {otop['example']} ({star}{otop['tambon'] if otop['tambon'].startswith('แขวง') else 'ต.' + otop['tambon']}).",
+                'otop': {k: otop[k] for k in ('type', 'example', 'stars', 'tambon', 'count', 'total')}}
     if name in curated:
         c = curated[name]
         return {'name': c['item'], 'sprite': c['sprite'], 'note': c['note'], 'kind': 'landmark'}
@@ -412,7 +565,12 @@ def district_item(name, slug, region, curated, stats):
     return {'name': item, 'sprite': spr, 'note': f'{why}; {e}.', 'kind': 'terrain'}
 
 
-def build_districts(slug, prov_feature, adm2, ref_prov, meta, heights, sea, sprite_lib):
+def landmark(name, curated):
+    c = curated.get(name)
+    return {'name': c['item'], 'sprite': c['sprite'], 'note': c['note']} if c else None
+
+
+def build_districts(slug, prov_feature, adm2, ref_prov, meta, heights, sea, sprite_lib, otop):
     ppolys = polygons(prov_feature['geometry'])
     x0, y0, x1, y1 = bbox(ppolys)
     res = min(0.01, max(0.0025, math.sqrt((x1 - x0) * (y1 - y0) / 60000)))
@@ -471,6 +629,8 @@ def build_districts(slug, prov_feature, adm2, ref_prov, meta, heights, sea, spri
 
     curated = meta[slug].get('district_items', {})
     region = meta[slug]['region']
+    prov_th = thai_key(meta[slug]['name']['th'])
+    otop_for = lambda th: otop.get((prov_th, thai_key(th)))
     districts = []
     for k, f in enumerate(members):
         d = ref[matched[k]] if k in matched else None
@@ -480,17 +640,19 @@ def build_districts(slug, prov_feature, adm2, ref_prov, meta, heights, sea, spri
             'name': {'en': en, 'th': d['name_th'] if d else ''},
             'anchor': anc[k], 'cells': cells[k],
             'elevation': int(round(stats[k][0])),
-            'item': district_item(en, slug, region, curated, stats[k]),
+            'item': district_item(en, slug, region, curated, stats[k], otop_for(d['name_th']) if d else None),
+            'landmark': landmark(en, curated),
         })
     # kongvut districts without a boundary in geoBoundaries (e.g. newer amphoe): names only
     matched_ref = set(matched.values())
     extra = [{'id': d['id'], 'name': {'en': d['name_en'], 'th': d['name_th']}, 'anchor': None, 'cells': 0,
-              'item': district_item(d['name_en'], slug, region, curated, (0, False, False))}
+              'item': district_item(d['name_en'], slug, region, curated, (0, False, False), otop_for(d['name_th'])),
+              'landmark': landmark(d['name_en'], curated)}
              for i, d in enumerate(ref) if i not in matched_ref]
     missing = set(curated) - {x['name']['en'] for x in districts + extra}
     if missing:
         print(f'  {slug}: district_items with unknown names: {sorted(missing)}', file=sys.stderr)
-    used = {x['item']['sprite'] for x in districts + extra}
+    used = {x['item']['sprite'] for x in districts + extra} | {x['landmark']['sprite'] for x in districts + extra if x['landmark']}
     sprites = {sid: sprite_lib[sid] for sid in sorted(used)}
 
     chars = [chr(c) for c in range(0x30, 0x7f) if chr(c) not in '\\`~.'] + \
@@ -524,6 +686,7 @@ def main():
     grid = build_map(th, slugs)
     heights = build_elevation()
     build_roads()
+    otop = build_otop()
     sea = [[grid[r][c] == -1 and not is_foreign(LAT1 - (r + .5) * S, LON0 + (c + .5) * S)
             for c in range(len(grid[0]))] for r in range(len(grid))]
     # district sprites: shared library plus every province's own item sprite
@@ -546,7 +709,7 @@ def main():
         if ref is None:
             print('  no name data for', slug, file=sys.stderr)
         n_geo, n_match, n_ref, n_sub = build_districts(
-            slug, f, [a[0] for a, o in zip(adm2, owner) if o == pi], ref, meta, heights, sea, sprite_lib)
+            slug, f, [a[0] for a, o in zip(adm2, owner) if o == pi], ref, meta, heights, sea, sprite_lib, otop)
         tot = [a + b for a, b in zip(tot, (n_geo, n_match, n_ref, n_sub))]
         if n_match < max(n_geo, n_ref):
             print(f'  {slug}: {n_geo} shapes, {n_ref} named, {n_match} matched')

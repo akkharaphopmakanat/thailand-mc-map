@@ -30,7 +30,9 @@ export function provinceTip(p, hint = '') {
 
 export function districtTip(p, d, hint = '') {
   return `<div class="t-name">${esc(d.name.en)}</div><div class="t-th">${esc(d.name.th)}</div>` +
-    (d.item ? `<div class="t-item">✦ ${esc(d.item.name)}</div><div class="t-lore">${esc(d.item.note)}</div>` : '') +
+    (d.item ? `<div class="t-item">✦ ${esc(d.item.name)}${d.item.kind === 'otop' ? ' <span class="t-otop">OTOP</span>' : ''}</div>` +
+      `<div class="t-lore">${esc(d.item.note)}</div>` : '') +
+    (d.landmark && d.item?.kind !== 'landmark' ? `<div class="t-lm">★ ${esc(d.landmark.name)}</div>` : '') +
     `<div class="t-reg">District of ${esc(p.name.en)}</div>` +
     (hint ? `<div class="t-hint">${esc(hint)}</div>` : '');
 }

@@ -59,8 +59,16 @@ Change `data/provinces/<slug>/province.json`. The `item.sprite` is 16 rows of 16
 characters; each letter is a colour from `PAL` in `js/config.js` and `.` is
 transparent.
 
-District icons: add a landmark under `district_items` in the province file, keyed by
-the district's English name as it appears in `districts.json`:
+District icons come from **OTOP** (One Tambon One Product) data: rated products from the
+Community Development Department's OTOP Product Champion list are linked to districts
+through the OTOP producer register, sorted into product types by keywords in their Thai
+names (กล้วยตาก → Dried Banana, ผ้าไหม → Silk, กาแฟ → Coffee…, see `OTOP_TYPES` in
+`tools/build_data.py`), and each district shows its most distinctive type, weighted by
+star rating and by how rare that type is nationwide. Bang Krathum, for example, shows
+Dried Banana. Only product names, types and stars are published, never producer names.
+
+Hand-picked landmarks are shown alongside the OTOP item. Add one under `district_items`
+in the province file, keyed by the district's English name as it appears in `districts.json`:
 
 ```json
 "district_items": {
@@ -68,10 +76,9 @@ the district's English name as it appears in `districts.json`:
 }
 ```
 
-`sprite` is any id from `data/sprites.json` or any province's `item.id`. Districts
-without a landmark get an item chosen from their real average elevation, coastline
-and region (mountain, forest, coast, rice, sugar cane, rubber, orchards…), and the
-page says so in the district's note.
+`sprite` is any id from `data/sprites.json` or any province's `item.id`. The few
+districts with no rated OTOP products use their landmark, or else an item chosen from
+their real average elevation, coastline and region.
 
 ## Rebuilding the data
 
@@ -97,6 +104,7 @@ which the page's Credits panel is built from.
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) THA ADM2, gbOpen — Royal Thai Survey Department / OCHA ROAP | CC BY 3.0 IGO | District outlines (`districts.json`) |
 | District and sub-district names, postcodes | [kongvut/thai-province-data](https://github.com/kongvut/thai-province-data) by Kongvut Sangkla | MIT | Names and postcodes (`districts.json`, `subdistricts.json`) |
 | Roads | [Natural Earth](https://www.naturalearthdata.com/) 1:10m roads | public domain | `roads.json`: highways as stone paths, roads as dirt paths |
+| OTOP products | [Community Development Department](https://data.go.th/dataset/cdd_opc) OTOP Product Champion list and producer register | Open Data Common | District OTOP items (`districts.json`) |
 | Elevation and sea depth | [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) (Mapzen terrarium; SRTM, GMTED, ETOPO1 and others) | public, attribution required | `elevation.json`, 2D relief, 3D view |
 
 geoBoundaries citation: Runfola, D. et al. (2020) *geoBoundaries: A global database of

@@ -185,6 +185,8 @@ body{
 .tip .t-item{color:var(--yellow)}
 .tip .t-reg{color:#7c7cff}
 .tip .t-lore{color:var(--gray);font-size:13px}
+.tip .t-otop{font-size:11px;color:#ffaa00;border:1px solid #ffaa00;padding:0 3px;vertical-align:1px}
+.tip .t-lm{color:#ffaa00}
 .tip .t-hint{color:#6f6f6f;font-size:12px;margin-top:2px}
 /* ---------- loading ---------- */
 .loading{
@@ -216,8 +218,9 @@ body{
 .dicon{width:28px;height:28px;image-rendering:pixelated;background:var(--slot);box-shadow:inset 1px 1px 0 var(--slot-dark),inset -1px -1px 0 #fff}
 .dname{min-width:0}
 .ditem{display:block;font-size:12px;color:#6b5a1e}
-.ditem.lm{color:#8a5a00;font-weight:600}
-.ditem.lm::before{content:"★ "}
+.ditem.landmark{color:#8a5a00;font-weight:600}
+.ditem.landmark::before{content:"★ "}
+.ditem.otop::before{content:"OTOP";font-size:10px;font-weight:600;color:#fff;background:#b0472b;padding:0 3px;margin-right:4px;vertical-align:1px}
 .tlist .dnote{grid-column:1/-1;color:#ffffa8;font-size:13px}
 .drow .n{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
 .drow.nogeo .n::after{content:" · no outline"}

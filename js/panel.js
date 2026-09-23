@@ -47,7 +47,7 @@ export class ProvincePanel {
       <section class="dist" aria-label="Districts">
         <div class="dist-head"><h3>Districts <span class="th">อำเภอ / ตำบล</span></h3><span class="count" data-el="count"></span></div>
         <label for="dq" style="position:absolute;left:-9999px">Filter districts and sub-districts</label>
-        <input id="dq" class="mcinput" type="search" placeholder="Filter districts, items or tambon…" autocomplete="off" disabled>
+        <input id="dq" class="mcinput" type="search" placeholder="Filter districts, OTOP, items or tambon…" autocomplete="off" disabled>
         <div class="dlist" data-el="list"><p class="muted">Loading districts…</p></div>
       </section>`;
     this.el.querySelectorAll('.chip').forEach(b => b.onclick = () => this.onSelect(+b.dataset.i));
@@ -87,7 +87,8 @@ export class ProvincePanel {
     const list = this.el.querySelector('[data-el="list"]');
     const q = this.q.value.trim().toLowerCase();
     const has = (n) => n.en.toLowerCase().includes(q) || n.th.includes(q);
-    const hasDistrict = (d) => has(d.name) || (d.item?.name || '').toLowerCase().includes(q);
+    const hasDistrict = (d) => has(d.name) || (d.item?.name || '').toLowerCase().includes(q) ||
+      (d.item?.otop?.example || '').includes(q) || (d.landmark?.name || '').toLowerCase().includes(q);
     const order = this.d.districts.map((_, k) => k)
       .sort((a, b) => this.d.districts[a].name.en.localeCompare(this.d.districts[b].name.en));
     const rows = [];
@@ -102,10 +103,11 @@ export class ProvincePanel {
         <button class="drow${dist.cells ? '' : ' nogeo'}" data-k="${k}" aria-expanded="${expanded}">
           <img class="dicon" src="${this._icon(dist)}" alt="">
           <span class="dname">${esc(dist.name.en)}<span class="th">${esc(dist.name.th)}</span>
-            <span class="ditem${dist.item?.kind === 'landmark' ? ' lm' : ''}">${esc(dist.item?.name || '')}</span></span>
+            <span class="ditem ${esc(dist.item?.kind || '')}">${esc(dist.item?.name || '')}</span></span>
           <span class="n">${q && tHits.length ? `${tHits.length}/` : ''}${tambon.length} tambon</span>
         </button>
-        <ul class="tlist" ${expanded ? '' : 'hidden'}>${dist.item ? `<li class="dnote">${esc(dist.item.note)}</li>` : ''}${tambon.map(t => `
+        <ul class="tlist" ${expanded ? '' : 'hidden'}>${dist.item ? `<li class="dnote">${esc(dist.item.note)}</li>` : ''}${
+          dist.landmark && dist.item?.kind !== 'landmark' ? `<li class="dnote">★ Landmark: ${esc(dist.landmark.name)}. ${esc(dist.landmark.note)}</li>` : ''}${tambon.map(t => `
           <li class="${hitIds.has(t.id) ? 'tl-hit' : ''}">${esc(t.name.en)}<span class="th">${esc(t.name.th)}</span><span class="zip">${t.zip || ''}</span></li>`).join('')
           || '<li>No sub-district data</li>'}</ul>`);
     }
