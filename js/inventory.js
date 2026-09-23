@@ -1,7 +1,7 @@
 // Creative-inventory grid of all province items, with region tabs and search.
 import { REGIONS, REGION_ORDER } from './config.js';
 import { itemSprite } from './sprites.js';
-import { provinceTip } from './tooltip.js';
+import { provinceTip } from './ui.js';
 
 export class Inventory {
   constructor({ tabsEl, gridEl, searchEl, titleEl, countEl, provinces, tooltip, onSelect, onHover }) {

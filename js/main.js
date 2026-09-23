@@ -3,14 +3,13 @@ import { h2 } from './noise.js';
 import { loadAtlas, loadDistricts, loadSubdistricts } from './data.js';
 import { classifyCells, renderWorld, LAYERS } from './world.js';
 import { createView3D } from './view3d.js';
+import { renderAsean } from './asean.js';
 import { buildDistrictLayer } from './districts.js';
 import { MapView } from './mapView.js';
 import { Inventory } from './inventory.js';
 import { ProvincePanel } from './panel.js';
-import { Tooltip, provinceTip, districtTip } from './tooltip.js';
-import { renderF3 } from './f3.js';
-import { renderCredits } from './credits.js';
-import { railTile, N, S } from './pieces.js';
+import { Tooltip, provinceTip, districtTip, renderF3, renderCredits } from './ui.js';
+import { railTile, N, S, makeBlockAtlas } from './pieces.js';
 
 const $ = id => document.getElementById(id);
 
@@ -59,7 +58,9 @@ const handlers = {
     else select(pick.province, false);
   },
 };
-const map = new MapView({ canvas: $('map'), wrap: $('mapWrap'), atlas, world, ...handlers });
+const backdrop = atlas.asean ? renderAsean(atlas.asean) : null;
+const map = new MapView({ canvas: $('map'), wrap: $('mapWrap'), atlas, world, backdrop, cells, ...handlers });
+makeBlockAtlas().then(b => map.setBlockAtlas(b)).catch(() => {});   // textures for the close-up 2D view
 map.layers = { ...layers };
 let view3d = null;   // created on first switch to 3D
 let mode = '2d';
@@ -121,7 +122,7 @@ $('mode').onclick = async () => {
     if (!view3d) {
       btn.disabled = true; btn.textContent = 'Loading…';
       try {
-        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, world, ...handlers });
+        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, world, backdrop, ...handlers });
       } catch (err) {
         btn.disabled = false; btn.textContent = '3D';
         $('hint').textContent = `3D view unavailable: ${err.message}`;

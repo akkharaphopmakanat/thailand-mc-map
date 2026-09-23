@@ -27,8 +27,10 @@ export const REGION_ORDER = ['N', 'NE', 'C', 'E', 'W', 'S'];
 /** Brightness per province shade index so neighbouring provinces differ. */
 export const SHADES = [1, .9, 1.1, .95, 1.05, .98, 1.02, .93];
 
-/** Seas and neighbouring countries: [label, lat, lon]. */
+/** Seas: [label, lat, lon]. Country names come from data/asean.json. */
 export const MAP_LABELS = [
-  ['ANDAMAN SEA', 8.6, 97.65], ['GULF OF THAILAND', 10.4, 101.3], ['MYANMAR', 17.6, 97.55],
-  ['LAOS', 19.3, 102.9], ['CAMBODIA', 12.9, 104.2], ['MALAYSIA', 5.75, 101.25], ['VIETNAM', 19.9, 105.1],
+  ['ANDAMAN SEA', 9.5, 96.0], ['GULF OF THAILAND', 10.4, 101.3], ['SOUTH CHINA SEA', 13.5, 113.5],
+  ['JAVA SEA', -5.0, 111.0], ['CELEBES SEA', 3.5, 122.5], ['SULU SEA', 8.5, 120.0],
+  ['PHILIPPINE SEA', 15.0, 128.0], ['INDIAN OCEAN', -5.0, 95.5], ['BANDA SEA', -6.0, 126.5],
+  ['BAY OF BENGAL', 16.0, 92.8],
 ];

@@ -2,9 +2,9 @@
 // The map is split into chunks; chunks near the camera are drawn at full detail and
 // farther ones with 2×, 4× or 8× bigger blocks (like a render distance), built on demand.
 // three.js is loaded from cdnjs the first time the 3D mode is opened.
-import { B } from './config.js';
+import { B, SHADES } from './config.js';
 import { KIND } from './world.js';
-import { makeAtlas, maskAt } from './pieces.js';
+import { makeAtlas, maskAt, makeBlockAtlas, blockMaterial, blockTexture } from './pieces.js';
 import { h2 } from './noise.js';
 import { itemSprite } from './sprites.js';
 
@@ -36,26 +36,30 @@ function loadThree() {
 
 /** @returns {Promise<View3D>} */
 export async function createView3D(opts) {
-  return new View3D(await loadThree(), opts);
+  const [THREE, blocks] = await Promise.all([loadThree(), makeBlockAtlas().catch(() => null)]);
+  return new View3D(THREE, { ...opts, blocks });
 }
+
+const TEXTURED_LOD = 2;                            // chunks at this level of detail or finer use block textures
 
 class View3D {
   /**
    * @param {object} THREE
-   * @param {object} o  {canvas, wrap, atlas, cells, world (2D terrain, used as top texture), onHover, onClick}
+   * @param {object} o  {canvas, wrap, atlas, cells, world (2D terrain, used as top texture),
+   *                    backdrop (2D ASEAN canvas, used for colours), onHover, onClick}
    */
-  constructor(THREE, { canvas, wrap, atlas, cells, world, onHover, onClick }) {
-    Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, world, onHover, onClick });
+  constructor(THREE, { canvas, wrap, atlas, cells, world, backdrop, blocks, onHover, onClick }) {
+    Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, world, backdrop, blocks, onHover, onClick });
     const { W, H } = atlas.map;
     this.W = W; this.H = H;
     this.SC = .04 / atlas.map.S;                     // blocks per 0.04° (camera and icon sizes scale with it)
     this.metresPerBlock = 40;
     this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1;
     this.active = false; this.tween = null;
-    this.layers = { rails: true };
+    this.layers = { mainRoads: true, mediumRoads: true, rails: true, rivers: true, streams: false };
     this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
     this.orbit = { ...this.home };
-    this.maxDist = 900 * this.SC;
+    this.maxDist = atlas.asean ? 2400 * this.SC : 900 * this.SC;
     // camera distance (blocks) where the level of detail steps 1→2→4→8; in chunk units so the
     // on-screen face count stays about the same whatever the block size
     this.lodDist = [2 * CHUNK, 5 * CHUNK, 11 * CHUNK];
@@ -65,7 +69,7 @@ class View3D {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(SKY);
     this.scene.fog = new THREE.Fog(SKY, 260 * this.SC, 900 * this.SC);
-    this.camera = new THREE.PerspectiveCamera(50, 1, .05, 3000 * this.SC);
+    this.camera = new THREE.PerspectiveCamera(50, 1, .05, 6000 * this.SC);
 
     const tex = this.topTex = new THREE.CanvasTexture(world.canvas);
     tex.magFilter = THREE.NearestFilter;
@@ -73,6 +77,13 @@ class View3D {
     tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
     this.topMat = new THREE.MeshBasicMaterial({ map: tex, vertexColors: true, side: THREE.DoubleSide });
     this.sideMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    // Block textures (Minetest Game, CC BY-SA 3.0) for the chunks near the camera
+    if (blocks) {
+      const btex = new THREE.CanvasTexture(blocks.canvas);
+      btex.magFilter = btex.minFilter = THREE.NearestFilter;
+      btex.generateMipmaps = false;
+      this.texMat = blockMaterial(THREE, btex, blocks.size);
+    }
     // Minecraft rail pieces laid on the ground near the camera
     this.pieces = makeAtlas();
     const ptex = new THREE.CanvasTexture(this.pieces.canvas);
@@ -81,6 +92,7 @@ class View3D {
     this.detailMat = new THREE.MeshBasicMaterial({ map: ptex, alphaTest: .5, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
 
     this._prepare();
+    this._buildBackdrop();
     this._buildWater();
     this._buildIcons();
     this._bindInput();
@@ -271,6 +283,145 @@ class View3D {
   }
 
   /**
+   * Close-up chunk with real block textures: grass (dry grass in Isan), dirt, stone, sand,
+   * leaves, river water, stone and dirt-path roads, gravel under rails; walls show grass-side
+   * over dirt like Minecraft. Same merging and gap-free chunk edges as _buildChunk.
+   */
+  _buildChunkTextured(chunk, L) {
+    const { T, W, H, cells, atlas, blocks } = this;
+    const { kind } = cells;
+    const grid = atlas.grid, hb = this.hb, roads = atlas.roads, streams = atlas.streams, layers = this.layers;
+    const G = this.lod[L];
+    const per = CHUNK / L;
+    const c0 = chunk.i * per, r0 = chunk.j * per;
+    const c1 = Math.min(G.w, c0 + per), r1 = Math.min(G.h, r0 + per);
+    const cw = c1 - c0;
+    const ht = (r, c) => G.height[r * G.w + c];
+    const rep = (r, c) => G.rep[r * G.w + c];
+    const neighbour = (r, c, dr, dc) => {
+      const rr = r + dr, cc = c + dc;
+      if (rr < 0 || cc < 0 || rr >= G.h || cc >= G.w) return MIN_Y;
+      if (rr >= r0 && rr < r1 && cc >= c0 && cc < c1) return ht(rr, cc);
+      let m = Infinity;
+      if (dr) { const y = dr < 0 ? r * L - 1 : Math.min(H - 1, (r + 1) * L); for (let x = c * L; x < Math.min(W, c * L + L); x++) m = Math.min(m, hb[y * W + x]); }
+      else { const x = dc < 0 ? c * L - 1 : Math.min(W - 1, (c + 1) * L); for (let y = r * L; y < Math.min(H, r * L + L); y++) m = Math.min(m, hb[y * W + x]); }
+      return Math.min(m, ht(rr, cc));
+    };
+    const X = c => Math.min(W, c * L) - W / 2, Z = r => Math.min(H, r * L) - H / 2;
+    const T_ = n => blocks.tile(n);
+    const topName = k => blockTexture(k, atlas, cells, layers, hb);
+    const SIDE = { grass: ['grass_side', 'dirt'], dry_grass: ['dry_grass_side', 'dirt'], river_water: ['dirt', 'dirt'],
+      dry_dirt: ['dirt', 'dirt'], leaves: ['leaves', 'tree'], jungleleaves: ['jungleleaves', 'tree'] };
+    const tint = k => {
+      const v = grid[k], j = .94 + h2(k, 1, 17) * .1;
+      const f = v >= 0 ? (SHADES[this.atlas.provinces[v].shade] || 1) * .5 + .5 : v === -2 ? .82 : 1;
+      const paddy = kind[k] === KIND.PADDY ? [1.02, 1.1, .9] : [1, 1, 1];
+      return paddy.map(q => q * f * j);
+    };
+    const tiles = new Int16Array(cw * (r1 - r0));
+    const names = [];
+    for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) {
+      const n = topName(rep(r, c));
+      let i = names.indexOf(n);
+      if (i < 0) { i = names.length; names.push(n); }
+      tiles[(r - r0) * cw + (c - c0)] = i;
+    }
+    const tileAt = (r, c) => tiles[(r - r0) * cw + (c - c0)];
+    const count = [0];
+    let buf = null;
+    const quad = (v, tileName, rgb, f, uv) => {
+      const q = count[0]++;
+      if (!buf) return q;
+      const o = q * 12, [tu, tv] = blocks.origin(T_(tileName));
+      buf.pos.set(v, o); buf.uv.set(uv, q * 8);
+      for (let i = 0; i < 4; i++) {
+        buf.tile[q * 8 + i * 2] = tu; buf.tile[q * 8 + i * 2 + 1] = tv;
+        buf.clr[o + i * 3] = rgb[0] * f; buf.clr[o + i * 3 + 1] = rgb[1] * f; buf.clr[o + i * 3 + 2] = rgb[2] * f;
+      }
+      return q;
+    };
+    const wall = (r, c, hn, f, verts, len) => {
+      const k = rep(r, c), h = ht(r, c), top = names[tileAt(r, c)], rgb = tint(k);
+      const [upper, lower] = SIDE[top] || [top, top];
+      if (h - hn > 1) {
+        quad(verts(h - 1, h), upper, rgb, f, [0, 0, 0, 1, len, 1, len, 0]);
+        quad(verts(hn, h - 1), lower, rgb, f, [0, 0, 0, h - 1 - hn, len, h - 1 - hn, len, 0]);
+      } else {
+        quad(verts(hn, h), upper, rgb, f, [0, 0, 0, h - hn, len, h - hn, len, 0]);
+      }
+    };
+    const same = (r, a, b) => ht(r, a) === ht(r, b) && tileAt(r, a) === tileAt(r, b) && grid[rep(r, a)] === grid[rep(r, b)];
+    const sameCol = (c, a, b) => ht(a, c) === ht(b, c) && tileAt(a, c) === tileAt(b, c) && grid[rep(a, c)] === grid[rep(b, c)];
+    const topQuad = new Int32Array(cw * (r1 - r0)).fill(-1);
+    const pass = () => {
+      count[0] = 0;
+      for (let r = r0; r < r1; r++) {
+        const z0 = Z(r), z1 = Z(r + 1);
+        for (let c = c0; c < c1;) {
+          let e = c + 1;
+          while (e < c1 && same(r, e, c)) e++;
+          const k = rep(r, c), h = ht(r, c), x0 = X(c), x1 = X(e);
+          const q = quad([x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0], names[tileAt(r, c)], tint(k), 1,
+            [0, 0, 0, z1 - z0, x1 - x0, z1 - z0, x1 - x0, 0]);
+          if (buf && kind[k] !== KIND.WATER) for (let i = c; i < e; i++) topQuad[(r - r0) * cw + (i - c0)] = q;
+          c = e;
+        }
+        for (const dr of [-1, 1]) {
+          const z = dr < 0 ? z0 : z1;
+          for (let c = c0; c < c1;) {
+            const hn = neighbour(r, c, dr, 0);
+            let e = c + 1;
+            while (e < c1 && same(r, e, c) && neighbour(r, e, dr, 0) === hn) e++;
+            if (hn < ht(r, c)) {
+              const xa = X(c), xb = X(e);
+              wall(r, c, hn, SHADE.ns, dr < 0
+                ? (lo, hi) => [xb, lo, z, xb, hi, z, xa, hi, z, xa, lo, z]
+                : (lo, hi) => [xa, lo, z, xa, hi, z, xb, hi, z, xb, lo, z], xb - xa);
+            }
+            c = e;
+          }
+        }
+      }
+      for (let c = c0; c < c1; c++) {
+        for (const dc of [-1, 1]) {
+          const x = dc < 0 ? X(c) : X(c + 1);
+          for (let r = r0; r < r1;) {
+            const hn = neighbour(r, c, 0, dc);
+            let e = r + 1;
+            while (e < r1 && sameCol(c, e, r) && neighbour(e, c, 0, dc) === hn) e++;
+            if (hn < ht(r, c)) {
+              const za = Z(r), zb = Z(e);
+              wall(r, c, hn, SHADE.ew, dc < 0
+                ? (lo, hi) => [x, lo, za, x, hi, za, x, hi, zb, x, lo, zb]
+                : (lo, hi) => [x, lo, zb, x, hi, zb, x, hi, za, x, lo, za], zb - za);
+            }
+            r = e;
+          }
+        }
+      }
+    };
+    pass();
+    const n = count[0];
+    buf = { n, pos: new Float32Array(n * 12), uv: new Float32Array(n * 8), tile: new Float32Array(n * 8), clr: new Float32Array(n * 12) };
+    pass();
+    const idx = new Uint32Array(n * 6);
+    for (let q = 0; q < n; q++) {
+      const v = q * 4, o = q * 6;
+      idx[o] = v; idx[o + 1] = v + 1; idx[o + 2] = v + 2; idx[o + 3] = v; idx[o + 4] = v + 2; idx[o + 5] = v + 3;
+    }
+    const geo = new T.BufferGeometry();
+    geo.setAttribute('position', new T.BufferAttribute(buf.pos, 3));
+    geo.setAttribute('uv', new T.BufferAttribute(buf.uv, 2));
+    geo.setAttribute('tile', new T.BufferAttribute(buf.tile, 2));
+    geo.setAttribute('tint', buf.attr = new T.BufferAttribute(buf.clr, 3));
+    geo.setIndex(new T.BufferAttribute(idx, 1));
+    geo.computeBoundingSphere();
+    const group = new T.Group();
+    group.add(new T.Mesh(geo, this.texMat));
+    return { L, group, geos: [geo], tops: buf, base: buf.clr.slice(), topQuad, r0, r1, c0, c1, cw, quads: n, hl: '' };
+  }
+
+  /**
    * Connected rail pieces on the blocks around the look-at point, rebuilt when the
    * point moves; hidden when the camera is far away (they would be smaller than a pixel).
    */
@@ -329,7 +480,10 @@ class View3D {
 
   /** Make level L the visible mesh for a chunk (building it now if needed). */
   _show(chunk, L) {
-    if (!chunk.meshes[L]) { chunk.meshes[L] = this._buildChunk(chunk, L); this.scene.add(chunk.meshes[L].group); }
+    if (!chunk.meshes[L]) {
+      chunk.meshes[L] = this.texMat && L <= TEXTURED_LOD ? this._buildChunkTextured(chunk, L) : this._buildChunk(chunk, L);
+      this.scene.add(chunk.meshes[L].group);
+    }
     for (const [lv, m] of Object.entries(chunk.meshes)) if (m) m.group.visible = +lv === L;
     chunk.shown = L;
     this._highlight(chunk.meshes[L]);
@@ -365,12 +519,72 @@ class View3D {
 
   _buildWater() {
     const { T, W, H } = this;
-    const geo = new T.PlaneGeometry(W + 400 * this.SC, H + 400 * this.SC);
+    const [x0, z0, x1, z1] = this.bounds;
+    const geo = new T.PlaneGeometry(x1 - x0 + 400 * this.SC, z1 - z0 + 400 * this.SC);
     geo.rotateX(-Math.PI / 2);
     const mat = new T.MeshBasicMaterial({ color: 0x3f76e4, transparent: true, opacity: .62, depthWrite: false });
     this.water = new T.Mesh(geo, mat);
-    this.water.position.y = .15;
+    this.water.position.set((x0 + x1) / 2, .15, (z0 + z1) / 2);
     this.scene.add(this.water);
+  }
+
+  /**
+   * All ASEAN around Thailand as coarse block columns (0.2°, every 4th backdrop block), coloured
+   * from the 2D backdrop and raised to real elevation. Blocks inside the detailed Thailand
+   * window are left out. Also sets this.bounds (world x/z extent the camera may pan over).
+   */
+  _buildBackdrop() {
+    const { T, W, H, atlas } = this;
+    const map = atlas.map, A = atlas.asean;
+    this.bounds = [-W / 2, -H / 2, W / 2, H / 2];
+    if (this.backMesh) { this.scene.remove(this.backMesh); this.backGeo.dispose(); this.backMesh = null; }
+    if (!A || !this.backdrop) return;
+    const D = 4, S = A.S * D;                                  // 0.2° columns
+    const w = Math.floor(A.W / D), h = Math.floor(A.H / D);
+    const X = lon => (lon - map.lon0) / map.S - W / 2, Z = lat => (map.lat1 - lat) / map.S - H / 2;
+    this.bounds = [X(A.lon0), Z(A.lat1), X(A.lon0 + w * S), Z(A.lat1 - h * S)];
+    const colours = this.backdrop.getContext('2d').getImageData(0, 0, A.W, A.H).data;
+    const inside = (r, c) => {
+      const lon = A.lon0 + (c + .5) * S, lat = A.lat1 - (r + .5) * S;
+      return lon > map.lon0 && lon < map.lon0 + map.W * map.S && lat < map.lat1 && lat > map.lat1 - map.H * map.S;
+    };
+    const ht = new Int16Array(w * h);
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+      const k = (r * D + (D >> 1)) * A.W + c * D + (D >> 1);
+      const e = A.elev ? A.elev[k] : 0;
+      ht[r * w + c] = A.grid[k] === 0 ? -Math.max(1, Math.round(Math.sqrt(Math.max(-e, 1)) / 5)) : Math.max(1, Math.round(e / this.metresPerBlock));
+    }
+    const pos = [], clr = [];
+    const quad = (v, k, f) => {
+      pos.push(...v);
+      const r = colours[k * 4] / 255 * f, g = colours[k * 4 + 1] / 255 * f, b = colours[k * 4 + 2] / 255 * f;
+      for (let i = 0; i < 4; i++) clr.push(r, g, b);
+    };
+    const at = (r, c) => (r < 0 || c < 0 || r >= h || c >= w) ? MIN_Y : inside(r, c) ? MIN_Y : ht[r * w + c];
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+      if (inside(r, c)) continue;
+      const k = (r * D + (D >> 1)) * A.W + c * D + (D >> 1), y = ht[r * w + c];
+      const x0 = X(A.lon0 + c * S), x1 = X(A.lon0 + (c + 1) * S), z0 = Z(A.lat1 - r * S), z1 = Z(A.lat1 - (r + 1) * S);
+      quad([x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0], k, 1);
+      const walls = [
+        [at(r - 1, c), .8, lo => [x1, lo, z0, x1, y, z0, x0, y, z0, x0, lo, z0]],
+        [at(r + 1, c), .8, lo => [x0, lo, z1, x0, y, z1, x1, y, z1, x1, lo, z1]],
+        [at(r, c - 1), .62, lo => [x0, lo, z0, x0, y, z0, x0, y, z1, x0, lo, z1]],
+        [at(r, c + 1), .62, lo => [x1, lo, z1, x1, y, z1, x1, y, z0, x1, lo, z0]],
+      ];
+      for (const [hn, f, v] of walls) if (hn < y) quad(v(Math.max(hn, MIN_Y)), k, f * .75);
+    }
+    const n = pos.length / 12, idx = new Uint32Array(n * 6);
+    for (let q = 0; q < n; q++) { const v = q * 4, o = q * 6; idx[o] = v; idx[o + 1] = v + 1; idx[o + 2] = v + 2; idx[o + 3] = v; idx[o + 4] = v + 2; idx[o + 5] = v + 3; }
+    const geo = new T.BufferGeometry();
+    geo.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3));
+    geo.setAttribute('color', new T.BufferAttribute(new Float32Array(clr), 3));
+    geo.setIndex(new T.BufferAttribute(idx, 1));
+    geo.computeBoundingSphere();
+    this.backGeo = geo;
+    this.backMesh = new T.Mesh(geo, this.sideMat);
+    this.scene.add(this.backMesh);
+    this.backQuads = n;
   }
 
   /* ---------------- selection highlight ---------------- */
@@ -493,15 +707,24 @@ class View3D {
   /** Layers changed: the 2D terrain canvas (our top texture) was redrawn; rebuild buildings. */
   setLayers(layers) {
     this.topTex.needsUpdate = true;
-    const changed = layers.rails !== this.layers.rails;
+    const keys = ['mainRoads', 'mediumRoads', 'rails', 'rivers', 'streams'];
+    const changed = keys.some(k => layers[k] !== this.layers[k]);
     this.layers = { ...layers };
-    if (changed) this._clearDetail();
+    if (changed) {
+      this._clearDetail();
+      // textured close-up chunks bake roads, rails and rivers into their block choice
+      for (const c of this.chunks.values()) for (const L of [1, 2]) {
+        const m = c.meshes[L];
+        if (m) { this._dispose(m); c.meshes[L] = null; if (c.shown === L) c.shown = 0; }
+      }
+    }
   }
   setDistrictHover() {}
 
   setVerticalScale(metresPerBlock) {
     this.metresPerBlock = metresPerBlock;
     this._prepare();
+    this._buildBackdrop();
     this._placeIcons();
   }
 
@@ -663,8 +886,9 @@ class View3D {
     const s = Math.sin(o.yaw), c = Math.cos(o.yaw);
     o.x += (-dx * c - dy * s / Math.max(Math.sin(o.pitch), .3)) * k;
     o.z += (dx * s - dy * c / Math.max(Math.sin(o.pitch), .3)) * k;
-    o.x = Math.max(-this.W / 2, Math.min(this.W / 2, o.x));
-    o.z = Math.max(-this.H / 2, Math.min(this.H / 2, o.z));
+    const [bx0, bz0, bx1, bz1] = this.bounds;
+    o.x = Math.max(bx0, Math.min(bx1, o.x));
+    o.z = Math.max(bz0, Math.min(bz1, o.z));
   }
 
   /* ---------------- frame ---------------- */
@@ -680,6 +904,9 @@ class View3D {
     this.icons.forEach((s, i) => { s.position.y = s.userData.base + bob(i); });
     this.districtIcons.forEach((s, i) => { s.position.y = s.userData.base + bob(i) * .6; });
     this._updateCamera();
+    // fog follows the camera distance so the whole of ASEAN can be seen when zoomed out
+    this.scene.fog.near = this.orbit.dist * 1.1;
+    this.scene.fog.far = this.orbit.dist * 3.2 + 200;
     this._updateLOD();
     this._updateDetail();
     this.renderer.render(this.scene, this.camera);

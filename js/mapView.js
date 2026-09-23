@@ -2,7 +2,8 @@
 // district borders, item icons and labels.
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite } from './sprites.js';
-import { railTile, maskAt } from './pieces.js';
+import { railTile, maskAt, blockTexture } from './pieces.js';
+import { aseanRect, countryAt } from './asean.js';
 
 const MAX_SCALE = 24;   // screen px per world px (a 0.005° block is 1 world px)
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -14,11 +15,15 @@ export class MapView {
    * @param {HTMLElement} o.wrap
    * @param {object} o.atlas   {map, grid, provinces}
    * @param {object} o.world   {canvas, paths}
+   * @param {HTMLCanvasElement} [o.backdrop]  ASEAN backdrop (see asean.js)
+   * @param {object} [o.cells]   block classification (world.js) for close-up textures
    * @param {(pick: object|null, e: PointerEvent) => void} o.onHover
    * @param {(pick: object) => void} o.onClick
    */
-  constructor({ canvas, wrap, atlas, world, onHover, onClick }) {
-    Object.assign(this, { canvas, wrap, atlas, world, onHover, onClick });
+  constructor({ canvas, wrap, atlas, world, backdrop, cells, onHover, onClick }) {
+    Object.assign(this, { canvas, wrap, atlas, world, backdrop, cells, onHover, onClick });
+    this.blocks = null;   // block texture atlas, set once loaded (see setBlockAtlas)
+    this.backRect = atlas.asean ? aseanRect(atlas.asean, atlas.map) : null;
     this.ctx = canvas.getContext('2d');
     this.view = { x: 0, y: 0, s: .3 };
     this.cw = 0; this.ch = 0; this.dpr = 1; this.fitS = .3;
@@ -39,6 +44,7 @@ export class MapView {
   setDistrictLayer(layer) { this.layer = layer; this.dirty = true; }
   setDistrictHover(k) { if (k !== this.dHover) { this.dHover = k; this.dirty = true; } }
   setDistrictFocus(k) { this.dFocus = k; this.dirty = true; }
+  setBlockAtlas(blocks) { this.blocks = blocks; this.dirty = true; }
 
   /* ---------------- camera ---------------- */
   resize() {
@@ -55,11 +61,16 @@ export class MapView {
     this.dirty = true;
   }
 
+  /** Thailand in the centre, zoomed out so all of ASEAN fits vertically (or all of Thailand without the backdrop). */
   fitView() {
-    const { W, H } = this.atlas.map;
-    const s = Math.min(this.cw / (W * B), this.ch / (H * B)) * .96;
+    const { W, H, lon0, lat1, S } = this.atlas.map;
+    const k = B / S;
+    const cx = (101.0 - lon0) * k, cy = (lat1 - 13.0) * k;          // centre of Thailand
+    const s = this.backRect
+      ? Math.min(this.ch / this.backRect[3], this.cw / (this.backRect[2] * .55)) * .98
+      : Math.min(this.cw / (W * B), this.ch / (H * B)) * .96;
     this.fitS = s;
-    return { s, x: (this.cw - W * B * s) / 2, y: (this.ch - H * B * s) / 2 };
+    return { s, x: this.cw / 2 - cx * s, y: this.ch / 2 - cy * s };
   }
 
   goTo(target) {
@@ -100,7 +111,10 @@ export class MapView {
     const { W, H } = this.atlas.map;
     const wx = (sx - this.view.x) / this.view.s, wy = (sy - this.view.y) / this.view.s;
     const c = Math.floor(wx / B), r = Math.floor(wy / B);
-    if (c < 0 || r < 0 || c >= W || r >= H) return null;
+    if (c < 0 || r < 0 || c >= W || r >= H) {
+      const country = this.atlas.asean ? countryAt(this.atlas.asean, this.atlas.map, wx, wy) : '';
+      return country ? { r, c, v: -3, province: -1, district: -1, country } : null;
+    }
     const v = this.atlas.grid[r * W + c];
     let province = v >= 0 ? v : -1, district = -1;
     if (this.layer) {
@@ -108,7 +122,8 @@ export class MapView {
       // the district raster is finer than the block grid, so trust it near borders
       if (district >= 0) province = this.selected;
     }
-    return { r, c, v, province, district };
+    const country = v < 0 && this.atlas.asean ? countryAt(this.atlas.asean, this.atlas.map, wx, wy) : '';
+    return { r, c, v, province, district, country };
   }
 
   /* ---------------- input ---------------- */
@@ -192,6 +207,30 @@ export class MapView {
     requestAnimationFrame(tt => this._loop(tt));
   }
 
+  /**
+   * Draw each on-screen Thai-grid block with its block texture, then the terrain map on top at
+   * low opacity so province shading, relief and borders still read.
+   */
+  _drawTextures(blockPx) {
+    const { ctx, view, atlas, cw, ch, blocks, cells, world } = this;
+    const { W, H } = atlas.map;
+    const c0 = Math.max(0, Math.floor(-view.x / blockPx)), c1 = Math.min(W - 1, Math.ceil((cw - view.x) / blockPx));
+    const r0 = Math.max(0, Math.floor(-view.y / blockPx)), r1 = Math.min(H - 1, Math.ceil((ch - view.y) / blockPx));
+    const z = Math.ceil(blockPx) + 1;
+    ctx.imageSmoothingEnabled = false;
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+      const k = r * W + c;
+      if (atlas.grid[k] === -1 && cells.kind[k] === 1 && cells.elev[k] < -25) continue;   // open sea: keep the map colour
+      const [u, v] = blocks.origin(blocks.tile(blockTexture(k, atlas, cells, this.layers)));
+      const cvw = blocks.canvas.width, cvh = blocks.canvas.height;
+      ctx.drawImage(blocks.canvas, u * cvw, (1 - v) * cvh - 16, 16, 16,
+        Math.floor(view.x + c * blockPx), Math.floor(view.y + r * blockPx), z, z);
+    }
+    ctx.globalAlpha = .3;
+    ctx.drawImage(world.canvas, view.x, view.y, W * B * view.s, H * B * view.s);
+    ctx.globalAlpha = 1;
+  }
+
   /** Draw connected rail pieces for the railway blocks on screen (roads stay plain blocks). */
   _drawBlockDetail(blockPx) {
     const { ctx, view, atlas, cw, ch } = this;
@@ -224,12 +263,18 @@ export class MapView {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#28409a';
     ctx.fillRect(0, 0, cw, ch);
+    if (this.backdrop) {                                  // all ASEAN, lower detail
+      const [bx, by, bw, bh] = this.backRect;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(this.backdrop, view.x + bx * s, view.y + by * s, bw * s, bh * s);
+    }
     ctx.imageSmoothingEnabled = s < 1;
     ctx.imageSmoothingQuality = 'medium';
     ctx.drawImage(world.canvas, view.x, view.y, map.W * B * s, map.H * B * s);
 
-    // Close up: connected Minecraft rail pieces
+    // Close up: block textures, then connected Minecraft rail pieces
     const blockPx = s * B;
+    if (blockPx >= 12 && this.blocks) this._drawTextures(blockPx);
     if (blockPx >= 8) this._drawBlockDetail(blockPx);
 
     // Province + district highlights, in world coordinates
@@ -271,11 +316,21 @@ export class MapView {
       }
     }
 
-    // Seas and neighbouring countries
+    // Seas and ASEAN countries
     ctx.font = '600 13px "Pixelify Sans", monospace';
     for (const [txt, lat, lon] of MAP_LABELS) {
       const [sx, sy] = this._w2s((lon - map.lon0) / map.S * B, (map.lat1 - lat) / map.S * B);
       this._text(txt, sx, sy, 'rgba(235,240,255,.72)', 'rgba(0,0,0,.45)');
+    }
+    const A = atlas.asean;
+    if (A) {
+      ctx.font = '600 15px "Pixelify Sans", monospace';
+      for (const c of A.countries) {
+        if (c.code === 'THA' || !c.anchor) continue;
+        const lon = A.lon0 + (c.anchor[1] + .5) * A.S, lat = A.lat1 - (c.anchor[0] + .5) * A.S;
+        const [sx, sy] = this._w2s((lon - map.lon0) / map.S * B, (map.lat1 - lat) / map.S * B);
+        this._text(c.name.toUpperCase(), sx, sy, 'rgba(255,255,255,.85)', 'rgba(0,0,0,.6)');
+      }
     }
 
     // District items and names when there is room
@@ -308,7 +363,8 @@ export class MapView {
     // Floating item icons
     // icon size follows screen px per 0.04°, so icons keep their size whatever the block size
     const cell = s * B * (.04 / map.S);
-    const base = Math.max(16, Math.min(44, cell * 3.4));
+    const base = Math.max(11, Math.min(44, cell * 3.4));
+    const zoomedOut = s < .12;                           // whole-ASEAN view: only hovered/selected items
     const showNames = cell >= 6.5;
     const drawIcon = (i, big) => {
       const p = provinces[i];
@@ -325,7 +381,7 @@ export class MapView {
         this._text(p.name.en, sx, Math.round(sy + sz * .56 + 8), big ? '#ffff55' : '#fff');
       }
     };
-    for (const i of this.order) if (i !== hov && i !== sel) drawIcon(i, false);
+    if (!zoomedOut) for (const i of this.order) if (i !== hov && i !== sel) drawIcon(i, false);
     if (hov >= 0 && hov !== sel) drawIcon(hov, true);
     if (sel >= 0 && !districtIcons) drawIcon(sel, true);
   }

@@ -51,7 +51,7 @@ export function classifyCells({ map, grid, provinces, elev: realElev }) {
         rgb = [rgb[0] * m, rgb[1] * m, rgb[2] * m];
       } else {
         const g = (rgb[0] + rgb[1] + rgb[2]) / 3;
-        rgb = rgb.map(x => (x * .55 + g * .45) * .62);
+        rgb = rgb.map(x => (x * .7 + g * .3) * .82);
         kd = kd === K.TREE ? K.FOREIGN_TREE : K.FOREIGN;
       }
     }

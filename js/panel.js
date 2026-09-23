@@ -1,7 +1,7 @@
 // Selected-province card: item, lore, neighbours, and the district (amphoe) → sub-district (tambon) browser.
 import { REGIONS } from './config.js';
 import { itemSprite, spriteFromRows } from './sprites.js';
-import { esc } from './tooltip.js';
+import { esc } from './ui.js';
 
 export class ProvincePanel {
   /**

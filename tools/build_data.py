@@ -9,8 +9,9 @@ data/sprites.json; this script never touches them. It (re)writes:
   data/provinces/<slug>/districts.json        amphoe / khet raster + names
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
   data/elevation.png                          mean height (m) per map block, land and sea (R*256+G-32768)
-  data/blocks.json                            per-block layers: roads, railways, rivers (OpenStreetMap)
-  data/rivers.json                            reservoirs (polygons) and main-river labels, world px
+  data/blocks.json                            per-block roads, railways, rivers (OpenStreetMap), river labels, reservoirs
+  data/map.json 'asean' + asean_elevation.png lower-detail backdrop of all ASEAN (0.05° blocks)
+  js/textures.js                              block textures (assets/textures, CC BY-SA 3.0) as data URLs
 
 Sources (downloaded into tools/.cache on first run):
   th.json       province polygons      github.com/apisit/thailand.json
@@ -131,6 +132,102 @@ def build_elevation():
     return heights.astype(int).tolist()
 
 
+# ---------------------------------------------------------------- ASEAN backdrop
+AS = 0.05                                        # backdrop block size (~5.5 km)
+A_LON0, A_LON1, A_LAT0, A_LAT1 = 92.0, 141.5, -11.2, 28.8
+ASEAN = [('THA', 'Thailand'), ('MMR', 'Myanmar'), ('LAO', 'Laos'), ('KHM', 'Cambodia'), ('VNM', 'Vietnam'),
+         ('MYS', 'Malaysia'), ('SGP', 'Singapore'), ('IDN', 'Indonesia'), ('PHL', 'Philippines'),
+         ('BRN', 'Brunei'), ('TLS', 'Timor-Leste')]
+OTHER_LAND = 20
+
+
+def build_asean():
+    """Country per 0.05° block over all ASEAN (0 sea, 1–11 ASEAN country, 20 other land), mean
+    elevation as a PNG, and one label point per country."""
+    import numpy as np
+    from PIL import Image
+    W = round((A_LON1 - A_LON0) / AS); H = round((A_LAT1 - A_LAT0) / AS)
+    grid = [[-1] * W for _ in range(H)]
+    index = {a3: i + 1 for i, (a3, _) in enumerate(ASEAN)}
+    for f in source('ne_50m_admin_0_countries.geojson')['features']:
+        if not f['geometry']:
+            continue
+        polys = polygons(f['geometry'])
+        x0, y0, x1, y1 = bbox(polys)
+        if x1 < A_LON0 or x0 > A_LON1 or y1 < A_LAT0 or y0 > A_LAT1:
+            continue
+        code = index.get(f['properties'].get('ADM0_A3'), OTHER_LAND)
+        for r, a, b in raster_spans(polys, A_LON0, A_LAT1, AS, W, H):
+            grid[r][a:b + 1] = [code] * (b - a + 1)
+    # label point per ASEAN country (deep inside, near the centroid)
+    idx_grid = [[v - 1 if 1 <= v <= len(ASEAN) else -1 for v in row] for row in grid]
+    anc, cells = anchors(idx_grid, W, H, len(ASEAN))
+    # elevation from zoom-5 terrain tiles (~5 km pixels)
+    z = 5
+    tx0, ty0 = [int(v) for v in tile_xy(A_LAT1, A_LON0, z)]
+    tx1, ty1 = [int(v) for v in tile_xy(A_LAT0, A_LON1, z)]
+    mosaic = np.zeros(((ty1 - ty0 + 1) * 256, (tx1 - tx0 + 1) * 256), dtype=np.float32)
+    tdir = os.path.join(CACHE, 'terrarium')
+    os.makedirs(tdir, exist_ok=True)
+    for ty in range(ty0, ty1 + 1):
+        for tx in range(tx0, tx1 + 1):
+            path = os.path.join(tdir, f'{z}_{tx}_{ty}.png')
+            if not os.path.exists(path):
+                urllib.request.urlretrieve(TILE_URL.format(z=z, x=tx, y=ty), path)
+            px = np.asarray(Image.open(path).convert('RGB'), dtype=np.float32)
+            mosaic[(ty - ty0) * 256:(ty - ty0 + 1) * 256, (tx - tx0) * 256:(tx - tx0 + 1) * 256] = \
+                px[..., 0] * 256 + px[..., 1] + px[..., 2] / 256 - 32768
+    k = 2
+    lats = A_LAT1 - (np.arange(H * k) + .5) * AS / k
+    lons = A_LON0 + (np.arange(W * k) + .5) * AS / k
+    n = 2 ** z
+    py = np.clip((((1 - np.arcsinh(np.tan(np.radians(lats))) / np.pi) / 2 * n - ty0) * 256).astype(int), 0, mosaic.shape[0] - 1)
+    pxs = np.clip((((lons + 180) / 360 * n - tx0) * 256).astype(int), 0, mosaic.shape[1] - 1)
+    heights = np.round(mosaic[np.ix_(py, pxs)].reshape(H, k, W, k).mean(axis=(1, 3))).astype(np.int32)
+    # remove one-row spikes (bad rows in the source tiles show up as lines)
+    up, down = np.roll(heights, 1, 0), np.roll(heights, -1, 0)
+    spike = (np.abs(heights - up) > 300) & (np.abs(heights - down) > 300) & (np.abs(up - down) < 300)
+    heights = np.where(spike, (up + down) // 2, heights)
+    v = heights + 32768
+    Image.fromarray(np.stack([(v >> 8).astype(np.uint8), (v & 255).astype(np.uint8), np.zeros_like(v, dtype=np.uint8)], -1), 'RGB') \
+        .save(os.path.join(DATA, 'asean_elevation.png'), optimize=True)
+    chars = '.' + ''.join(chr(0x41 + i) for i in range(len(ASEAN))) + ','   # A.. = ASEAN countries, ',' = other land
+    sym = {-1: '.', OTHER_LAND: ','} | {i + 1: chr(0x41 + i) for i in range(len(ASEAN))}
+    path = os.path.join(DATA, 'map.json')
+    with open(path, encoding='utf-8') as f:
+        m = json.load(f)
+    m['asean'] = {
+        'W': W, 'H': H, 'S': AS, 'lon0': A_LON0, 'lat1': A_LAT1,
+        'countries': [{'code': a3, 'name': name, 'anchor': anc[i]} for i, (a3, name) in enumerate(ASEAN)],
+        'symbols': {'.': 'sea', ',': 'other land', **{chr(0x41 + i): a3 for i, (a3, _) in enumerate(ASEAN)}},
+        'elevation': {'file': 'asean_elevation.png', 'encoding': 'metres = R * 256 + G - 32768'},
+        'rows': [rle(''.join(sym[v] for v in row)) for row in grid],
+    }
+    dump(path, m)
+    print(f'asean backdrop (map.json): {W}x{H} blocks, {sum(cells)} ASEAN land blocks')
+
+
+# ---------------------------------------------------------------- block textures
+def build_textures():
+    """Pack assets/textures/*.png (Minetest Game, CC BY-SA 3.0) into js/textures.js as data URLs."""
+    import base64
+    tdir = os.path.join(ROOT, 'assets', 'textures')
+    names = sorted(f[:-4] for f in os.listdir(tdir) if f.endswith('.png'))
+    lines = ['// Generated by tools/build_data.py from assets/textures: do not edit.',
+             '// Textures from Minetest Game (mods/default), CC BY-SA 3.0, by celeron55 (Perttu Ahola),',
+             '// Cisoun, VanessaE, Calinou, paramat, BlockMen and other Minetest Game contributors;',
+             '// see assets/textures/LICENSE-minetest_game-default.txt. Share-alike: this file and any',
+             '// textures derived from it are under CC BY-SA 3.0.',
+             'export const TEXTURES = {']
+    for n in names:
+        with open(os.path.join(tdir, n + '.png'), 'rb') as f:
+            lines.append(f"  '{n.replace('default_', '')}': 'data:image/png;base64,{base64.b64encode(f.read()).decode()}',")
+    lines.append('};')
+    with open(os.path.join(ROOT, 'js', 'textures.js'), 'w') as f:
+        f.write('\n'.join(lines) + '\n')
+    print(f'js/textures.js: {len(names)} textures')
+
+
 # ---------------------------------------------------------------- roads
 PX_PER_DEG = 200  # world pixels per degree: B / S in js/config.js and map.json (1 px per 0.005° block)
 
@@ -168,10 +265,13 @@ def build_rivers(labels):
             if not inside(poly[0]):
                 continue
             lakes.append({'name': p.get('name') or '', 'rings': [to_px(simplify([(x, y) for x, y in r], 0.002)) for r in poly]})
-    dump(os.path.join(DATA, 'rivers.json'), {'units': f'world px ({PX_PER_DEG} per degree)',
-                                             'labels_fields': ['name', 'x', 'y', 'angle'], 'labels': labels,
-                                             'rivers': rivers, 'lakes': lakes})
-    print(f'rivers.json: {len(lakes)} lakes, {len(labels)} labels')
+    path = os.path.join(DATA, 'blocks.json')
+    with open(path, encoding='utf-8') as f:
+        blocks = json.load(f)
+    blocks['rivers'] = {'units': f'world px ({PX_PER_DEG} per degree)', 'labels_fields': ['name', 'x', 'y', 'angle'],
+                        'labels': labels, 'rivers': rivers, 'lakes': lakes}
+    dump(path, blocks)
+    print(f'river labels and reservoirs (blocks.json): {len(lakes)} lakes, {len(labels)} labels')
 
 
 # ---------------------------------------------------------------- OpenStreetMap roads, rail, rivers
@@ -962,6 +1062,8 @@ def main():
     slugs = [by_dataset[f['properties']['name']] for f in th]
     grid, foreign = build_map(th, slugs)
     heights = build_elevation()
+    build_asean()
+    build_textures()
     labels = build_transport(len(grid[0]), len(grid))
     build_rivers(labels)
     otop = build_otop()

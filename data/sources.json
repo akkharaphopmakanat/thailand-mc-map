@@ -37,7 +37,7 @@
       "author": "Mapzen / Linux Foundation; includes SRTM and GMTED (NASA/USGS), ETOPO1 (NOAA) and other public sources",
       "url": "https://registry.opendata.aws/terrain-tiles/",
       "license": "Public data; attribution to the underlying sources required (see the dataset's attribution page)",
-      "used_for": "Mean land elevation and sea depth per map block in data/elevation.png (2D relief and the 3D view)"
+      "used_for": "Mean land elevation and sea depth per block in data/elevation.png, and the ASEAN backdrop (data/asean_elevation.png)"
     },
     {
       "id": "otop",
@@ -67,7 +67,7 @@
       "author": "Natural Earth (naturalearthdata.com)",
       "url": "https://www.naturalearthdata.com/downloads/50m-cultural-vectors/",
       "license": "Public domain",
-      "used_for": "Which blocks outside Thailand are land (neighbouring countries) and which are sea"
+      "used_for": "Land vs sea outside Thailand, and the ASEAN backdrop countries (data/map.json 'asean')"
     },
     {
       "id": "osm",
@@ -77,6 +77,14 @@
       "download": "https://download.geofabrik.de/asia/thailand.html",
       "license": "ODbL 1.0: data/blocks.json road and water layers are a derived database under the same licence",
       "used_for": "Main roads (motorway, trunk), medium roads (primary, secondary), railways, rivers and river labels, rasterised per 0.005° block in data/blocks.json and data/rivers.json"
+    },
+    {
+      "id": "textures",
+      "title": "Minetest Game block textures (mods/default)",
+      "author": "celeron55 (Perttu Ahola), Cisoun, VanessaE, Calinou, paramat, BlockMen and other Minetest Game contributors",
+      "url": "https://github.com/minetest/minetest_game",
+      "license": "CC BY-SA 3.0 (share-alike: js/textures.js and derived textures stay CC BY-SA 3.0)",
+      "used_for": "16×16 block textures (grass, dirt, stone, sand, gravel, leaves, water…) in the close-up 2D view and near chunks in 3D"
     }
   ],
   "fonts": [
@@ -103,6 +111,6 @@
     "Trees and rice paddies are generated for looks; elevation is real but averaged over 550 m blocks.",
     "District items come from OTOP product data; hand-picked landmarks are shown alongside, and terrain is used only where a district has no rated OTOP products.",
     "Province items, pixel sprites and descriptions are original to this project.",
-    "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft."
+    "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft. Minecraft textures are not used."
   ]
 }

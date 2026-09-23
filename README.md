@@ -2,7 +2,7 @@
 
 Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
 
-A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
+A Minecraft-style block map of Thailand, centred in a lower-detail map of all ASEAN. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
 Roads, railways and rivers come from OpenStreetMap. **Main roads** (motorway, trunk) are stone
@@ -39,19 +39,19 @@ js/
   mapView.js                2D canvas camera, pan/zoom/pinch, picking, drawing
   view3d.js                 3D voxel view in chunks with 3 levels of detail (three.js from cdnjs, loaded on demand)
   sprites.js                16×16 item sprite → canvas / data URL
-  pieces.js                 connected rail pieces (2D close-up and 3D ground), junction block
+  pieces.js                 rail pieces, junction block, block texture atlas + shader, block→texture rule
   inventory.js              creative-inventory grid with region tabs and search
   panel.js                  selected province card + district/tambon browser
-  tooltip.js                Minecraft item tooltip
-  credits.js                Credits panel built from data/sources.json
-  f3.js                     F3 debug overlay (lat/lon, biome, province, district)
+  ui.js                     Minecraft tooltip, F3 debug overlay, credits panel (from data/sources.json)
+  asean.js                  lower-detail ASEAN backdrop (2D image, country lookup)
+  textures.js               block textures as data URLs [generated from assets/textures]
 data/
   sources.json              data references and credits
-  blocks.json               per-block roads, rails and rivers (OSM)                    [generated]
-  rivers.json               reservoirs and main-river labels, world px                 [generated]
+  blocks.json               per-block roads, rails, rivers (OSM), river labels, lakes  [generated]
+  asean_elevation.png       ASEAN backdrop elevation (backdrop grid itself is in map.json)  [generated]
   elevation.png             real mean elevation / sea depth per block (R*256+G-32768)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
-  map.json                  country block grid (0.005° ≈ 550 m), anchors, neighbours  [generated]
+  map.json                  block grid (0.005° ≈ 550 m), anchors, neighbours, ASEAN backdrop  [generated]
   provinces/<slug>/
     province.json           name, region, item + sprite, description, district_items  [hand-written]
     districts.json          district raster, names and each district's item           [generated]
