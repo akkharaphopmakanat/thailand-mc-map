@@ -11,7 +11,7 @@
       "author": "apisit",
       "url": "https://github.com/apisit/thailand.json",
       "license": "No license stated by the repository",
-      "used_for": "Province outlines, rasterized to the 0.04° block grid in data/map.json"
+      "used_for": "Province outlines, rasterized to the 0.02° block grid in data/map.json"
     },
     {
       "id": "districts",
@@ -33,7 +33,7 @@
     },
     {
       "id": "elevation",
-      "title": "Terrain Tiles on AWS (terrarium encoding, zoom 7)",
+      "title": "Terrain Tiles on AWS (terrarium encoding, zoom 8)",
       "author": "Mapzen / Linux Foundation; includes SRTM and GMTED (NASA/USGS), ETOPO1 (NOAA) and other public sources",
       "url": "https://registry.opendata.aws/terrain-tiles/",
       "license": "Public data; attribution to the underlying sources required (see the dataset's attribution page)",
@@ -69,7 +69,7 @@
     }
   ],
   "notes": [
-    "Trees and rice paddies are generated for looks; elevation is real but averaged over 4.4 km blocks.",
+    "Trees and rice paddies are generated for looks; elevation is real but averaged over 2.2 km blocks.",
     "District landmark items are hand-picked for well-known districts; the rest are chosen from real elevation, coastline and region.",
     "Province items, pixel sprites and descriptions are original to this project.",
     "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft."

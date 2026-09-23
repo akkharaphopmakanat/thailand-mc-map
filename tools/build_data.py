@@ -5,7 +5,7 @@ Hand-written content lives in data/provinces/<slug>/province.json (including
 optional `district_items` landmarks keyed by district English name) and
 data/sprites.json; this script never touches them. It (re)writes:
 
-  data/map.json                               province block grid for the whole country
+  data/map.json                               province block grid for the whole country (0.02° blocks)
   data/provinces/<slug>/districts.json        amphoe / khet raster + names
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
   data/elevation.json                         mean height (m) per map block, land and sea
@@ -15,7 +15,7 @@ Sources (downloaded into tools/.cache on first run):
   th.json       province polygons      github.com/apisit/thailand.json
   adm2.geojson  district polygons      geoBoundaries THA ADM2 (CC BY 3.0 IGO)
   pds.json      Thai admin names       github.com/kongvut/thai-province-data (MIT)
-  terrarium/    elevation tiles, z7    AWS Terrain Tiles (Mapzen terrarium encoding)
+  terrarium/    elevation tiles, z8    AWS Terrain Tiles (Mapzen terrarium encoding)
   ne_10m_roads.geojson  roads          Natural Earth 1:10m roads (public domain)
 
 Usage: python3 tools/build_data.py
@@ -36,8 +36,8 @@ SOURCES = {
     'ne_10m_roads.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_roads.geojson',
 }
 
-# Country grid: 0.04° blocks (~4.4 km)
-S = 0.04
+# Country grid: 0.02° blocks (~2.2 km)
+S = 0.02
 LON0, LON1, LAT0, LAT1 = 97.2, 105.8, 5.4, 20.6
 # Symbols used to encode province indices in map.json rows ('.' sea, ',' foreign land, '~' RLE marker)
 CHARS = [chr(c) for c in range(0x21, 0x7f) if chr(c) not in '"\\`\'$~.,-'][:77]
@@ -58,7 +58,7 @@ def source(name):
 
 # ---------------------------------------------------------------- elevation
 TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
-TILE_Z = 7  # ~1.2 km pixels, averaged down to 0.04° blocks
+TILE_Z = 8  # ~0.6 km pixels, averaged down to 0.02° blocks
 
 
 def tile_xy(lat, lon, z):
@@ -69,7 +69,7 @@ def tile_xy(lat, lon, z):
 
 
 def build_elevation():
-    """Mean elevation (metres, negative = sea depth) per 0.04° block, written as base64 int16."""
+    """Mean elevation (metres, negative = sea depth) per 0.02° block, written as base64 int16."""
     import numpy as np
     from PIL import Image
     W = round((LON1 - LON0) / S); H = round((LAT1 - LAT0) / S)
@@ -110,7 +110,7 @@ def build_elevation():
 
 
 # ---------------------------------------------------------------- roads
-WORLD_PX = 8  # must match B in js/config.js: world pixels per block
+PX_PER_DEG = 200  # world pixels per degree: B / S in js/config.js and map.json (4 px per 0.02° block)
 
 
 def simplify(pts, tol):
@@ -132,7 +132,7 @@ def simplify(pts, tol):
 
 def build_roads():
     """Natural Earth roads inside the map, in world pixels. scalerank ≤ 5 or expressway → highway."""
-    px = WORLD_PX / S
+    px = PX_PER_DEG
     out = {'highway': [], 'road': []}
     for f in source('ne_10m_roads.geojson')['features']:
         g = f['geometry']
@@ -149,7 +149,7 @@ def build_roads():
             for x, y in pts:
                 flat += [round((x - LON0) * px), round((LAT1 - y) * px)]
             out[cls].append(flat)
-    dump(os.path.join(DATA, 'roads.json'), {'units': 'world px (8 per 0.04° block)', **out})
+    dump(os.path.join(DATA, 'roads.json'), {'units': f'world px ({PX_PER_DEG} per degree)', **out})
     print(f"roads.json: {len(out['highway'])} highway lines, {len(out['road'])} road lines")
 
 

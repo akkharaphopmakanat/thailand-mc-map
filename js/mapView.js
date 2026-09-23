@@ -268,7 +268,8 @@ export class MapView {
     }
 
     // Floating item icons
-    const cell = s * B;
+    // icon size follows screen px per 0.04°, so icons keep their size whatever the block size
+    const cell = s * B * (.04 / map.S);
     const base = Math.max(16, Math.min(44, cell * 3.4));
     const showNames = cell >= 6.5;
     const drawIcon = (i, big) => {

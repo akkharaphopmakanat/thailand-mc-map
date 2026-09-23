@@ -45,7 +45,7 @@ data/
   roads.json                highways / roads as world-pixel polylines                  [generated]
   elevation.json            real mean elevation / sea depth per block (int16, base64)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
-  map.json                  country block grid (0.04° ≈ 4.4 km), anchors, neighbours  [generated]
+  map.json                  country block grid (0.02° ≈ 2.2 km), anchors, neighbours  [generated]
   provinces/<slug>/
     province.json           name, region, item + sprite, description, district_items  [hand-written]
     districts.json          district raster, names and each district's item           [generated]
@@ -110,7 +110,7 @@ tambon boundary dataset, so tambon are listed rather than drawn. Three named
 districts have no outline in the boundary data (Ko Sichang, and two entries in
 Ratchaburi and Songkhla), so they are listed but not drawn.
 
-Elevation is real but averaged over 4.4 km blocks; trees and paddies are generated
+Elevation is real but averaged over 2.2 km blocks; trees and paddies are generated
 for looks. Province items, sprites and descriptions are original to this project.
 The 3D view loads [three.js](https://threejs.org/) r128 (MIT) from cdnjs.
 

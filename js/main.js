@@ -111,7 +111,7 @@ $('zout').onclick = () => mode === '3d' ? view3d.zoom(1 / 1.5) : map.zoomAt(1 / 
 $('zfit').onclick = () => mode === '3d' ? view3d.fit() : map.goTo(map.fitView());
 
 /* ---------- 2D / 3D switch ---------- */
-const V_SCALES = [30, 60, 120];   // metres of real elevation per block
+const V_SCALES = [25, 40, 80];    // metres of real elevation per block
 $('mode').onclick = async () => {
   const btn = $('mode');
   if (mode === '2d') {

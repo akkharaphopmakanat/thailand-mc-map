@@ -16,12 +16,13 @@ export function classifyCells({ map, grid, provinces, elev: realElev }) {
   const { W, H } = map;
   const N = W * H;
   const kind = new Uint8Array(N), col = new Float32Array(N * 3), elev = new Float32Array(N);
+  const f = map.S / .04;   // keep noise feature sizes in real distance, whatever the block size
 
   for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
     const k = r * W + c, v = grid[k];
     const reg = v >= 0 ? provinces[v].region : null;
     const R = reg ? REGIONS[reg] : null;
-    let e = realElev ? realElev[k] : (v === -1 ? -60 : fbm(c, r, 11) * (R ? R.amp : .55) * 1800);
+    let e = realElev ? realElev[k] : (v === -1 ? -60 : fbm(c * f, r * f, 11) * (R ? R.amp : .55) * 1800);
     let rgb, kd = K.GRASS;
     if (v === -1) {
       e = Math.min(e, -2);
@@ -37,12 +38,12 @@ export function classifyCells({ map, grid, provinces, elev: realElev }) {
         if (rr >= 0 && cc >= 0 && rr < H && cc < W && grid[rr * W + cc] === -1) { coast = true; break; }
       }
       // Forest is denser on high ground
-      const tree = vn(c / 6, r / 6, 5) > (R ? R.forest : .5) - Math.min(e, 1500) / 3000 && h2(c, r, 6) < .6;
+      const tree = vn(c * f / 6, r * f / 6, 5) > (R ? R.forest : .5) - Math.min(e, 1500) / 3000 && h2(c, r, 6) < .6;
       if (coast && e < 40) { rgb = [222, 208, 160]; kd = K.SAND; }
       else if (e > 1350 + h2(c, r, 7) * 250) { rgb = [132, 132, 134]; kd = K.STONE; }
       else if (tree) { const b = R ? R.base : [92, 118, 70]; rgb = [b[0] * .66, b[1] * .7, b[2] * .66]; kd = K.TREE; }
-      else if (reg === 'C' && e < 60 && vn(c / 5, r / 5, 21) > .48) { rgb = [126, 186, 78]; kd = K.PADDY; }
-      else if (reg === 'NE' && vn(c / 4, r / 4, 31) > .7) rgb = [136, 100, 64];
+      else if (reg === 'C' && e < 60 && vn(c * f / 5, r * f / 5, 21) > .48) { rgb = [126, 186, 78]; kd = K.PADDY; }
+      else if (reg === 'NE' && vn(c * f / 4, r * f / 4, 31) > .7) rgb = [136, 100, 64];
       else rgb = R ? R.base.slice() : [92, 118, 70];
 
       if (v >= 0) {
@@ -86,7 +87,7 @@ export function renderWorld(atlas, cells = classifyCells(atlas)) {
       if (kd === K.GRASS || kd === K.FOREIGN) { if (h2(gx, gy, 4) < .1) n *= .84; }
       else if (kd === K.TREE || kd === K.FOREIGN_TREE) { n = .78 + h2(gx >> 1, gy >> 1, 8) * .4; if (x === 0 || y === 0) n *= .9; }
       else if (kd === K.STONE) n = .82 + h2(gx >> 1, gy, 9) * .32;
-      else if (kd === K.PADDY) n = (y % 4 === 0) ? .78 : 1.02 + h2(gx, gy, 3) * .06;
+      else if (kd === K.PADDY) n = (gy % 3 === 0) ? .8 : 1.02 + h2(gx, gy, 3) * .06;
       else if (kd === K.WATER) { n = .97 + h2(gx, gy, 3) * .06; if (h2(gx >> 2, gy, 12) < .018) n = 1.18; }
       const o = (gy * PW + gx) * 4;
       px[o] = Math.min(255, cr * n); px[o + 1] = Math.min(255, cg * n); px[o + 2] = Math.min(255, cb * n); px[o + 3] = 255;
@@ -98,15 +99,23 @@ export function renderWorld(atlas, cells = classifyCells(atlas)) {
   // Dark block edges on province borders (darker on the national border)
   const darken = (gx, gy, f) => { const o = (gy * PW + gx) * 4; px[o] *= f; px[o + 1] *= f; px[o + 2] *= f; };
   const isBorder = (v, u) => v !== u && (v >= 0 || u >= 0) && v !== -1 && u !== -1;
+  // province borders: 1 px line; national border: 2 px, darker
+  const edge = (v, u, near, far) => {
+    const national = v < 0 || u < 0;
+    for (let i = 0; i < B; i++) {
+      darken(...far(i), national ? .4 : .6);
+      if (national) darken(...near(i), .4);
+    }
+  };
   for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
     const v = grid[r * W + c];
     if (c + 1 < W) {
       const u = grid[r * W + c + 1];
-      if (isBorder(v, u)) { const f = (v >= 0 && u >= 0) ? .55 : .35; for (let y = 0; y < B; y++) { darken(c * B + B - 1, r * B + y, f); darken((c + 1) * B, r * B + y, f); } }
+      if (isBorder(v, u)) edge(v, u, y => [c * B + B - 1, r * B + y], y => [(c + 1) * B, r * B + y]);
     }
     if (r + 1 < H) {
       const u = grid[(r + 1) * W + c];
-      if (isBorder(v, u)) { const f = (v >= 0 && u >= 0) ? .55 : .35; for (let x = 0; x < B; x++) { darken(c * B + x, r * B + B - 1, f); darken(c * B + x, (r + 1) * B, f); } }
+      if (isBorder(v, u)) edge(v, u, x => [c * B + x, r * B + B - 1], x => [c * B + x, (r + 1) * B]);
     }
   }
   wx.putImageData(img, 0, 0);

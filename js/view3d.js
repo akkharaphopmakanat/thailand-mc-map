@@ -11,6 +11,7 @@ const MIN_Y = -16;                                 // bottom of the world slab
 const SHADE = { top: 1, ns: .8, ew: .62 };         // Minecraft-style face brightness
 const DIRT = [134, 96, 67], LOG = [102, 76, 44];
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MAX_DPR = 1.5;                               // cap render resolution for a steady frame rate
 
 let threePromise = null;
 function loadThree() {
@@ -39,18 +40,21 @@ class View3D {
     Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, world, onHover, onClick });
     const { W, H } = atlas.map;
     this.W = W; this.H = H;
-    this.metresPerBlock = 60;
+    this.SC = .04 / atlas.map.S;                     // blocks per 0.04° (camera and icon sizes scale with it)
+    this.metresPerBlock = 40;
     this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1;
     this.active = false; this.tween = null;
     // orbit camera around a ground target (block coordinates, centred on the map)
-    this.orbit = { x: 0, z: 40, yaw: 0, pitch: .9, dist: 330 };
+    this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
+    this.orbit = { ...this.home };
+    this.maxDist = 900 * this.SC;
 
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR));
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(SKY);
-    this.scene.fog = new THREE.Fog(SKY, 260, 900);
-    this.camera = new THREE.PerspectiveCamera(50, 1, .5, 3000);
+    this.scene.fog = new THREE.Fog(SKY, 260 * this.SC, 900 * this.SC);
+    this.camera = new THREE.PerspectiveCamera(50, 1, .5, 3000 * this.SC);
 
     this._buildTerrain();
     this._buildWater();
@@ -64,21 +68,22 @@ class View3D {
   /** Column height in blocks for block k at the current vertical scale. */
   _height(k) {
     const e = this.cells.elev[k];
-    if (this.cells.kind[k] === KIND.WATER) return -Math.max(1, Math.round(Math.sqrt(-e) / 4));
+    if (this.cells.kind[k] === KIND.WATER) return -Math.max(1, Math.round(Math.sqrt(-e) / 5));   // coarse seabed steps: fewer faces
     return Math.max(1, Math.round(e / this.metresPerBlock));
   }
 
   _buildTerrain() {
-    const { T, W, H, cells } = this;
+    const { T, W, H, cells, atlas } = this;
     const { kind, col } = cells;
+    const grid = atlas.grid;
     const N = W * H;
     const hb = this.hb = new Int16Array(N);
     for (let k = 0; k < N; k++) hb[k] = this._height(k);
     const at = (r, c) => (r < 0 || c < 0 || r >= H || c >= W) ? MIN_Y : hb[r * W + c];
 
     // Two meshes: land tops textured with the 2D terrain canvas (roads, borders, grass detail),
-    // and everything else (sides, seabed) in flat vertex colours.
-    // Two passes each: count quads, then fill typed arrays.
+    // and walls + seabed in flat vertex colours. Neighbouring faces with the same height and
+    // look are merged into strips to keep the vertex count down.
     const count = [0, 0];
     let buf = null;
     const quad = (m, v, rgb, f, uv) => {
@@ -92,39 +97,81 @@ class View3D {
       return q;
     };
     const WHITE = [255, 255, 255];
+    const isLeafy = kd => kd === KIND.TREE || kd === KIND.FOREIGN_TREE;
+    const isGrassy = kd => kd === KIND.GRASS || kd === KIND.PADDY || kd === KIND.FOREIGN;
+    const topRGB = k => kind[k] === KIND.WATER
+      ? (hb[k] > -3 ? [196, 182, 132] : [128, 124, 118])        // sand shallows, gravel deeper
+      : [col[k * 3], col[k * 3 + 1], col[k * 3 + 2]];
+    const sideRGB = k => kind[k] === KIND.WATER ? [150, 140, 110] : isGrassy(kind[k]) ? DIRT : topRGB(k);
+
+    // Wall between block k (height h) and a lower neighbour at height hn, as strips of `len` blocks.
+    // wallVerts(lo, hi) gives the quad corners for the whole strip.
+    const wall = (k, hn, f, wallVerts) => {
+      const h = hb[k], kd = kind[k], jit = .95 + h2(k, 1, 17) * .1;
+      if ((isGrassy(kd) || isLeafy(kd)) && h - hn >= 1) {
+        const lip = isLeafy(kd) ? .6 : .2;
+        quad(1, wallVerts(h - lip, h), topRGB(k), f * jit);
+        quad(1, wallVerts(hn, h - lip), isLeafy(kd) ? LOG : sideRGB(k), f * jit);
+      } else {
+        quad(1, wallVerts(hn, h), sideRGB(k), f * jit);
+      }
+    };
+    // Cells merge into a strip when they look identical: same height, kind, province and neighbour height
+    const sameLook = (a, b) => hb[a] === hb[b] && kind[a] === kind[b] && grid[a] === grid[b];
+
     const pass = () => {
       count[0] = count[1] = 0;
-      for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
-        const k = r * W + c, h = hb[k], kd = kind[k];
-        const x0 = c - W / 2, x1 = x0 + 1, z0 = r - H / 2, z1 = z0 + 1;
-        const jit = .95 + h2(c, r, 17) * .1;
-        const top = [col[k * 3], col[k * 3 + 1], col[k * 3 + 2]];
-        const topV = [x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0];
-        if (kd === KIND.WATER) {
-          quad(1, topV, h > -3 ? [196, 182, 132] : [128, 124, 118], jit);   // sand shallows, gravel deeper
-        } else {
-          const u0 = c / W, u1 = (c + 1) / W, v0 = 1 - r / H, v1 = 1 - (r + 1) / H;
-          const tq = quad(0, topV, WHITE, jit, [u0, v0, u0, v1, u1, v1, u1, v0]);
-          if (buf) this._topQuad[k] = tq;
-        }
-        const grassy = kd === KIND.GRASS || kd === KIND.PADDY || kd === KIND.FOREIGN;
-        const leafy = kd === KIND.TREE || kd === KIND.FOREIGN_TREE;
-        const side = kd === KIND.WATER ? [150, 140, 110] : grassy ? DIRT : top;
-        // four sides where the neighbour is lower
-        const sides = [
-          [at(r - 1, c), SHADE.ns, (lo, hi) => [x1, lo, z0, x1, hi, z0, x0, hi, z0, x0, lo, z0]],
-          [at(r + 1, c), SHADE.ns, (lo, hi) => [x0, lo, z1, x0, hi, z1, x1, hi, z1, x1, lo, z1]],
-          [at(r, c - 1), SHADE.ew, (lo, hi) => [x0, lo, z0, x0, hi, z0, x0, hi, z1, x0, lo, z1]],
-          [at(r, c + 1), SHADE.ew, (lo, hi) => [x1, lo, z1, x1, hi, z1, x1, hi, z0, x1, lo, z0]],
-        ];
-        for (const [hn, f, v] of sides) {
-          if (hn >= h) continue;
-          if ((grassy || leafy) && h - hn >= 1) {
-            // grass/leaf lip on top, dirt or log below
-            quad(1, v(h - (leafy ? .6 : .2), h), top, f * jit);
-            quad(1, v(hn, h - (leafy ? .6 : .2)), leafy ? LOG : side, f * jit);
+      // Rows: tops, north and south walls
+      for (let r = 0; r < H; r++) {
+        const z0 = r - H / 2, z1 = z0 + 1;
+        // tops
+        for (let c = 0; c < W;) {
+          const k = r * W + c;
+          let e = c + 1;
+          while (e < W && sameLook(r * W + e, k)) e++;
+          const h = hb[k], x0 = c - W / 2, x1 = e - W / 2;
+          const topV = [x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0];
+          if (kind[k] === KIND.WATER) {
+            quad(1, topV, topRGB(k), 1);
           } else {
-            quad(1, v(hn, h), side, f * jit);
+            const u0 = c / W, u1 = e / W, v0 = 1 - r / H, v1 = 1 - (r + 1) / H;
+            const tq = quad(0, topV, WHITE, 1, [u0, v0, u0, v1, u1, v1, u1, v0]);
+            if (buf) for (let i = c; i < e; i++) this._topQuad[r * W + i] = tq;
+          }
+          c = e;
+        }
+        // north (dr = -1) and south (dr = +1) walls
+        for (const [dr, f] of [[-1, SHADE.ns], [1, SHADE.ns]]) {
+          const z = dr < 0 ? z0 : z1;
+          for (let c = 0; c < W;) {
+            const k = r * W + c, hn = at(r + dr, c);
+            let e = c + 1;
+            while (e < W && sameLook(r * W + e, k) && at(r + dr, e) === hn) e++;
+            if (hn < hb[k]) {
+              const xa = c - W / 2, xb = e - W / 2;
+              wall(k, hn, f, dr < 0
+                ? (lo, hi) => [xb, lo, z, xb, hi, z, xa, hi, z, xa, lo, z]
+                : (lo, hi) => [xa, lo, z, xa, hi, z, xb, hi, z, xb, lo, z]);
+            }
+            c = e;
+          }
+        }
+      }
+      // Columns: west and east walls
+      for (let c = 0; c < W; c++) {
+        for (const [dc, f] of [[-1, SHADE.ew], [1, SHADE.ew]]) {
+          const x = (dc < 0 ? c : c + 1) - W / 2;
+          for (let r = 0; r < H;) {
+            const k = r * W + c, hn = at(r, c + dc);
+            let e = r + 1;
+            while (e < H && sameLook(e * W + c, k) && at(e, c + dc) === hn) e++;
+            if (hn < hb[k]) {
+              const za = r - H / 2, zb = e - H / 2;
+              wall(k, hn, f, dc < 0
+                ? (lo, hi) => [x, lo, za, x, hi, za, x, hi, zb, x, lo, zb]
+                : (lo, hi) => [x, lo, zb, x, hi, zb, x, hi, za, x, lo, za]);
+            }
+            r = e;
           }
         }
       }
@@ -166,6 +213,7 @@ class View3D {
       this.scene.add(mesh);
       return mesh;
     });
+    this.quadCount = count[0] + count[1];
     this._applyHighlight();
   }
 
@@ -204,16 +252,16 @@ class View3D {
     const { W } = this;
     this.icons.forEach((s, i) => {
       const { r, c } = s.userData;
-      s.userData.base = Math.max(this.hb[r * W + c], 0) + 4;
+      s.userData.base = Math.max(this.hb[r * W + c], 0) + 4 * this.SC;
       const big = i === this.selected || i === this.hover;
-      const z = big ? 7 : 5;
+      const z = (big ? 7 : 5) * this.SC;
       s.scale.set(z, z, 1);
       s.visible = !(i === this.selected && this.districtIcons.length);
     });
     for (const s of this.districtIcons) {
       const { r, c } = s.userData;
-      s.userData.base = Math.max(this.hb[r * W + c], 0) + 2.2;
-      const z = s.userData.k === this.dFocus ? 3.4 : 2.4;
+      s.userData.base = Math.max(this.hb[r * W + c], 0) + 2.2 * this.SC;
+      const z = (s.userData.k === this.dFocus ? 3.4 : 2.4) * this.SC;
       s.scale.set(z, z, 1);
     }
   }
@@ -267,11 +315,13 @@ class View3D {
     const clr = tops.clr;
     clr.set(base);
     const sel = this.selected;
+    const done = new Set();
     if (sel >= 0) {
       const b = atlas.provinces[sel].bb;
       for (let r = b[1]; r <= b[3]; r++) for (let c = b[0]; c <= b[2]; c++) {
         const k = r * W + c;
-        if (atlas.grid[k] !== sel || tq[k] < 0) continue;
+        if (atlas.grid[k] !== sel || tq[k] < 0 || done.has(tq[k])) continue;
+        done.add(tq[k]);
         let mix = .3;
         if (this.layer && this.dFocus >= 0 && this.layer.hit((c + .5) * B, (r + .5) * B) === this.dFocus) mix = .7;
         const o = tq[k] * 12;
@@ -308,18 +358,18 @@ class View3D {
   focusProvince(i) {
     const b = this.atlas.provinces[i].bb;
     const size = Math.max(b[2] - b[0], b[3] - b[1]) + 1;
-    this._goTo({ x: (b[0] + b[2] + 1) / 2 - this.W / 2, z: (b[1] + b[3] + 1) / 2 - this.H / 2 + size * .15, dist: size * 1.9 + 30 });
+    this._goTo({ x: (b[0] + b[2] + 1) / 2 - this.W / 2, z: (b[1] + b[3] + 1) / 2 - this.H / 2 + size * .15, dist: size * 1.9 + 30 * this.SC });
   }
 
   focusDistrict(k) {
     const b = this.layer?.bb[k];
     if (!b || !isFinite(b[0])) return;
     const size = Math.max(b[2] - b[0], b[3] - b[1]) / B;
-    this._goTo({ x: (b[0] + b[2]) / 2 / B - this.W / 2, z: (b[1] + b[3]) / 2 / B - this.H / 2, dist: size * 2.4 + 18 });
+    this._goTo({ x: (b[0] + b[2]) / 2 / B - this.W / 2, z: (b[1] + b[3]) / 2 / B - this.H / 2, dist: size * 2.4 + 18 * this.SC });
   }
 
-  fit() { this._goTo({ x: 0, z: 40, yaw: 0, pitch: .9, dist: 330 }); }
-  zoom(f) { this.tween = null; this.orbit.dist = Math.min(900, Math.max(12, this.orbit.dist / f)); }
+  fit() { this._goTo({ ...this.home }); }
+  zoom(f) { this.tween = null; this.orbit.dist = Math.min(this.maxDist, Math.max(12, this.orbit.dist / f)); }
 
   _updateCamera() {
     const o = this.orbit;
@@ -344,7 +394,7 @@ class View3D {
     ray.setFromCamera(ndc, this.camera);
     const o = ray.ray.origin, d = ray.ray.direction;
     const { W, H } = this;
-    for (let t = 0; t < 2500; t += .35) {
+    for (let t = 0; t < 2500 * this.SC; t += .35) {
       const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
       const c = Math.floor(x + W / 2), r = Math.floor(z + H / 2);
       if (c < 0 || r < 0 || c >= W || r >= H) { if (y < MIN_Y) return null; continue; }
@@ -384,7 +434,7 @@ class View3D {
       if (pinch && pts.size >= 2) {
         const [a, b] = [...pts.values()];
         const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        o.dist = Math.min(900, Math.max(12, pinch.dist * pinch.d / d));
+        o.dist = Math.min(this.maxDist, Math.max(12, pinch.dist * pinch.d / d));
         this._pan(mx - pinch.mx, my - pinch.my);
         pinch.mx = mx; pinch.my = my;
         return;
@@ -432,7 +482,7 @@ class View3D {
     cv.addEventListener('wheel', e => {
       e.preventDefault();
       this.tween = null;
-      this.orbit.dist = Math.min(900, Math.max(12, this.orbit.dist * Math.exp(e.deltaY * (e.deltaMode === 1 ? .04 : .0012))));
+      this.orbit.dist = Math.min(this.maxDist, Math.max(12, this.orbit.dist * Math.exp(e.deltaY * (e.deltaMode === 1 ? .04 : .0012))));
     }, { passive: false });
   }
 
@@ -456,7 +506,7 @@ class View3D {
       for (const key of ['x', 'z', 'yaw', 'pitch', 'dist']) this.orbit[key] = tw.a[key] + (tw.b[key] - tw.a[key]) * e;
       if (k >= 1) this.tween = null;
     }
-    const bob = i => reduced ? 0 : Math.sin(t / 520 + i * 1.7) * .35;
+    const bob = i => reduced ? 0 : Math.sin(t / 520 + i * 1.7) * .35 * this.SC;
     this.icons.forEach((s, i) => { s.position.y = s.userData.base + bob(i); });
     this.districtIcons.forEach((s, i) => { s.position.y = s.userData.base + bob(i) * .6; });
     this._updateCamera();
