@@ -5,7 +5,9 @@ Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
 A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
-Switch to the **3D** view to fly over real terrain built from elevation data.
+Highways are drawn as stone paths and smaller roads as dirt paths (with oak-plank
+bridges over water). Switch to the **3D** view to fly over real terrain built from
+elevation data.
 
 ## Run it
 
@@ -40,6 +42,7 @@ js/
   f3.js                     F3 debug overlay (lat/lon, biome, province, district)
 data/
   sources.json              data references and credits
+  roads.json                highways / roads as world-pixel polylines                  [generated]
   elevation.json            real mean elevation / sea depth per block (int16, base64)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
   map.json                  country block grid (0.04° ≈ 4.4 km), anchors, neighbours  [generated]
@@ -93,6 +96,7 @@ which the page's Credits panel is built from.
 | Province boundaries | [apisit/thailand.json](https://github.com/apisit/thailand.json) | none stated | Province outlines (`data/map.json`) |
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) THA ADM2, gbOpen — Royal Thai Survey Department / OCHA ROAP | CC BY 3.0 IGO | District outlines (`districts.json`) |
 | District and sub-district names, postcodes | [kongvut/thai-province-data](https://github.com/kongvut/thai-province-data) by Kongvut Sangkla | MIT | Names and postcodes (`districts.json`, `subdistricts.json`) |
+| Roads | [Natural Earth](https://www.naturalearthdata.com/) 1:10m roads | public domain | `roads.json`: highways as stone paths, roads as dirt paths |
 | Elevation and sea depth | [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) (Mapzen terrarium; SRTM, GMTED, ETOPO1 and others) | public, attribution required | `elevation.json`, 2D relief, 3D view |
 
 geoBoundaries citation: Runfola, D. et al. (2020) *geoBoundaries: A global database of

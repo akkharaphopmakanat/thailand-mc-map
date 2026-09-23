@@ -9,12 +9,14 @@ data/sprites.json; this script never touches them. It (re)writes:
   data/provinces/<slug>/districts.json        amphoe / khet raster + names
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
   data/elevation.json                         mean height (m) per map block, land and sea
+  data/roads.json                             highways and roads as world-pixel polylines
 
 Sources (downloaded into tools/.cache on first run):
   th.json       province polygons      github.com/apisit/thailand.json
   adm2.geojson  district polygons      geoBoundaries THA ADM2 (CC BY 3.0 IGO)
   pds.json      Thai admin names       github.com/kongvut/thai-province-data (MIT)
   terrarium/    elevation tiles, z7    AWS Terrain Tiles (Mapzen terrarium encoding)
+  ne_10m_roads.geojson  roads          Natural Earth 1:10m roads (public domain)
 
 Usage: python3 tools/build_data.py
 """
@@ -31,6 +33,7 @@ SOURCES = {
     'th.json': 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json',
     'adm2.geojson': 'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson',
     'pds.json': 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json',
+    'ne_10m_roads.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_roads.geojson',
 }
 
 # Country grid: 0.04° blocks (~4.4 km)
@@ -104,6 +107,50 @@ def build_elevation():
     })
     print(f'elevation.json: {heights.min()} .. {heights.max()} m')
     return heights.astype(int).tolist()
+
+
+# ---------------------------------------------------------------- roads
+WORLD_PX = 8  # must match B in js/config.js: world pixels per block
+
+
+def simplify(pts, tol):
+    """Douglas–Peucker line simplification."""
+    if len(pts) < 3:
+        return pts
+    (x0, y0), (x1, y1) = pts[0], pts[-1]
+    dx, dy = x1 - x0, y1 - y0
+    norm = math.hypot(dx, dy) or 1e-12
+    best, bi = 0, 0
+    for i in range(1, len(pts) - 1):
+        d = abs(dy * (pts[i][0] - x0) - dx * (pts[i][1] - y0)) / norm
+        if d > best:
+            best, bi = d, i
+    if best <= tol:
+        return [pts[0], pts[-1]]
+    return simplify(pts[:bi + 1], tol)[:-1] + simplify(pts[bi:], tol)
+
+
+def build_roads():
+    """Natural Earth roads inside the map, in world pixels. scalerank ≤ 5 or expressway → highway."""
+    px = WORLD_PX / S
+    out = {'highway': [], 'road': []}
+    for f in source('ne_10m_roads.geojson')['features']:
+        g = f['geometry']
+        if not g:
+            continue
+        lines = g['coordinates'] if g['type'] == 'MultiLineString' else [g['coordinates']]
+        p = f['properties']
+        cls = 'highway' if (p.get('scalerank') or 99) <= 5 or p.get('expressway') == 1 else 'road'
+        for line in lines:
+            if not any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in line):
+                continue
+            pts = simplify([(x, y) for x, y in line], 0.004)
+            flat = []
+            for x, y in pts:
+                flat += [round((x - LON0) * px), round((LAT1 - y) * px)]
+            out[cls].append(flat)
+    dump(os.path.join(DATA, 'roads.json'), {'units': 'world px (8 per 0.04° block)', **out})
+    print(f"roads.json: {len(out['highway'])} highway lines, {len(out['road'])} road lines")
 
 
 def polygons(geom):
@@ -476,6 +523,7 @@ def main():
     slugs = [by_dataset[f['properties']['name']] for f in th]
     grid = build_map(th, slugs)
     heights = build_elevation()
+    build_roads()
     sea = [[grid[r][c] == -1 and not is_foreign(LAT1 - (r + .5) * S, LON0 + (c + .5) * S)
             for c in range(len(grid[0]))] for r in range(len(grid))]
     # district sprites: shared library plus every province's own item sprite

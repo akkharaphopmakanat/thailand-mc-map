@@ -10,10 +10,14 @@ async function json(url) {
 
 /**
  * @param {(done: number, total: number) => void} [onProgress]
- * @returns {Promise<{map: object, grid: Int16Array, provinces: object[], elev: Int16Array|null}>}
+ * @returns {Promise<{map: object, grid: Int16Array, provinces: object[], roads: object|null, elev: Int16Array|null}>}
  */
 export async function loadAtlas(onProgress = () => {}) {
-  const [map, elevation] = await Promise.all([json('data/map.json'), json('data/elevation.json').catch(() => null)]);
+  const [map, elevation, roads] = await Promise.all([
+    json('data/map.json'),
+    json('data/elevation.json').catch(() => null),
+    json('data/roads.json').catch(() => null),
+  ]);
   const grid = decodeRows(map.rows, map.W, map.H, map.chars, { '.': -1, ',': -2 });
   let done = 0;
   const total = map.provinces.length;
@@ -34,7 +38,7 @@ export async function loadAtlas(onProgress = () => {}) {
       if (r > b[3]) b[3] = r;
     }
   }
-  return { map, grid, provinces, elev: elevation ? decodeInt16(elevation.data) : null };
+  return { map, grid, provinces, roads, elev: elevation ? decodeInt16(elevation.data) : null };
 }
 
 /** base64 little-endian int16 → Int16Array (metres per block, negative = sea depth). */

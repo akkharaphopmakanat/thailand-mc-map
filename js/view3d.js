@@ -33,10 +33,10 @@ export async function createView3D(opts) {
 class View3D {
   /**
    * @param {object} THREE
-   * @param {object} o  {canvas, wrap, atlas, cells, onHover, onClick}
+   * @param {object} o  {canvas, wrap, atlas, cells, world (2D terrain, used as top texture), onHover, onClick}
    */
-  constructor(THREE, { canvas, wrap, atlas, cells, onHover, onClick }) {
-    Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, onHover, onClick });
+  constructor(THREE, { canvas, wrap, atlas, cells, world, onHover, onClick }) {
+    Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, world, onHover, onClick });
     const { W, H } = atlas.map;
     this.W = W; this.H = H;
     this.metresPerBlock = 60;
@@ -76,32 +76,40 @@ class View3D {
     for (let k = 0; k < N; k++) hb[k] = this._height(k);
     const at = (r, c) => (r < 0 || c < 0 || r >= H || c >= W) ? MIN_Y : hb[r * W + c];
 
-    // Two passes: count quads, then fill typed arrays
-    let quads = 0;
-    const pass = (fill) => {
-      let q = 0;
-      const pos = fill && this._pos, clr = fill && this._clr;
-      const quad = (ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz, rgb, f) => {
-        if (fill) {
-          const o = q * 12;
-          pos.set([ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz], o);
-          const r = rgb[0] * f / 255, g = rgb[1] * f / 255, b = rgb[2] * f / 255;
-          for (let i = 0; i < 4; i++) { clr[o + i * 3] = r; clr[o + i * 3 + 1] = g; clr[o + i * 3 + 2] = b; }
-        }
-        return q++;
-      };
+    // Two meshes: land tops textured with the 2D terrain canvas (roads, borders, grass detail),
+    // and everything else (sides, seabed) in flat vertex colours.
+    // Two passes each: count quads, then fill typed arrays.
+    const count = [0, 0];
+    let buf = null;
+    const quad = (m, v, rgb, f, uv) => {
+      const q = count[m]++;
+      if (!buf) return q;
+      const b = buf[m], o = q * 12;
+      b.pos.set(v, o);
+      const r = rgb[0] * f / 255, g = rgb[1] * f / 255, bl = rgb[2] * f / 255;
+      for (let i = 0; i < 4; i++) { b.clr[o + i * 3] = r; b.clr[o + i * 3 + 1] = g; b.clr[o + i * 3 + 2] = bl; }
+      if (uv) b.uv.set(uv, q * 8);
+      return q;
+    };
+    const WHITE = [255, 255, 255];
+    const pass = () => {
+      count[0] = count[1] = 0;
       for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
         const k = r * W + c, h = hb[k], kd = kind[k];
         const x0 = c - W / 2, x1 = x0 + 1, z0 = r - H / 2, z1 = z0 + 1;
-        const jit = .94 + h2(c, r, 17) * .12;
-        const top = kd === KIND.WATER
-          ? (h > -3 ? [196, 182, 132] : [128, 124, 118])      // sand shallows, gravel deeper
-          : [col[k * 3], col[k * 3 + 1], col[k * 3 + 2]];
-        const tq = quad(x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0, top, SHADE.top * jit);
-        if (fill) this._topQuad[k] = tq;
+        const jit = .95 + h2(c, r, 17) * .1;
+        const top = [col[k * 3], col[k * 3 + 1], col[k * 3 + 2]];
+        const topV = [x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0];
+        if (kd === KIND.WATER) {
+          quad(1, topV, h > -3 ? [196, 182, 132] : [128, 124, 118], jit);   // sand shallows, gravel deeper
+        } else {
+          const u0 = c / W, u1 = (c + 1) / W, v0 = 1 - r / H, v1 = 1 - (r + 1) / H;
+          const tq = quad(0, topV, WHITE, jit, [u0, v0, u0, v1, u1, v1, u1, v0]);
+          if (buf) this._topQuad[k] = tq;
+        }
         const grassy = kd === KIND.GRASS || kd === KIND.PADDY || kd === KIND.FOREIGN;
-        const side = kd === KIND.TREE || kd === KIND.FOREIGN_TREE ? top
-          : grassy ? DIRT : top;
+        const leafy = kd === KIND.TREE || kd === KIND.FOREIGN_TREE;
+        const side = kd === KIND.WATER ? [150, 140, 110] : grassy ? DIRT : top;
         // four sides where the neighbour is lower
         const sides = [
           [at(r - 1, c), SHADE.ns, (lo, hi) => [x1, lo, z0, x1, hi, z0, x0, hi, z0, x0, lo, z0]],
@@ -111,38 +119,53 @@ class View3D {
         ];
         for (const [hn, f, v] of sides) {
           if (hn >= h) continue;
-          if (grassy && h - hn >= 1) {
-            // grass-block side: thin green lip, dirt below
-            quad(...v(h - .2, h), top, f * jit);
-            quad(...v(hn, h - .2), side, f * jit);
+          if ((grassy || leafy) && h - hn >= 1) {
+            // grass/leaf lip on top, dirt or log below
+            quad(1, v(h - (leafy ? .6 : .2), h), top, f * jit);
+            quad(1, v(hn, h - (leafy ? .6 : .2)), leafy ? LOG : side, f * jit);
           } else {
-            quad(...v(hn, h), kd === KIND.TREE || kd === KIND.FOREIGN_TREE ? LOG : side, f * jit);
+            quad(1, v(hn, h), side, f * jit);
           }
         }
       }
-      return q;
     };
-    quads = pass(false);
-    this._pos = new Float32Array(quads * 12);
-    this._clr = new Float32Array(quads * 12);
-    this._topQuad = new Int32Array(N);
-    pass(true);
-    this._baseClr = this._clr.slice();
+    pass();
+    const mk = (n, uv) => ({ n, pos: new Float32Array(n * 12), clr: new Float32Array(n * 12), uv: uv ? new Float32Array(n * 8) : null });
+    buf = [mk(count[0], true), mk(count[1], false)];
+    this._topQuad = new Int32Array(N).fill(-1);
+    pass();
+    this._tops = buf[0];
+    this._baseClr = buf[0].clr.slice();
 
-    const idx = new Uint32Array(quads * 6);
-    for (let q = 0; q < quads; q++) {
-      const v = q * 4, o = q * 6;
-      idx[o] = v; idx[o + 1] = v + 1; idx[o + 2] = v + 2; idx[o + 3] = v; idx[o + 4] = v + 2; idx[o + 5] = v + 3;
+    const geometry = (b) => {
+      const idx = new Uint32Array(b.n * 6);
+      for (let q = 0; q < b.n; q++) {
+        const v = q * 4, o = q * 6;
+        idx[o] = v; idx[o + 1] = v + 1; idx[o + 2] = v + 2; idx[o + 3] = v; idx[o + 4] = v + 2; idx[o + 5] = v + 3;
+      }
+      const geo = new T.BufferGeometry();
+      geo.setAttribute('position', new T.BufferAttribute(b.pos, 3));
+      geo.setAttribute('color', b.attr = new T.BufferAttribute(b.clr, 3));
+      if (b.uv) geo.setAttribute('uv', new T.BufferAttribute(b.uv, 2));
+      geo.setIndex(new T.BufferAttribute(idx, 1));
+      return geo;
+    };
+    if (!this.topMat) {
+      const tex = new T.CanvasTexture(this.world.canvas);
+      tex.magFilter = T.NearestFilter;
+      tex.minFilter = T.LinearMipmapLinearFilter;
+      tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+      this.topMat = new T.MeshBasicMaterial({ map: tex, vertexColors: true, side: T.DoubleSide });
+      this.sideMat = new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide });
     }
-    const geo = new T.BufferGeometry();
-    geo.setAttribute('position', new T.BufferAttribute(this._pos, 3));
-    geo.setAttribute('color', this._clrAttr = new T.BufferAttribute(this._clr, 3));
-    geo.setIndex(new T.BufferAttribute(idx, 1));
-    if (this.terrain) { this.scene.remove(this.terrain); this._geo.dispose(); }
-    this._geo = geo;
-    // winding differs between faces, so render both sides
-    this.terrain = new T.Mesh(geo, this.terrainMat ??= new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide }));
-    this.scene.add(this.terrain);
+    for (const m of this.meshes || []) { this.scene.remove(m); m.userData.geo.dispose(); }
+    this.meshes = [[buf[0], this.topMat], [buf[1], this.sideMat]].map(([b, mat]) => {
+      const geo = geometry(b);
+      const mesh = new T.Mesh(geo, mat);
+      mesh.userData.geo = geo;
+      this.scene.add(mesh);
+      return mesh;
+    });
     this._applyHighlight();
   }
 
@@ -239,26 +262,27 @@ class View3D {
 
   /** Tint the tops of the selected province (and focused district) yellow. */
   _applyHighlight() {
-    if (!this._clr) return;
-    const { W, H, atlas, _clr: clr, _baseClr: base, _topQuad: tq } = this;
+    if (!this._tops) return;
+    const { W, atlas, _tops: tops, _baseClr: base, _topQuad: tq } = this;
+    const clr = tops.clr;
     clr.set(base);
     const sel = this.selected;
     if (sel >= 0) {
       const b = atlas.provinces[sel].bb;
       for (let r = b[1]; r <= b[3]; r++) for (let c = b[0]; c <= b[2]; c++) {
         const k = r * W + c;
-        if (atlas.grid[k] !== sel) continue;
-        let mix = .22;
-        if (this.layer && this.dFocus >= 0 && this.layer.hit((c + .5) * B, (r + .5) * B) === this.dFocus) mix = .55;
+        if (atlas.grid[k] !== sel || tq[k] < 0) continue;
+        let mix = .3;
+        if (this.layer && this.dFocus >= 0 && this.layer.hit((c + .5) * B, (r + .5) * B) === this.dFocus) mix = .7;
         const o = tq[k] * 12;
         for (let i = 0; i < 12; i += 3) {
-          clr[o + i] += (1 - clr[o + i]) * mix;
-          clr[o + i + 1] += (1 - clr[o + i + 1]) * mix;
-          clr[o + i + 2] += (.35 - clr[o + i + 2]) * mix;
+          clr[o + i] = clr[o + i] * (1 - mix) + 1.15 * mix;
+          clr[o + i + 1] = clr[o + i + 1] * (1 - mix) + 1.1 * mix;
+          clr[o + i + 2] = clr[o + i + 2] * (1 - mix) + .45 * mix;
         }
       }
     }
-    this._clrAttr.needsUpdate = true;
+    tops.attr.needsUpdate = true;
   }
 
   /* ---------------- camera ---------------- */

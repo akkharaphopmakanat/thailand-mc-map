@@ -93,6 +93,8 @@ export function renderWorld(atlas, cells = classifyCells(atlas)) {
     }
   }
 
+  if (atlas.roads) paintRoads(atlas.roads, px, PW, W * B, H * B, kind, W);
+
   // Dark block edges on province borders (darker on the national border)
   const darken = (gx, gy, f) => { const o = (gy * PW + gx) * 4; px[o] *= f; px[o + 1] *= f; px[o + 2] *= f; };
   const isBorder = (v, u) => v !== u && (v >= 0 || u >= 0) && v !== -1 && u !== -1;
@@ -110,6 +112,46 @@ export function renderWorld(atlas, cells = classifyCells(atlas)) {
   wx.putImageData(img, 0, 0);
 
   return { canvas, ctx: wx, paths: provincePaths(map, grid, provinces.length) };
+}
+
+/**
+ * Stamp roads into the terrain pixels: cobblestone highways (3 px), dirt-path roads (2 px),
+ * oak-plank bridges where a road crosses water. One world pixel is about 550 m.
+ */
+function paintRoads(roads, px, PW, pw, ph, kind, W) {
+  const paint = (x, y, style) => {
+    if (x < 0 || y < 0 || x >= pw || y >= ph) return;
+    const o = (y * PW + x) * 4;
+    const water = kind[((y / B) | 0) * W + ((x / B) | 0)] === K.WATER;
+    let rgb, n;
+    if (water) { rgb = [162, 130, 78]; n = (y % 3 === 0) ? .72 : .92 + h2(x >> 2, y, 41) * .12; }
+    else if (style === 'highway') { rgb = [126, 126, 126]; n = h2(x, y, 43) < .22 ? .62 : .82 + h2(x >> 1, y >> 1, 44) * .34; }
+    else { rgb = [150, 122, 68]; n = .88 + h2(x, y, 45) * .2; }
+    px[o] = rgb[0] * n; px[o + 1] = rgb[1] * n; px[o + 2] = rgb[2] * n;
+  };
+  const stamp = (x, y, w, style) => {
+    const a = -Math.floor((w - 1) / 2);
+    for (let dy = a; dy < a + w; dy++) for (let dx = a; dx < a + w; dx++) paint(x + dx, y + dy, style);
+  };
+  // roads first so highways sit on top where they overlap
+  for (const [style, w] of [['road', 2], ['highway', 3]]) {
+    for (const line of roads[style] || []) {
+      for (let i = 2; i < line.length; i += 2) {
+        // Bresenham between consecutive points
+        let x0 = line[i - 2], y0 = line[i - 1];
+        const x1 = line[i], y1 = line[i + 1];
+        const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+        let err = dx + dy;
+        for (;;) {
+          stamp(x0, y0, w, style);
+          if (x0 === x1 && y0 === y1) break;
+          const e2 = 2 * err;
+          if (e2 >= dy) { err += dy; x0 += sx; }
+          if (e2 <= dx) { err += dx; y0 += sy; }
+        }
+      }
+    }
+  }
 }
 
 /** Outline (edge) and fill paths per province in world pixels. */

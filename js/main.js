@@ -118,7 +118,7 @@ $('mode').onclick = async () => {
     if (!view3d) {
       btn.disabled = true; btn.textContent = 'Loading…';
       try {
-        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, ...handlers });
+        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, world, ...handlers });
       } catch (err) {
         btn.disabled = false; btn.textContent = '3D';
         $('hint').textContent = `3D view unavailable: ${err.message}`;

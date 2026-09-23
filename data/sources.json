@@ -38,6 +38,14 @@
       "url": "https://registry.opendata.aws/terrain-tiles/",
       "license": "Public data; attribution to the underlying sources required (see the dataset's attribution page)",
       "used_for": "Mean land elevation and sea depth per map block in data/elevation.json (2D relief and the 3D view)"
+    },
+    {
+      "id": "roads",
+      "title": "Natural Earth 1:10m Cultural Vectors — Roads",
+      "author": "Natural Earth (naturalearthdata.com)",
+      "url": "https://www.naturalearthdata.com/downloads/10m-cultural-vectors/roads/",
+      "license": "Public domain",
+      "used_for": "Highways (stone path) and roads (dirt path) in data/roads.json, drawn in 2D and on 3D block tops"
     }
   ],
   "fonts": [
