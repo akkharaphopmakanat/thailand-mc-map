@@ -16,13 +16,18 @@ export async function renderCredits(el) {
     <h2>Credits</h2>
     <p class="cr-author">Made by ${link(src.author.url, src.author.name)}
       · ${link(src.author.repo, 'source on GitHub')}</p>
-    <h3>Data references</h3>
-    <ul class="cr-list">${src.data.map(d => `
-      <li>${link(d.url, d.title)}<br>
-        <span class="cr-meta">${esc(d.author)} · ${esc(d.license)}</span><br>
-        <span class="cr-use">${esc(d.used_for)}</span>
-        ${d.citation ? `<br><span class="cr-cite">${esc(d.citation)}</span>` : ''}</li>`).join('')}
-    </ul>
+    <h3>Data references <span class="cr-count">${src.data.length}</span></h3>
+    <div class="cr-acc">${src.data.map(d => `
+      <details>
+        <summary>${esc(d.title)}<span class="cr-lic">${esc(d.license)}</span></summary>
+        <div class="cr-body">
+          <p class="cr-meta">${esc(d.author)}</p>
+          <p class="cr-use">${esc(d.used_for)}</p>
+          ${d.citation ? `<p class="cr-cite">${esc(d.citation)}</p>` : ''}
+          <p>${link(d.url, 'Source')}${[].concat(d.download || []).map((u, i) => ` · ${link(u, 'Download' + (i ? ' ' + (i + 1) : ''))}`).join('')}</p>
+        </div>
+      </details>`).join('')}
+    </div>
     <h3>Fonts</h3>
     <p class="cr-fonts">${src.fonts.map(f => `${link(f.url, f.title)} (${esc(f.license)})`).join(' · ')}</p>
     <ul class="cr-notes">${src.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`;
