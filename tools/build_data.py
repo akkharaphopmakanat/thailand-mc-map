@@ -8,7 +8,7 @@ data/sprites.json; this script never touches them. It (re)writes:
   data/map.json                               province block grid for the whole country (0.01° blocks)
   data/provinces/<slug>/districts.json        amphoe / khet raster + names
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
-  data/elevation.json + elevation.bin         mean height (m) per map block, land and sea (int16 LE)
+  data/elevation.json + elevation.png         mean height (m) per map block, land and sea (R*256+G-32768)
   data/roads.json                             highways and roads as world-pixel polylines
 
 Sources (downloaded into tools/.cache on first run):
@@ -80,7 +80,8 @@ def tile_xy(lat, lon, z):
 
 
 def build_elevation():
-    """Mean elevation (metres, negative = sea depth) per 0.01° block, written as raw int16 LE."""
+    """Mean elevation (metres, negative = sea depth) per 0.01° block, as a lossless RGB PNG:
+    metres = R * 256 + G - 32768 (blue unused)."""
     import numpy as np
     from PIL import Image
     W = round((LON1 - LON0) / S); H = round((LAT1 - LAT0) / S)
@@ -111,10 +112,11 @@ def build_elevation():
     fine = mosaic[np.ix_(py, px_)]
     blocks = fine.reshape(H, k, W, k).mean(axis=(1, 3))
     heights = np.round(blocks).astype('<i2')
-    with open(os.path.join(DATA, 'elevation.bin'), 'wb') as f:
-        f.write(heights.tobytes())
+    v = heights.astype(np.int32) + 32768
+    rgb = np.stack([(v >> 8).astype(np.uint8), (v & 255).astype(np.uint8), np.zeros_like(v, dtype=np.uint8)], axis=-1)
+    Image.fromarray(rgb, 'RGB').save(os.path.join(DATA, 'elevation.png'), optimize=True)
     dump(os.path.join(DATA, 'elevation.json'), {
-        'W': W, 'H': H, 'unit': 'm', 'encoding': 'int16le', 'file': 'elevation.bin', 'source': 'terrarium',
+        'W': W, 'H': H, 'unit': 'm', 'encoding': 'png: metres = R * 256 + G - 32768', 'file': 'elevation.png', 'source': 'terrarium',
         'min': int(heights.min()), 'max': int(heights.max()),
     })
     print(f'elevation.json: {heights.min()} .. {heights.max()} m')

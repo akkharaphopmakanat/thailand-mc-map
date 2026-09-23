@@ -43,7 +43,7 @@ js/
 data/
   sources.json              data references and credits
   roads.json                highways / roads as world-pixel polylines                  [generated]
-  elevation.json + .bin     real mean elevation / sea depth per block (raw int16)       [generated]
+  elevation.json + .png     real mean elevation / sea depth per block (R*256+G-32768)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
   map.json                  country block grid (0.01° ≈ 1.1 km), anchors, neighbours  [generated]
   provinces/<slug>/

@@ -41,14 +41,21 @@ export async function loadAtlas(onProgress = () => {}) {
   return { map, grid, provinces, roads, elev: elevation };
 }
 
-/** data/elevation.bin: int16 little-endian metres per block (negative = sea depth). */
+/** data/elevation.png: metres per block = R * 256 + G - 32768 (negative = sea depth). */
 async function loadElevation() {
   const meta = await json('data/elevation.json');
   const res = await fetch(`data/${meta.file}`);
   if (!res.ok) throw new Error(`elevation ${res.status}`);
-  const buf = await res.arrayBuffer();
-  const view = new DataView(buf), out = new Int16Array(buf.byteLength >> 1);
-  for (let i = 0; i < out.length; i++) out[i] = view.getInt16(i * 2, true);
+  const blob = await res.blob();
+  // no colour management or alpha premultiplication, so pixel values stay exact
+  const bmp = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+  const cv = document.createElement('canvas');
+  cv.width = bmp.width; cv.height = bmp.height;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bmp, 0, 0);
+  const px = ctx.getImageData(0, 0, bmp.width, bmp.height).data;
+  const out = new Int16Array(bmp.width * bmp.height);
+  for (let i = 0; i < out.length; i++) out[i] = px[i * 4] * 256 + px[i * 4 + 1] - 32768;
   return out;
 }
 

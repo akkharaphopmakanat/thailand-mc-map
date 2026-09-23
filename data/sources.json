@@ -37,7 +37,7 @@
       "author": "Mapzen / Linux Foundation; includes SRTM and GMTED (NASA/USGS), ETOPO1 (NOAA) and other public sources",
       "url": "https://registry.opendata.aws/terrain-tiles/",
       "license": "Public data; attribution to the underlying sources required (see the dataset's attribution page)",
-      "used_for": "Mean land elevation and sea depth per map block in data/elevation.bin (2D relief and the 3D view)"
+      "used_for": "Mean land elevation and sea depth per map block in data/elevation.png (2D relief and the 3D view)"
     },
     {
       "id": "roads",
