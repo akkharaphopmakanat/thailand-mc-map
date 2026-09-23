@@ -5,8 +5,8 @@ Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
 A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
-Highways are drawn as stone paths and smaller roads as dirt paths (with oak-plank
-bridges over water). Switch to the **3D** view to fly over real terrain built from
+Rivers and reservoirs are drawn as water, highways as stone paths and smaller roads
+as dirt paths (with oak-plank bridges over water). Switch to the **3D** view to fly over real terrain built from
 elevation data.
 
 ## Run it
@@ -43,6 +43,7 @@ js/
 data/
   sources.json              data references and credits
   roads.json                highways / roads as world-pixel polylines                  [generated]
+  rivers.json               rivers (with width and label) and reservoirs, world px     [generated]
   elevation.json + .png     real mean elevation / sea depth per block (R*256+G-32768)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
   map.json                  country block grid (0.01° ≈ 1.1 km), anchors, neighbours  [generated]
@@ -103,6 +104,8 @@ which the page's Credits panel is built from.
 | Province boundaries | [apisit/thailand.json](https://github.com/apisit/thailand.json) | none stated | Province outlines (`data/map.json`) |
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) THA ADM2, gbOpen — Royal Thai Survey Department / OCHA ROAP | CC BY 3.0 IGO | District outlines (`districts.json`) |
 | District and sub-district names, postcodes | [kongvut/thai-province-data](https://github.com/kongvut/thai-province-data) by Kongvut Sangkla | MIT | Names and postcodes (`districts.json`, `subdistricts.json`) |
+| Rivers and reservoirs | [Natural Earth](https://www.naturalearthdata.com/) 1:10m rivers and lakes | public domain | `rivers.json`: rivers, reservoirs, river labels |
+| Neighbouring countries | [Natural Earth](https://www.naturalearthdata.com/) 1:50m countries | public domain | Land vs sea outside Thailand |
 | Roads | [Natural Earth](https://www.naturalearthdata.com/) 1:10m roads | public domain | `roads.json`: highways as stone paths, roads as dirt paths |
 | OTOP products | [Community Development Department](https://data.go.th/dataset/cdd_opc) OTOP Product Champion list and producer register | Open Data Common | District OTOP items (`districts.json`) |
 | Elevation and sea depth | [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) (Mapzen terrarium; SRTM, GMTED, ETOPO1 and others) | public, attribution required | `elevation.json`, 2D relief, 3D view |

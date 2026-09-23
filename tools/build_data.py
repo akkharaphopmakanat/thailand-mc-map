@@ -10,6 +10,7 @@ data/sprites.json; this script never touches them. It (re)writes:
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
   data/elevation.json + elevation.png         mean height (m) per map block, land and sea (R*256+G-32768)
   data/roads.json                             highways and roads as world-pixel polylines
+  data/rivers.json                            rivers (polylines + width) and reservoirs (polygons), world px
 
 Sources (downloaded into tools/.cache on first run):
   th.json       province polygons      github.com/apisit/thailand.json
@@ -17,6 +18,8 @@ Sources (downloaded into tools/.cache on first run):
   pds.json      Thai admin names       github.com/kongvut/thai-province-data (MIT)
   terrarium/    elevation tiles, z8    AWS Terrain Tiles (Mapzen terrarium encoding)
   ne_10m_roads.geojson  roads          Natural Earth 1:10m roads (public domain)
+  ne_10m_rivers_lake_centerlines.geojson, ne_10m_lakes.geojson   Natural Earth rivers and lakes
+  ne_50m_admin_0_countries.geojson  neighbouring countries (land vs sea outside Thailand)
   otop_*.csv, CDD_OPC_*.csv  OTOP     Community Development Department open data (data.go.th)
 
 Usage: python3 tools/build_data.py
@@ -35,6 +38,9 @@ SOURCES = {
     'adm2.geojson': 'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson',
     'pds.json': 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json',
     'ne_10m_roads.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_roads.geojson',
+    'ne_10m_rivers_lake_centerlines.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_rivers_lake_centerlines.geojson',
+    'ne_10m_lakes.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_lakes.geojson',
+    'ne_50m_admin_0_countries.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson',
     # OTOP producer register (province, district, sub-district per producer) and the
     # OTOP Product Champion star ratings (product, producer, province, category, stars)
     'otop_2026.csv': 'https://logi.cdd.go.th/opendata_cdd/2026/CDD_otop_own_2026.csv',
@@ -167,6 +173,46 @@ def build_roads():
     print(f"roads.json: {len(out['highway'])} highway lines, {len(out['road'])} road lines")
 
 
+def build_rivers():
+    """Natural Earth rivers (width from scalerank) and lakes/reservoirs, in world pixels."""
+    px = PX_PER_DEG
+    to_px = lambda pts: [v for x, y in pts for v in (round((x - LON0) * px), round((LAT1 - y) * px))]
+    inside = lambda pts: any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in pts)
+    rivers = []
+    for f in source('ne_10m_rivers_lake_centerlines.geojson')['features']:
+        g, p = f['geometry'], f['properties']
+        if not g or p.get('featurecla') != 'River':      # lake centerlines are covered by the lake polygons
+            continue
+        rank = p.get('scalerank') or 9
+        width = 4 if rank <= 2 else 3 if rank <= 7 else 2   # world px (~550 m each), wider than life so they read
+        for line in (g['coordinates'] if g['type'] == 'MultiLineString' else [g['coordinates']]):
+            if not inside(line):
+                continue
+            pts = simplify([(x, y) for x, y in line], 0.002)
+            # label at the vertex halfway along the line, with the local direction
+            seg = [math.dist(a, b) for a, b in zip(pts, pts[1:])]
+            half, acc, li = sum(seg) / 2, 0, 0
+            for li, d in enumerate(seg):
+                acc += d
+                if acc >= half:
+                    break
+            (ax, ay), (bx, by) = pts[li], pts[min(li + 1, len(pts) - 1)]
+            rivers.append({'name': p.get('name_en') or p.get('name') or '', 'w': width, 'pts': to_px(pts),
+                           'label': [round(((ax + bx) / 2 - LON0) * px), round((LAT1 - (ay + by) / 2) * px),
+                                     round(math.degrees(math.atan2(-(by - ay), bx - ax)), 1)]})
+    lakes = []
+    for f in source('ne_10m_lakes.geojson')['features']:
+        g, p = f['geometry'], f['properties']
+        if not g:
+            continue
+        for poly in polygons(g):
+            if not inside(poly[0]):
+                continue
+            lakes.append({'name': p.get('name') or '', 'rings': [to_px(simplify([(x, y) for x, y in r], 0.002)) for r in poly]})
+    dump(os.path.join(DATA, 'rivers.json'), {'units': f'world px ({PX_PER_DEG} per degree)', 'rivers': rivers, 'lakes': lakes})
+    print(f'rivers.json: {len(rivers)} river lines, {len(lakes)} lakes')
+
+
 def polygons(geom):
     return geom['coordinates'] if geom['type'] == 'MultiPolygon' else [geom['coordinates']]
 
@@ -269,16 +315,41 @@ def anchors(grid, w, h, n):
     return [[b[1], b[2]] if b else None for b in best], [s[2] for s in sums]
 
 
-def is_foreign(lat, lon):
-    """Rough land/sea split for cells outside Thailand (neighbouring countries vs. sea)."""
-    if lat >= 16.2: return True
-    if lat >= 13.6: return lon >= 98.1
-    if lat >= 9.9 and 98.55 <= lon <= 99.9: return True
-    if lat >= 11.4 and lon >= 102.3: return True
-    if 10.4 <= lat < 11.4 and lon >= 103.1: return True
-    if lat < 6.62 and 100.33 <= lon <= 102.3: return True
-    if lat < 6.45 and 100.1 <= lon < 100.33: return True
-    return False
+def foreign_mask(grid):
+    """True for non-Thai land blocks: inside a neighbouring country's outline (Natural Earth),
+    or any non-Thai block the open sea cannot reach (gaps where the two border datasets differ)."""
+    H, W = len(grid), len(grid[0])
+    mask = [[False] * W for _ in range(H)]
+    for f in source('ne_50m_admin_0_countries.geojson')['features']:
+        if f['properties'].get('ADM0_A3') == 'THA' or not f['geometry']:
+            continue
+        polys = polygons(f['geometry'])
+        x0, y0, x1, y1 = bbox(polys)
+        if x1 < LON0 or x0 > LON1 or y1 < LAT0 or y0 > LAT1:
+            continue
+        for r, a, b in raster_spans(polys, LON0, LAT1, S, W, H):
+            mask[r][a:b + 1] = [True] * (b - a + 1)
+    # Sea = non-Thai, non-foreign blocks connected to open water (seeded in the Andaman Sea and the Gulf)
+    sea = [[False] * W for _ in range(H)]
+    seeds = [(8.0, 97.4), (9.5, 101.5), (7.0, 102.5)]
+    q = deque()
+    for lat, lon in seeds:
+        r, c = int((LAT1 - lat) / S), int((lon - LON0) / S)
+        if grid[r][c] == -1 and not mask[r][c]:
+            sea[r][c] = True
+            q.append((r, c))
+    while q:
+        r, c = q.popleft()
+        for dr, dc in DIRS4:
+            rr, cc = r + dr, c + dc
+            if 0 <= rr < H and 0 <= cc < W and not sea[rr][cc] and grid[rr][cc] == -1 and not mask[rr][cc]:
+                sea[rr][cc] = True
+                q.append((rr, cc))
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] == -1 and not sea[r][c]:
+                mask[r][c] = True
+    return mask
 
 
 def dump(path, obj, pretty=False):
@@ -313,15 +384,13 @@ def build_map(features, slugs):
         used = {shade[n] for n in adj[v] if n in shade}
         shade[v] = next(k for k in range(8) if k not in used)
 
+    foreign = foreign_mask(grid)
     rows = []
     for r in range(H):
         s = []
         for c in range(W):
             v = grid[r][c]
-            if v >= 0:
-                s.append(CHARS[v])
-            else:
-                s.append(',' if is_foreign(LAT1 - (r + .5) * S, LON0 + (c + .5) * S) else '.')
+            s.append(CHARS[v] if v >= 0 else ',' if foreign[r][c] else '.')
         rows.append(rle(''.join(s)))
     dump(os.path.join(DATA, 'map.json'), {
         'W': W, 'H': H, 'S': S, 'lon0': LON0, 'lat1': LAT1, 'chars': ''.join(CHARS),
@@ -329,7 +398,7 @@ def build_map(features, slugs):
         'adj': [sorted(a) for a in adj], 'cells': cells, 'rows': rows,
     })
     print(f'map.json: {W}x{H} blocks, min province {min(cells)} blocks')
-    return grid
+    return grid, foreign
 
 
 def assign_districts(adm2, grid, ref_names):
@@ -687,12 +756,12 @@ def main():
             meta[slug] = json.load(f)
     by_dataset = {m['dataset_name']: s for s, m in meta.items()}
     slugs = [by_dataset[f['properties']['name']] for f in th]
-    grid = build_map(th, slugs)
+    grid, foreign = build_map(th, slugs)
     heights = build_elevation()
     build_roads()
+    build_rivers()
     otop = build_otop()
-    sea = [[grid[r][c] == -1 and not is_foreign(LAT1 - (r + .5) * S, LON0 + (c + .5) * S)
-            for c in range(len(grid[0]))] for r in range(len(grid))]
+    sea = [[grid[r][c] == -1 and not foreign[r][c] for c in range(len(grid[0]))] for r in range(len(grid))]
     # district sprites: shared library plus every province's own item sprite
     with open(os.path.join(DATA, 'sprites.json'), encoding='utf-8') as f:
         sprite_lib = json.load(f)['sprites']

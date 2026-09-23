@@ -233,6 +233,23 @@ export class MapView {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
+    // River names along the river once zoomed in
+    if (atlas.rivers && s >= .9) {
+      ctx.font = 'italic 600 12px "Pixelify Sans", monospace';
+      const seen = new Set();
+      for (const r of atlas.rivers.rivers) {
+        if (!r.name || seen.has(r.name) || !r.label) continue;
+        const [sx, sy] = this._w2s(r.label[0], r.label[1]);
+        if (sx < -80 || sy < -20 || sx > cw + 80 || sy > ch + 20) continue;
+        seen.add(r.name);
+        let a = -r.label[2] * Math.PI / 180;
+        if (a > Math.PI / 2) a -= Math.PI; else if (a < -Math.PI / 2) a += Math.PI;
+        ctx.save(); ctx.translate(sx, sy - 8); ctx.rotate(a);
+        this._text(r.name, 0, 0, '#bfe0ff', 'rgba(10,30,80,.8)');
+        ctx.restore();
+      }
+    }
+
     // Seas and neighbouring countries
     ctx.font = '600 13px "Pixelify Sans", monospace';
     for (const [txt, lat, lon] of MAP_LABELS) {

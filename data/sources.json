@@ -60,6 +60,22 @@
       ],
       "license": "Open Data Common (data.go.th)",
       "used_for": "Each district's OTOP item: rated products are linked to districts through the producer register, grouped into product types, and the most distinctive type is shown. Only product names, types and star ratings are published; producer names are not."
+    },
+    {
+      "id": "rivers",
+      "title": "Natural Earth 1:10m Physical Vectors: Rivers + lake centerlines, and Lakes + reservoirs",
+      "author": "Natural Earth (naturalearthdata.com)",
+      "url": "https://www.naturalearthdata.com/downloads/10m-physical-vectors/",
+      "license": "Public domain",
+      "used_for": "Rivers and reservoirs in data/rivers.json, painted as water in 2D and on 3D block tops"
+    },
+    {
+      "id": "countries",
+      "title": "Natural Earth 1:50m Admin 0 Countries",
+      "author": "Natural Earth (naturalearthdata.com)",
+      "url": "https://www.naturalearthdata.com/downloads/50m-cultural-vectors/",
+      "license": "Public domain",
+      "used_for": "Which blocks outside Thailand are land (neighbouring countries) and which are sea"
     }
   ],
   "fonts": [

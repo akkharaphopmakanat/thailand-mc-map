@@ -94,7 +94,9 @@ export function renderWorld(atlas, cells = classifyCells(atlas)) {
     }
   }
 
-  if (atlas.roads) paintRoads(atlas.roads, px, PW, W * B, H * B, kind, W);
+  const wet = new Uint8Array(PW * H * B);   // pixels covered by rivers and lakes (roads become bridges)
+  if (atlas.rivers) paintRivers(atlas.rivers, px, PW, W * B, H * B, wet);
+  if (atlas.roads) paintRoads(atlas.roads, px, PW, W * B, H * B, kind, W, wet);
 
   // Dark block edges on province borders (darker on the national border)
   const darken = (gx, gy, f) => { const o = (gy * PW + gx) * 4; px[o] *= f; px[o + 1] *= f; px[o + 2] *= f; };
@@ -127,11 +129,11 @@ export function renderWorld(atlas, cells = classifyCells(atlas)) {
  * Stamp roads into the terrain pixels: cobblestone highways (3 px), dirt-path roads (2 px),
  * oak-plank bridges where a road crosses water. One world pixel is about 550 m.
  */
-function paintRoads(roads, px, PW, pw, ph, kind, W) {
+function paintRoads(roads, px, PW, pw, ph, kind, W, wet) {
   const paint = (x, y, style) => {
     if (x < 0 || y < 0 || x >= pw || y >= ph) return;
     const o = (y * PW + x) * 4;
-    const water = kind[((y / B) | 0) * W + ((x / B) | 0)] === K.WATER;
+    const water = wet[y * PW + x] || kind[((y / B) | 0) * W + ((x / B) | 0)] === K.WATER;
     let rgb, n;
     if (water) { rgb = [162, 130, 78]; n = (y % 3 === 0) ? .72 : .92 + h2(x >> 2, y, 41) * .12; }
     else if (style === 'highway') { rgb = [126, 126, 126]; n = h2(x, y, 43) < .22 ? .62 : .82 + h2(x >> 1, y >> 1, 44) * .34; }
@@ -144,22 +146,58 @@ function paintRoads(roads, px, PW, pw, ph, kind, W) {
   };
   // roads first so highways sit on top where they overlap
   for (const [style, w] of [['road', 2], ['highway', 3]]) {
-    for (const line of roads[style] || []) {
-      for (let i = 2; i < line.length; i += 2) {
-        // Bresenham between consecutive points
-        let x0 = line[i - 2], y0 = line[i - 1];
-        const x1 = line[i], y1 = line[i + 1];
-        const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
-        let err = dx + dy;
-        for (;;) {
-          stamp(x0, y0, w, style);
-          if (x0 === x1 && y0 === y1) break;
-          const e2 = 2 * err;
-          if (e2 >= dy) { err += dy; x0 += sx; }
-          if (e2 <= dx) { err += dx; y0 += sy; }
+    for (const line of roads[style] || []) polyline(line, (x, y) => stamp(x, y, w, style));
+  }
+}
+
+/** Call fn for every pixel along a flat [x0, y0, x1, y1, …] polyline (Bresenham). */
+function polyline(line, fn) {
+  for (let i = 2; i < line.length; i += 2) {
+    let x0 = line[i - 2], y0 = line[i - 1];
+    const x1 = line[i], y1 = line[i + 1];
+    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy;
+    for (;;) {
+      fn(x0, y0);
+      if (x0 === x1 && y0 === y1) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+  }
+}
+
+/** Paint reservoirs (polygon fill) and rivers (width from the data) as water; mark them in `wet`. */
+function paintRivers({ rivers = [], lakes = [] }, px, PW, pw, ph, wet) {
+  const water = (x, y) => {
+    if (x < 0 || y < 0 || x >= pw || y >= ph) return;
+    const i = y * PW + x, o = i * 4;
+    const n = .94 + h2(x, y, 51) * .1 + (h2(x >> 2, y, 52) < .03 ? .15 : 0);
+    px[o] = 58 * n; px[o + 1] = 104 * n; px[o + 2] = 214 * n;
+    wet[i] = 1;
+  };
+  for (const lake of lakes) {
+    // even-odd scanline fill over all rings
+    let y0 = Infinity, y1 = -Infinity;
+    for (const ring of lake.rings) for (let i = 1; i < ring.length; i += 2) { y0 = Math.min(y0, ring[i]); y1 = Math.max(y1, ring[i]); }
+    for (let y = Math.max(0, y0); y <= Math.min(ph - 1, y1); y++) {
+      const xs = [], yc = y + .5;
+      for (const ring of lake.rings) {
+        for (let i = 0; i < ring.length; i += 2) {
+          const j = (i + 2) % ring.length;
+          const ax = ring[i], ay = ring[i + 1], bx = ring[j], by = ring[j + 1];
+          if ((ay <= yc) !== (by <= yc)) xs.push(ax + (yc - ay) * (bx - ax) / (by - ay));
         }
       }
+      xs.sort((a, b) => a - b);
+      for (let k = 0; k + 1 < xs.length; k += 2) for (let x = Math.ceil(xs[k] - .5); x <= Math.floor(xs[k + 1] - .5); x++) water(x, y);
     }
+  }
+  for (const river of rivers) {
+    const a = -Math.floor((river.w - 1) / 2);
+    polyline(river.pts, (x, y) => {
+      for (let dy = a; dy < a + river.w; dy++) for (let dx = a; dx < a + river.w; dx++) water(x + dx, y + dy);
+    });
   }
 }
 
