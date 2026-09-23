@@ -71,21 +71,12 @@
     },
     {
       "id": "osm",
-      "title": "OpenStreetMap: roads (tertiary and above), railways and rivers",
+      "title": "OpenStreetMap: roads, railways and rivers",
       "author": "© OpenStreetMap contributors, extract by Geofabrik",
       "url": "https://www.openstreetmap.org/copyright",
       "download": "https://download.geofabrik.de/asia/thailand.html",
       "license": "ODbL 1.0: data/blocks.json road and water layers are a derived database under the same licence",
-      "used_for": "Roads (dirt path → stone bricks), railways and smaller rivers, rasterised per 0.005° block in data/blocks.json"
-    },
-    {
-      "id": "geonames",
-      "title": "GeoNames Thailand gazetteer (populated places)",
-      "author": "GeoNames (geonames.org)",
-      "url": "https://www.geonames.org/",
-      "download": "https://download.geonames.org/export/dump/TH.zip",
-      "license": "CC BY 4.0",
-      "used_for": "Cities (provincial capitals), towns (district seats) in data/towns.json, villages in each province's subdistricts.json, and the settlement layer in data/blocks.json"
+      "used_for": "Main roads (motorway, trunk, primary, secondary), local roads (tertiary, unclassified), railways and rivers, rasterised per 0.005° block in data/blocks.json"
     }
   ],
   "fonts": [

@@ -1,6 +1,6 @@
 // Entry point: load data, build the world, and wire map ⇄ panels.
 import { h2 } from './noise.js';
-import { loadAtlas, loadDistricts, loadSubdistricts, loadVillages } from './data.js';
+import { loadAtlas, loadDistricts, loadSubdistricts } from './data.js';
 import { classifyCells, renderWorld, LAYERS } from './world.js';
 import { createView3D } from './view3d.js';
 import { buildDistrictLayer } from './districts.js';
@@ -10,7 +10,7 @@ import { ProvincePanel } from './panel.js';
 import { Tooltip, provinceTip, districtTip } from './tooltip.js';
 import { renderF3 } from './f3.js';
 import { renderCredits } from './credits.js';
-import { railTile } from './structures.js';
+import { railTile, N, S } from './pieces.js';
 
 const $ = id => document.getElementById(id);
 
@@ -85,22 +85,18 @@ async function select(i, fly = true) {
   layer = null;
   const p = provinces[i];
   map.setSelected(i);
-  map.setVillages([]);
   view3d?.setSelected(i);
   inventory.setSelected(i);
   panel.show(p);
   renderF3($('f3'), atlas, null, null);
   if (fly) active().focusProvince(i);
   try {
-    const [d, subs, villages] = await Promise.all([
-      loadDistricts(p.slug), loadSubdistricts(p.slug), loadVillages(p.slug).catch(() => ({})),
-    ]);
+    const [d, subs] = await Promise.all([loadDistricts(p.slug), loadSubdistricts(p.slug)]);
     if (selected !== i) return;
     layer = buildDistrictLayer(d, atlas.map);
     map.setDistrictLayer(layer);
-    map.setVillages(Object.values(villages).flat());
     view3d?.setDistrictLayer(layer);
-    panel.setDistricts(p, d, subs, villages, atlas.towns);
+    panel.setDistricts(p, d, subs);
   } catch (err) {
     panel.setError(p, `Could not load districts: ${err.message}`);
   }
@@ -163,7 +159,7 @@ if (document.fonts) document.fonts.ready.then(() => { map.dirty = true; });
 select(provinces.findIndex(p => p.slug === 'bangkok'), false);
 
 /* ---------- map layers ---------- */
-$('railIcon').style.backgroundImage = `url(${railTile('ns').toDataURL()})`;
+$('railIcon').style.backgroundImage = `url(${railTile(N | S).toDataURL()})`;
 function loadLayers() {
   try { return { ...LAYERS, ...JSON.parse(localStorage.getItem('layers') || '{}') }; } catch { return { ...LAYERS }; }
 }

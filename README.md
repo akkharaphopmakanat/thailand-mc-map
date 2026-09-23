@@ -5,14 +5,13 @@ Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
 A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
-Roads, railways and rivers come from OpenStreetMap: motorways and trunk roads are stone
-bricks, primary roads cobblestone, secondary gravel, tertiary dirt path, and roads over water
-become oak-plank bridges. Zoom in and railways are Minecraft rail pieces (straights and
-curves), and every city, town and village (GeoNames, 84,000+) is a little Minecraft build:
-houses with log frames, plank or plaster walls, windows, doors and gable roofs, wheat farms,
-wells, Thai temples with orange roofs and gold spires, and stone-brick city towers, in 2D
-from above and in 3D around wherever you look. A **Layers** box switches main roads, local
-roads, railways, main rivers, small rivers, towns and villages on and off. Switch to the **3D** view to fly over real terrain built from
+Roads, railways and rivers come from OpenStreetMap. **Main roads** are the large and medium
+roads (motorway and trunk as stone with a yellow centre line, primary and secondary as
+cobblestone); everything else is a **local road** (dirt path, hidden by default). Zoom in and
+roads and railways become connected Minecraft pieces: rail straights, curves and buffer
+stops, plus a special **rail junction block** (a gravel pad with the branching track and a
+switch lever) where lines meet. Roads over water become oak-plank bridges. A **Layers** box
+switches main roads, local roads, railways, main rivers and small rivers on and off. Switch to the **3D** view to fly over real terrain built from
 elevation data.
 
 ## Run it
@@ -41,7 +40,7 @@ js/
   mapView.js                2D canvas camera, pan/zoom/pinch, picking, drawing
   view3d.js                 3D voxel view in chunks with 3 levels of detail (three.js from cdnjs, loaded on demand)
   sprites.js                16×16 item sprite → canvas / data URL
-  structures.js             Minecraft buildings: block textures, voxel prefabs, greedy mesher, rail pieces
+  pieces.js                 connected rail and road pieces (2D close-up and 3D ground), junction block
   inventory.js              creative-inventory grid with region tabs and search
   panel.js                  selected province card + district/tambon browser
   tooltip.js                Minecraft item tooltip
@@ -49,8 +48,7 @@ js/
   f3.js                     F3 debug overlay (lat/lon, biome, province, district)
 data/
   sources.json              data references and credits
-  blocks.json               per-block roads, rails, small rivers (OSM) and settlements   [generated]
-  towns.json                cities and district-seat towns (GeoNames)                  [generated]
+  blocks.json               per-block roads, rails and rivers (OSM)                    [generated]
   rivers.json               rivers (with width and label) and reservoirs, world px     [generated]
   elevation.png             real mean elevation / sea depth per block (R*256+G-32768)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
@@ -58,7 +56,7 @@ data/
   provinces/<slug>/
     province.json           name, region, item + sprite, description, district_items  [hand-written]
     districts.json          district raster, names and each district's item           [generated]
-    subdistricts.json       tambon names + postcodes, and villages, by district id    [generated]
+    subdistricts.json       tambon names + postcodes, keyed by district id            [generated]
 tools/build_data.py         regenerates the [generated] files
 ```
 
@@ -122,7 +120,6 @@ which the page's Credits panel is built from.
 | Rivers and reservoirs | [Natural Earth](https://www.naturalearthdata.com/) 1:10m rivers and lakes | public domain | `rivers.json`: rivers, reservoirs, river labels |
 | Neighbouring countries | [Natural Earth](https://www.naturalearthdata.com/) 1:50m countries | public domain | Land vs sea outside Thailand |
 | Roads, railways, small rivers | © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, via [Geofabrik](https://download.geofabrik.de/asia/thailand.html) | ODbL 1.0 | `blocks.json` (derived database, same licence) |
-| Cities, towns, villages | [GeoNames](https://www.geonames.org/) | CC BY 4.0 | `towns.json`, villages in `subdistricts.json`, settlements in `blocks.json` |
 | OTOP products | [Community Development Department](https://data.go.th/dataset/cdd_opc) OTOP Product Champion list and producer register | Open Data Common | District OTOP items (`districts.json`) |
 | Elevation and sea depth | [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) (Mapzen terrarium; SRTM, GMTED, ETOPO1 and others) | public, attribution required | `elevation.png`, 2D relief, 3D view |
 

@@ -63,7 +63,7 @@ export function classifyCells({ map, grid, provinces, elev: realElev }) {
 }
 
 /** Map layers that can be switched on and off. */
-export const LAYERS = { roads: true, localRoads: false, rails: true, rivers: true, streams: false, towns: true, villages: true };
+export const LAYERS = { roads: true, localRoads: false, rails: true, rivers: true, streams: false };
 
 /**
  * 2D terrain canvas (B px per block) plus outline/fill paths per province.
@@ -131,25 +131,18 @@ export function renderWorld(atlas, cells = classifyCells(atlas), layers = LAYERS
   return { canvas, ctx: wx, paths: into?.paths || provincePaths(map, grid, provinces.length) };
 }
 
-/** Settlement code (1 village, 2 town, 3 city) if its layer is on, else 0. */
-export function settlementShown(code, layers) {
-  if (!code) return 0;
-  return (code === 1 ? layers.villages : layers.towns) ? code : 0;
-}
-
 // Block colours for the per-block layers, Minecraft style
-const ROAD_RGB = { 1: [148, 122, 68], 2: [136, 128, 120], 3: [122, 122, 122], 4: [168, 168, 170] };
+const ROAD_RGB = { 1: [150, 122, 70], 2: [122, 122, 122], 3: [122, 122, 122], 4: [138, 138, 142] };
 const PLANK = [162, 130, 78], RAIL = [176, 176, 184], TIE = [104, 80, 52];
-const SETTLE_RGB = { 1: [150, 98, 60], 2: [178, 90, 70], 3: [150, 150, 152] };
 
 /**
- * Paint the per-block OSM layers and settlements: small rivers as water, villages as a hut,
- * towns as roofs, cities as stone; then roads (dirt path → stone bricks) and rails on top,
- * with oak-plank bridges over water. One block = B world pixels.
+ * Paint the per-block OSM layers: rivers as water, then roads (local dirt path, medium
+ * cobblestone, large stone) and rails on top, with oak-plank bridges over water.
+ * One block = B world pixels.
  */
 function paintBlocks(atlas, cells, px, PW, wet, layers) {
   const { W, H } = atlas.map;
-  const { roads, streams, settlements } = atlas;
+  const { roads, streams } = atlas;
   const put = (c, r, fn) => {
     for (let y = 0; y < B; y++) for (let x = 0; x < B; x++) {
       const gx = c * B + x, gy = r * B + y, i = gy * PW + gx, o = i * 4;
@@ -163,17 +156,15 @@ function paintBlocks(atlas, cells, px, PW, wet, layers) {
     if (atlas.grid[k] === -1) continue;
     const stream = streams?.[k] === 2 ? layers.rivers : streams?.[k] === 1 && layers.streams;
     if (stream) put(c, r, (x, y, i) => { wet[i] = 1; return tint([58, 104, 214], .94 + h2(x, y, 51) * .1); });
-    const s = settlementShown(settlements?.[k], layers);
-    if (s) put(c, r, (x, y) => tint(SETTLE_RGB[s], s === 3 ? .78 + h2(x, y, 61) * .4 : .85 + h2(x, y, 62) * .3));
     let rd = roads?.[k];
-    // 1–2 local (tertiary, secondary), 3–4 main (primary, trunk/motorway), 5 railway
-    if (rd === 5 ? !layers.rails : rd >= 3 ? !layers.roads : !layers.localRoads) rd = 0;
+    // 1 local (tertiary, unclassified), 2–4 main (secondary, primary, trunk/motorway), 5 railway
+    if (rd === 5 ? !layers.rails : rd >= 2 ? !layers.roads : !layers.localRoads) rd = 0;
     if (!rd) continue;
     const water = cells.kind[k] === K.WATER || stream;
     put(c, r, (x, y, i) => {
       if (water || wet[i]) return tint(PLANK, (y % 3 === 0) ? .75 : .95);
       if (rd === 5) return (x + y) % 2 ? RAIL : TIE;
-      if (rd === 4) return tint(ROAD_RGB[4], h2(x, y, 43) < .2 ? .7 : .92 + h2(x, y, 44) * .12);
+      if (rd === 4) return tint(ROAD_RGB[4], .92 + h2(x, y, 44) * .12);
       return tint(ROAD_RGB[rd], .86 + h2(x, y, 45) * .24);
     });
   }

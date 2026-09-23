@@ -61,11 +61,10 @@ export class ProvincePanel {
     this.q.addEventListener('input', () => this._renderList());
   }
 
-  /** District raster, sub-district names, villages (by district id) and towns arrived for province p. */
-  setDistricts(p, d, subs, villages = {}, towns = []) {
+  /** District raster + sub-district names arrived for province p. */
+  setDistricts(p, d, subs) {
     if (p !== this.p) return;
-    this.d = d; this.subs = subs; this.villages = villages;
-    this.towns = new Map(towns.map(t => [t.district, t]));
+    this.d = d; this.subs = subs;
     this.q.disabled = false;
     const nSub = Object.values(subs.districts).reduce((a, l) => a + l.length, 0);
     this.el.querySelector('[data-el="count"]').textContent = `${d.districts.length} amphoe · ${nSub} tambon`;
@@ -80,16 +79,6 @@ export class ProvincePanel {
   _icon(dist) {
     const id = dist.item?.sprite;
     return id ? spriteFromRows('d:' + id, this.d.sprites?.[id]).url : '';
-  }
-
-  /** District seat town and village list for the expanded district. */
-  _places(dist) {
-    const id = String(dist.id);
-    const town = this.towns?.get(id);
-    const vs = this.villages?.[id] || [];
-    const shown = vs.slice(0, 60).map(v => esc(v[1] || v[0])).join(' · ');
-    return (town ? `<li class="dnote">🏠 ${town.kind === 'city' ? 'City' : 'Town'}: ${esc(town.name)}${town.th ? ' · ' + esc(town.th) : ''}</li>` : '') +
-      (vs.length ? `<li class="dnote dvill">Villages (หมู่บ้าน) · ${vs.length}: ${shown}${vs.length > 60 ? ` … and ${vs.length - 60} more` : ''}</li>` : '');
   }
 
   _tambon(k) { return this.subs?.districts[String(this.d.districts[k].id)] || []; }
@@ -117,7 +106,7 @@ export class ProvincePanel {
             <span class="ditem ${esc(dist.item?.kind || '')}">${esc(dist.item?.name || '')}</span></span>
           <span class="n">${q && tHits.length ? `${tHits.length}/` : ''}${tambon.length} tambon</span>
         </button>
-        <ul class="tlist" ${expanded ? '' : 'hidden'}>${dist.item ? `<li class="dnote">${esc(dist.item.note)}</li>` : ''}${this._places(dist)}${
+        <ul class="tlist" ${expanded ? '' : 'hidden'}>${dist.item ? `<li class="dnote">${esc(dist.item.note)}</li>` : ''}${
           dist.landmark && dist.item?.kind !== 'landmark' ? `<li class="dnote">★ Landmark: ${esc(dist.landmark.name)}. ${esc(dist.landmark.note)}</li>` : ''}${tambon.map(t => `
           <li class="${hitIds.has(t.id) ? 'tl-hit' : ''}">${esc(t.name.en)}<span class="th">${esc(t.name.th)}</span><span class="zip">${t.zip || ''}</span></li>`).join('')
           || '<li>No sub-district data</li>'}</ul>`);

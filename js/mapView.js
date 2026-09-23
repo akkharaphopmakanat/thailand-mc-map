@@ -2,7 +2,7 @@
 // district borders, item icons and labels.
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite } from './sprites.js';
-import { topTile, railTile, railKind } from './structures.js';
+import { railTile, roadTile, roadClass, maskAt } from './pieces.js';
 
 const MAX_SCALE = 24;   // screen px per world px (a 0.005° block is 1 world px)
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -24,8 +24,7 @@ export class MapView {
     this.cw = 0; this.ch = 0; this.dpr = 1; this.fitS = .3;
     this.hover = -1; this.selected = -1;
     this.layer = null; this.dHover = -1; this.dFocus = -1;
-    this.villages = [];   // [[name, th, x, y], …] of the selected province
-    this.layers = { roads: true, localRoads: false, rails: true, rivers: true, streams: false, towns: true, villages: true };
+    this.layers = { roads: true, localRoads: false, rails: true, rivers: true, streams: false };
     this.dirty = true; this.tween = null;
     this.order = atlas.provinces.map(p => p.i).sort((a, b) => atlas.provinces[a].anchor[0] - atlas.provinces[b].anchor[0]);
     this._bindInput();
@@ -40,7 +39,6 @@ export class MapView {
   setDistrictLayer(layer) { this.layer = layer; this.dirty = true; }
   setDistrictHover(k) { if (k !== this.dHover) { this.dHover = k; this.dirty = true; } }
   setDistrictFocus(k) { this.dFocus = k; this.dirty = true; }
-  setVillages(list) { this.villages = list || []; this.dirty = true; }
 
   /* ---------------- camera ---------------- */
   resize() {
@@ -194,22 +192,25 @@ export class MapView {
     requestAnimationFrame(tt => this._loop(tt));
   }
 
-  /** Draw per-block building tiles and rail pieces for the blocks on screen. */
+  /** Draw connected road and rail pieces for the blocks on screen. */
   _drawBlockDetail(blockPx) {
     const { ctx, view, atlas, cw, ch } = this;
     const { W, H } = atlas.map;
-    const L = this.layers, roads = atlas.roads, settle = atlas.settlements;
+    const L = this.layers, roads = atlas.roads;
+    if (!roads) return;
     const c0 = Math.max(0, Math.floor(-view.x / blockPx)), c1 = Math.min(W - 1, Math.ceil((cw - view.x) / blockPx));
     const r0 = Math.max(0, Math.floor(-view.y / blockPx)), r1 = Math.min(H - 1, Math.ceil((ch - view.y) / blockPx));
-    const isRail = (r, c) => r >= 0 && c >= 0 && r < H && c < W && roads[r * W + c] === 5;
+    const at = (r, c) => (r < 0 || c < 0 || r >= H || c >= W) ? 0 : roads[r * W + c];
+    const shown = code => code === 5 ? L.rails : code >= 2 ? L.roads : code === 1 && L.localRoads;
+    const isRail = (r, c) => at(r, c) === 5;
+    const isRoad = (r, c) => { const v = at(r, c); return v >= 1 && v <= 4 && shown(v); };
     ctx.imageSmoothingEnabled = false;
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
-      const k = r * W + c, x = Math.floor(view.x + c * blockPx), y = Math.floor(view.y + r * blockPx), z = Math.ceil(blockPx) + 1;
-      const s = settle?.[k];
-      if (s && (s === 1 ? L.villages : L.towns)) ctx.drawImage(topTile(s, c, r), x, y, z, z);
-      if (L.rails && roads?.[k] === 5) {
-        ctx.drawImage(railTile(railKind(isRail(r - 1, c), isRail(r + 1, c), isRail(r, c + 1), isRail(r, c - 1))), x, y, z, z);
-      }
+      const code = roads[r * W + c];
+      if (!code || !shown(code)) continue;
+      const x = Math.floor(view.x + c * blockPx), y = Math.floor(view.y + r * blockPx), z = Math.ceil(blockPx) + 1;
+      const tile = code === 5 ? railTile(maskAt(r, c, isRail)) : roadTile(roadClass(code), maskAt(r, c, isRoad));
+      ctx.drawImage(tile, x, y, z, z);
     }
   }
 
@@ -232,7 +233,7 @@ export class MapView {
     ctx.imageSmoothingQuality = 'medium';
     ctx.drawImage(world.canvas, view.x, view.y, map.W * B * s, map.H * B * s);
 
-    // Close up: Minecraft buildings on settlement blocks and rail pieces on railway blocks
+    // Close up: connected Minecraft road and rail pieces
     const blockPx = s * B;
     if (blockPx >= 8) this._drawBlockDetail(blockPx);
 
@@ -275,29 +276,6 @@ export class MapView {
         this._text(r.name, 0, 0, '#bfe0ff', 'rgba(10,30,80,.8)');
         ctx.restore();
       }
-    }
-
-    // Settlements: cities from a moderate zoom, towns closer in, villages of the selected province close up
-    const inView = (sx, sy) => sx > -60 && sy > -20 && sx < cw + 60 && sy < ch + 20;
-    if (this.layers.villages && s >= .9 && this.villages.length) {
-      ctx.font = '11px "Pixelify Sans", monospace';
-      for (const v of this.villages) {
-        const [sx, sy] = this._w2s(v[2], v[3]);
-        if (!inView(sx, sy)) continue;
-        ctx.fillStyle = '#3a2412'; ctx.fillRect(sx - 2.5, sy - 2.5, 5, 5);
-        ctx.fillStyle = '#c0703c'; ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3);
-        if (s >= 5) this._text(v[0], sx, sy - 9, '#fff2d8');
-      }
-    }
-    for (const t of this.layers.towns ? atlas.towns : []) {
-      const city = t.kind === 'city';
-      if (!(city ? s >= .45 : s >= 1.6)) continue;
-      const [sx, sy] = this._w2s(t.x, t.y);
-      if (!inView(sx, sy)) continue;
-      ctx.fillStyle = '#000'; ctx.fillRect(sx - (city ? 4 : 3), sy - (city ? 4 : 3), city ? 8 : 6, city ? 8 : 6);
-      ctx.fillStyle = city ? '#ffffff' : '#ffd6a0'; ctx.fillRect(sx - (city ? 3 : 2), sy - (city ? 3 : 2), city ? 6 : 4, city ? 6 : 4);
-      ctx.font = city ? '600 13px "Pixelify Sans", monospace' : '600 11px "Pixelify Sans", monospace';
-      this._text(t.name, sx, sy - (city ? 12 : 10), city ? '#ffffff' : '#ffe9c4');
     }
 
     // Seas and neighbouring countries

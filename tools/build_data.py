@@ -6,11 +6,10 @@ optional `district_items` landmarks keyed by district English name) and
 data/sprites.json; this script never touches them. It (re)writes:
 
   data/map.json                               province block grid for the whole country (0.005° blocks)
-  data/towns.json                             provincial capitals and district seats (GeoNames)
   data/provinces/<slug>/districts.json        amphoe / khet raster + names
-  data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes, villages (GeoNames)
+  data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
   data/elevation.png                          mean height (m) per map block, land and sea (R*256+G-32768)
-  data/blocks.json                            per-block layers: roads, railways, small rivers (OpenStreetMap), settlements
+  data/blocks.json                            per-block layers: roads, railways, rivers (OpenStreetMap)
   data/rivers.json                            rivers (polylines + width) and reservoirs (polygons), world px
 
 Sources (downloaded into tools/.cache on first run):
@@ -20,7 +19,6 @@ Sources (downloaded into tools/.cache on first run):
   terrarium/    elevation tiles, z8    AWS Terrain Tiles (Mapzen terrarium encoding)
   ne_10m_rivers_lake_centerlines.geojson, ne_10m_lakes.geojson   Natural Earth rivers and lakes
   ne_50m_admin_0_countries.geojson  neighbouring countries (land vs sea outside Thailand)
-  geonames_TH.zip  populated places   GeoNames Thailand dump (CC BY 4.0)
   thailand-latest.osm.pbf  roads, rail, rivers   OpenStreetMap via Geofabrik (ODbL); read with
                          pyosmium: pip install --target tools/.cache/pylib osmium
   otop_*.csv, CDD_OPC_*.csv  OTOP     Community Development Department open data (data.go.th)
@@ -43,7 +41,6 @@ SOURCES = {
     'ne_10m_rivers_lake_centerlines.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_rivers_lake_centerlines.geojson',
     'ne_10m_lakes.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_lakes.geojson',
     'ne_50m_admin_0_countries.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson',
-    'geonames_TH.zip': 'https://download.geonames.org/export/dump/TH.zip',
     'thailand-latest.osm.pbf': 'https://download.geofabrik.de/asia/thailand-latest.osm.pbf',
     # OTOP producer register (province, district, sub-district per producer) and the
     # OTOP Product Champion star ratings (product, producer, province, category, stars)
@@ -198,8 +195,10 @@ def build_rivers():
 
 # ---------------------------------------------------------------- OpenStreetMap roads, rail, rivers
 # Transport codes per block, higher wins where they meet
-ROAD_CODE = {'tertiary': 1, 'tertiary_link': 1, 'secondary': 2, 'secondary_link': 2,
-             'primary': 3, 'primary_link': 3, 'trunk': 4, 'trunk_link': 4, 'motorway': 4, 'motorway_link': 4}
+# 1 local (tertiary, unclassified), 2–3 medium (secondary, primary), 4 large (trunk, motorway)
+ROAD_CODE = {'tertiary': 1, 'tertiary_link': 1, 'unclassified': 1,
+             'secondary': 2, 'secondary_link': 2, 'primary': 3, 'primary_link': 3,
+             'trunk': 4, 'trunk_link': 4, 'motorway': 4, 'motorway_link': 4}
 RAIL_CODE = 5
 # Main rivers (water code 2, drawn two blocks wide); every other river is code 1 ("small rivers").
 # Matched on the whole name so Thai syllables inside stream names don't count.
@@ -216,8 +215,9 @@ def is_main_river(tags):
     return bool(MAIN_EN.match((tags.get('name:en') or '').strip()) or MAIN_TH.match((tags.get('name') or '').strip()))
 
 
-TRANSPORT_NAMES = {1: 'tertiary road (dirt path)', 2: 'secondary road (gravel)', 3: 'primary road (cobblestone)',
-                   4: 'highway / motorway (stone bricks)', 5: 'railway (rails)'}
+TRANSPORT_NAMES = {1: 'local road: tertiary, unclassified (dirt path)', 2: 'medium road: secondary (cobblestone)',
+                   3: 'medium road: primary (cobblestone)', 4: 'large road: trunk, motorway (stone, centre line)',
+                   5: 'railway (rails)'}
 
 
 def build_transport(W, H):
@@ -241,10 +241,11 @@ def build_transport(W, H):
                     layer[r0][c0] = code
                 if r0 == r1 and c0 == c1:
                     break
+                # one axis per step, so lines are 4-connected staircases (rails and roads join up)
                 e2 = 2 * err
-                if e2 >= dc:
+                if e2 >= dc and (e2 - dc <= dr - e2 or c0 == c1):
                     err += dc; r0 += sr
-                if e2 <= dr:
+                else:
                     err += dr; c0 += sc
 
     n = {'road': 0, 'rail': 0, 'river': 0, 'main': 0}
@@ -280,60 +281,6 @@ def build_transport(W, H):
         'water': [rle(''.join('.12'[v] for v in row)) for row in water],
     })
     print(f"blocks.json: {n['road']} road ways, {n['rail']} rail ways, {n['river']} river ways ({n['main']} main)")
-
-
-# ---------------------------------------------------------------- towns and villages
-def build_places(grid, district_slug):
-    """GeoNames populated places: PPLC/PPLA = city (provincial capital), PPLA2 = town (district
-    seat), PPL = village. Writes towns.json, villages into each subdistricts.json and a settlement
-    layer into blocks.json."""
-    import io, zipfile
-    H, W = len(grid), len(grid[0])
-    thai = lambda alts: next((a for a in alts.split(',') if any('\u0e00' <= ch <= '\u0e7f' for ch in a)), '')
-    towns, villages = [], {}
-    layer = [bytearray(W) for _ in range(H)]          # 0 none, 1 village, 2 town, 3 city
-    with zipfile.ZipFile(cached('geonames_TH.zip')) as z, io.TextIOWrapper(z.open('TH.txt'), encoding='utf-8') as f:
-        for line in f:
-            r = line.rstrip('\n').split('\t')
-            if r[6] != 'P' or r[7] not in ('PPLC', 'PPLA', 'PPLA2', 'PPL'):
-                continue
-            lat, lon = float(r[4]), float(r[5])
-            row, col = int((LAT1 - lat) / S), int((lon - LON0) / S)
-            if not (0 <= row < H and 0 <= col < W) or grid[row][col] < 0:
-                continue
-            x, y = round((lon - LON0) * PX_PER_DEG, 1), round((LAT1 - lat) * PX_PER_DEG, 1)
-            name, th, code = r[1], thai(r[3]), r[11]
-            if r[7] == 'PPL':
-                slug = district_slug.get(code)
-                if slug:
-                    villages.setdefault(slug, {}).setdefault(code, []).append([name, th, x, y])
-                    layer[row][col] = max(layer[row][col], 1)
-            else:
-                kind = 3 if r[7] in ('PPLC', 'PPLA') else 2
-                towns.append([name, th, x, y, 'city' if kind == 3 else 'town', int(r[14] or 0), code])
-                rad = 3 if kind == 3 else 1                 # footprint: 7x7 blocks for cities, 3x3 for towns
-                for rr in range(max(0, row - rad), min(H, row + rad + 1)):
-                    for cc in range(max(0, col - rad), min(W, col + rad + 1)):
-                        if grid[rr][cc] >= 0 and (kind == 3 or abs(rr - row) + abs(cc - col) <= rad + 1):
-                            layer[rr][cc] = max(layer[rr][cc], kind)
-    towns.sort(key=lambda t: (t[4] != 'city', -t[5]))
-    dump(os.path.join(DATA, 'towns.json'), {'fields': ['name', 'th', 'x', 'y', 'kind', 'population', 'district_id'],
-                                            'units': f'world px ({PX_PER_DEG} per degree)', 'towns': towns})
-    for slug in os.listdir(PROV_DIR):              # villages sit beside the tambon lists
-        path = os.path.join(PROV_DIR, slug, 'subdistricts.json')
-        with open(path, encoding='utf-8') as f:
-            sub = json.load(f)
-        sub['villages'] = {'fields': ['name', 'th', 'x', 'y'], 'units': f'world px ({PX_PER_DEG} per degree)',
-                           'districts': villages.get(slug, {})}
-        dump(path, sub)
-    path = os.path.join(DATA, 'blocks.json')
-    with open(path, encoding='utf-8') as f:
-        blocks = json.load(f)
-    blocks['settlement_codes'] = {'1': 'village', '2': 'town', '3': 'city'}
-    blocks['settlements'] = [rle(''.join('.123'[v] for v in row)) for row in layer]
-    dump(path, blocks)
-    nv = sum(len(v) for d in villages.values() for v in d.values())
-    print(f'places: {sum(t[4] == "city" for t in towns)} cities, {sum(t[4] == "town" for t in towns)} towns, {nv} villages')
 
 
 def polygons(geom):
@@ -910,12 +857,7 @@ def main():
         if n_match < max(n_geo, n_ref):
             print(f'  {slug}: {n_geo} shapes, {n_ref} named, {n_match} matched')
     print(f'districts: {tot[0]} shapes, {tot[2]} named, {tot[1]} matched; subdistricts: {tot[3]}')
-    district_slug = {}
-    for slug in slugs:
-        ref = ref_by_th.get(meta[slug]['name']['th'])
-        for d in (ref['districts'] if ref else []):
-            district_slug[str(d['id'])] = slug
-    build_places(grid, district_slug)
+
 
 
 if __name__ == '__main__':

@@ -10,14 +10,13 @@ async function json(url) {
 
 /**
  * @param {(done: number, total: number) => void} [onProgress]
- * @returns {Promise<object>} {map, grid, provinces, rivers, elev, roads, streams, settlements, towns}
+ * @returns {Promise<object>} {map, grid, provinces, rivers, elev, roads, streams}
  */
 export async function loadAtlas(onProgress = () => {}) {
-  const [map, blocks, rivers, towns] = await Promise.all([
+  const [map, blocks, rivers] = await Promise.all([
     json('data/map.json'),
     json('data/blocks.json').catch(() => null),
     json('data/rivers.json').catch(() => null),
-    json('data/towns.json').catch(() => null),
   ]);
   const elevation = map.elevation ? await loadElevation(map.elevation).catch(() => null) : null;
   const grid = decodeRows(map.rows, map.W, map.H, map.chars, { '.': -1, ',': -2 });
@@ -42,11 +41,9 @@ export async function loadAtlas(onProgress = () => {}) {
   }
   return {
     map, grid, provinces, rivers, elev: elevation,
-    // per-block OSM layers: roads 1 tertiary … 4 motorway/trunk, 5 railway; water 1 river
+    // per-block OSM layers: roads 1 local, 2–3 medium, 4 large, 5 railway; water 1 small, 2 main river
     roads: blocks ? decodeRows(blocks.roads, blocks.W, blocks.H, '012345', { '.': 0 }) : null,
     streams: blocks ? decodeRows(blocks.water, blocks.W, blocks.H, '012', { '.': 0 }) : null,   // 1 small, 2 main river
-    settlements: blocks?.settlements ? decodeRows(blocks.settlements, blocks.W, blocks.H, '0123', { '.': 0 }) : null,
-    towns: towns ? towns.towns.map(([name, th, x, y, kind, population, district]) => ({ name, th, x, y, kind, population, district })) : [],
   };
 }
 
@@ -70,10 +67,6 @@ async function loadElevation(meta) {
 const districtCache = new Map();
 const subdistrictCache = new Map();
 
-/** Villages (GeoNames) of one province, keyed by district id: [[name, th, x, y], …] in world px. */
-export async function loadVillages(slug) {
-  return (await loadSubdistricts(slug)).villages?.districts || {};
-}
 
 /** Amphoe/khet raster for one province: {res, lon0, lat1, w, h, districts[], grid}. */
 export function loadDistricts(slug) {
