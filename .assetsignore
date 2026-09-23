@@ -1,0 +1,14 @@
+# Files Cloudflare Workers / Pages should not upload as site assets (same syntax as .gitignore)
+.git
+.gitignore
+.assetsignore
+.nojekyll
+.wrangler
+node_modules
+tools
+docs
+assets
+README.md
+wrangler.json
+wrangler.jsonc
+wrangler.toml
