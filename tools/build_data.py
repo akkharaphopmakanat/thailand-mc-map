@@ -200,8 +200,8 @@ def is_main_river(tags):
     return bool(MAIN_EN.match((tags.get('name:en') or '').strip()))
 
 
-TRANSPORT_NAMES = {2: 'medium road: secondary (cobblestone)', 3: 'medium road: primary (cobblestone)',
-                   4: 'main road: trunk, motorway (stone, centre line)', 5: 'railway (rails)'}
+TRANSPORT_NAMES = {2: 'medium road: secondary (dirt path)', 3: 'medium road: primary (dirt path)',
+                   4: 'main road: trunk, motorway (stone)', 5: 'railway (rails)'}
 
 
 def build_transport(W, H):

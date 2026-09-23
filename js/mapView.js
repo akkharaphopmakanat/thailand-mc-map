@@ -2,8 +2,7 @@
 // district borders, item icons and labels.
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite } from './sprites.js';
-import { railTile, roadTile, roadClass, maskAt } from './pieces.js';
-import { roadShown } from './world.js';
+import { railTile, maskAt } from './pieces.js';
 
 const MAX_SCALE = 24;   // screen px per world px (a 0.005° block is 1 world px)
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -193,25 +192,20 @@ export class MapView {
     requestAnimationFrame(tt => this._loop(tt));
   }
 
-  /** Draw connected road and rail pieces for the blocks on screen. */
+  /** Draw connected rail pieces for the railway blocks on screen (roads stay plain blocks). */
   _drawBlockDetail(blockPx) {
     const { ctx, view, atlas, cw, ch } = this;
     const { W, H } = atlas.map;
-    const L = this.layers, roads = atlas.roads;
-    if (!roads) return;
+    const roads = atlas.roads;
+    if (!roads || !this.layers.rails) return;
     const c0 = Math.max(0, Math.floor(-view.x / blockPx)), c1 = Math.min(W - 1, Math.ceil((cw - view.x) / blockPx));
     const r0 = Math.max(0, Math.floor(-view.y / blockPx)), r1 = Math.min(H - 1, Math.ceil((ch - view.y) / blockPx));
-    const at = (r, c) => (r < 0 || c < 0 || r >= H || c >= W) ? 0 : roads[r * W + c];
-    const shown = code => roadShown(code, L);
-    const isRail = (r, c) => at(r, c) === 5;
-    const isRoad = (r, c) => { const v = at(r, c); return v >= 2 && v <= 4 && shown(v); };
+    const isRail = (r, c) => r >= 0 && c >= 0 && r < H && c < W && roads[r * W + c] === 5;
     ctx.imageSmoothingEnabled = false;
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
-      const code = roads[r * W + c];
-      if (!code || !shown(code)) continue;
+      if (roads[r * W + c] !== 5) continue;
       const x = Math.floor(view.x + c * blockPx), y = Math.floor(view.y + r * blockPx), z = Math.ceil(blockPx) + 1;
-      const tile = code === 5 ? railTile(maskAt(r, c, isRail)) : roadTile(roadClass(code), maskAt(r, c, isRoad));
-      ctx.drawImage(tile, x, y, z, z);
+      ctx.drawImage(railTile(maskAt(r, c, isRail)), x, y, z, z);
     }
   }
 
@@ -234,7 +228,7 @@ export class MapView {
     ctx.imageSmoothingQuality = 'medium';
     ctx.drawImage(world.canvas, view.x, view.y, map.W * B * s, map.H * B * s);
 
-    // Close up: connected Minecraft road and rail pieces
+    // Close up: connected Minecraft rail pieces
     const blockPx = s * B;
     if (blockPx >= 8) this._drawBlockDetail(blockPx);
 

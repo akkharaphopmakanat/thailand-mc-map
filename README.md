@@ -5,13 +5,12 @@ Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
 A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
-Roads, railways and rivers come from OpenStreetMap. **Main roads** (motorway, trunk) are
-stone with a yellow centre line and **medium roads** (primary, secondary) are cobblestone.
-Zoom in and roads and railways become connected Minecraft pieces: rail straights, curves and
-buffer stops, plus a special **rail junction block** (a gravel pad with the branching track and
-a switch lever) where lines meet. Roads over water become oak-plank bridges. River names sit on
-the main rivers themselves. A **Layers** box switches main roads, medium roads, railways, main
-rivers and small rivers on and off. Switch to the **3D** view to fly over real terrain built from
+Roads, railways and rivers come from OpenStreetMap. **Main roads** (motorway, trunk) are stone
+blocks and **medium roads** (primary, secondary) are dirt path; roads over water become oak-plank
+bridges. Zoom in and railways become connected Minecraft rail pieces: straights, curves and
+buffer stops, plus a special **rail junction block** (a gravel pad with the branching track and a
+switch lever) where lines meet. River names sit on the main rivers themselves. A **Layers** box
+switches main roads, medium roads, railways, main rivers and small rivers on and off. Switch to the **3D** view to fly over real terrain built from
 elevation data.
 
 ## Run it
@@ -40,7 +39,7 @@ js/
   mapView.js                2D canvas camera, pan/zoom/pinch, picking, drawing
   view3d.js                 3D voxel view in chunks with 3 levels of detail (three.js from cdnjs, loaded on demand)
   sprites.js                16×16 item sprite → canvas / data URL
-  pieces.js                 connected rail and road pieces (2D close-up and 3D ground), junction block
+  pieces.js                 connected rail pieces (2D close-up and 3D ground), junction block
   inventory.js              creative-inventory grid with region tabs and search
   panel.js                  selected province card + district/tambon browser
   tooltip.js                Minecraft item tooltip

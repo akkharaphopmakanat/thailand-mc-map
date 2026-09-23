@@ -1,5 +1,5 @@
-// Minecraft-style rail and road pieces for the close-up map (2D) and the ground near the
-// camera (3D). A block's piece depends on which of its four sides connect to the same network:
+// Minecraft-style rail pieces for the close-up map (2D) and the ground near the camera (3D).
+// A block's piece depends on which of its four sides connect to the railway:
 // mask bits N = 1, E = 2, S = 4, W = 8.
 import { h2 } from './noise.js';
 
@@ -100,64 +100,19 @@ export function railTile(mask) {
   return cv;
 }
 
-/* ---------------- roads ---------------- */
-/** Road class for a block's road code: 3 main (trunk/motorway), 2 medium (primary/secondary). */
-export const roadClass = code => code === 4 ? 3 : code === 2 || code === 3 ? 2 : 0;
-
-const ROAD_STYLE = {
-  3: { rgb: [132, 132, 136], edge: [88, 88, 92], w: 12, line: true, noise: .12 },   // main: stone, centre line
-  2: { rgb: [122, 122, 122], edge: [84, 84, 84], w: 10, line: false, noise: .35 },  // medium: cobblestone
-};
-
-const roadCache = new Map();
-/** 16×16 road piece: a band from the centre to each connected side (transparent elsewhere). */
-export function roadTile(cls, mask) {
-  const key = cls * 16 + mask;
-  if (roadCache.has(key)) return roadCache.get(key);
-  const { cv, x, img } = canvas();
-  const px = img.data, st = ROAD_STYLE[cls];
-  const lo = (PX - st.w) >> 1, hi = lo + st.w - 1;          // band across the centre
-  const m = mask || N | S;                                   // isolated block: show a short straight
-  const inBand = (i, j) => {
-    const core = i >= lo && i <= hi && j >= lo && j <= hi;
-    return core || (m & N && j < lo && i >= lo && i <= hi) || (m & S && j > hi && i >= lo && i <= hi) ||
-      (m & W && i < lo && j >= lo && j <= hi) || (m & E && i > hi && j >= lo && j <= hi);
-  };
-  for (let j = 0; j < PX; j++) for (let i = 0; i < PX; i++) {
-    if (!inBand(i, j)) continue;
-    const edge = !inBand(i - 1, j) && i > 0 || !inBand(i + 1, j) && i < PX - 1 || !inBand(i, j - 1) && j > 0 || !inBand(i, j + 1) && j < PX - 1;
-    const r = h2(cls === 2 ? i >> 1 : i, cls === 2 ? j >> 1 : j, 410 + cls);
-    let rgb = edge ? st.edge : st.rgb.map(v => v * (1 - st.noise / 2 + r * st.noise));
-    if (st.line) {                                          // dashed yellow centre line along each arm
-      const onV = (i === 7 || i === 8) && ((m & N && j < 8) || (m & S && j >= 8)) && j % 4 < 2;
-      const onH = (j === 7 || j === 8) && ((m & W && i < 8) || (m & E && i >= 8)) && i % 4 < 2;
-      if (onV || onH) rgb = [236, 196, 52];
-    }
-    const o = (j * PX + i) * 4;
-    px[o] = rgb[0]; px[o + 1] = rgb[1]; px[o + 2] = rgb[2]; px[o + 3] = 255;
-  }
-  x.putImageData(img, 0, 0);
-  roadCache.set(key, cv);
-  return cv;
-}
-
 /* ---------------- atlas for the 3D view ---------------- */
-/**
- * All pieces in one texture: rail masks 0–15 in tiles 0–15, road class c (2 medium, 3 main) and
- * mask m in tile 16 + (c - 2) * 16 + m. Returns {canvas, uv(tile) -> [u0, v0, u1, v1]}.
- */
+/** All 16 rail pieces (by mask) in one texture. Returns {canvas, uv(mask) -> [u0, v0, u1, v1]}. */
 export function makeAtlas() {
-  const COLS = 8, n = 48, rows = n / COLS;
+  const COLS = 8, n = 16, rows = n / COLS;
   const cv = document.createElement('canvas');
   cv.width = COLS * PX; cv.height = rows * PX;
   const x = cv.getContext('2d');
   const put = (t, img) => x.drawImage(img, (t % COLS) * PX, Math.floor(t / COLS) * PX);
   for (let m = 0; m < 16; m++) put(m, railTile(m));
-  for (let c = 2; c <= 3; c++) for (let m = 0; m < 16; m++) put(16 + (c - 2) * 16 + m, roadTile(c, m));
   const eps = .5 / cv.width;
   const uv = t => {
     const c = t % COLS, r = Math.floor(t / COLS);
     return [c * PX / cv.width + eps, 1 - (r + 1) * PX / cv.height + eps, (c + 1) * PX / cv.width - eps, 1 - r * PX / cv.height - eps];
   };
-  return { canvas: cv, uv, railTile: m => m, roadTile: (c, m) => 16 + (c - 2) * 16 + m };
+  return { canvas: cv, uv };
 }

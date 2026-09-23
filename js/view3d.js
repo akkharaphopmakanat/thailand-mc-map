@@ -3,8 +3,8 @@
 // farther ones with 2×, 4× or 8× bigger blocks (like a render distance), built on demand.
 // three.js is loaded from cdnjs the first time the 3D mode is opened.
 import { B } from './config.js';
-import { KIND, roadShown } from './world.js';
-import { makeAtlas, maskAt, roadClass } from './pieces.js';
+import { KIND } from './world.js';
+import { makeAtlas, maskAt } from './pieces.js';
 import { h2 } from './noise.js';
 import { itemSprite } from './sprites.js';
 
@@ -17,7 +17,7 @@ const CHUNK = 64;                                  // full-detail blocks per chu
 const LODS = [1, 2, 4, 8];                         // block size multiplier per level of detail
 const BUILD_BUDGET_MS = 10;                        // chunk building time per frame
 const MAX_DPR = 1.5;                               // cap render resolution for a steady frame rate
-const DETAIL_RADIUS = 40;                          // blocks around the look-at point that get rail and road pieces
+const DETAIL_RADIUS = 40;                          // blocks around the look-at point that get rail pieces
 const DETAIL_CAMERA = 160;                         // …only when the camera is at most this far away
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -52,7 +52,7 @@ class View3D {
     this.metresPerBlock = 40;
     this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1;
     this.active = false; this.tween = null;
-    this.layers = { mainRoads: true, mediumRoads: true, rails: true };
+    this.layers = { rails: true };
     this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
     this.orbit = { ...this.home };
     this.maxDist = 900 * this.SC;
@@ -73,7 +73,7 @@ class View3D {
     tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
     this.topMat = new THREE.MeshBasicMaterial({ map: tex, vertexColors: true, side: THREE.DoubleSide });
     this.sideMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
-    // Minecraft rail and road pieces laid on the ground near the camera
+    // Minecraft rail pieces laid on the ground near the camera
     this.pieces = makeAtlas();
     const ptex = new THREE.CanvasTexture(this.pieces.canvas);
     ptex.magFilter = ptex.minFilter = THREE.NearestFilter;
@@ -271,7 +271,7 @@ class View3D {
   }
 
   /**
-   * Connected rail and road pieces on the blocks around the look-at point, rebuilt when the
+   * Connected rail pieces on the blocks around the look-at point, rebuilt when the
    * point moves; hidden when the camera is far away (they would be smaller than a pixel).
    */
   _updateDetail() {
@@ -291,19 +291,14 @@ class View3D {
 
   _buildDetail(cc, rc) {
     const { T, W, H, atlas, pieces } = this;
-    const hb = this.hb, roads = atlas.roads, L = this.layers;
-    const at = (r, c) => (r < 0 || c < 0 || r >= H || c >= W) ? 0 : roads[r * W + c];
-    const shown = code => roadShown(code, L);
-    const isRail = (r, c) => at(r, c) === 5;
-    const isRoad = (r, c) => { const v = at(r, c); return v >= 2 && v <= 4 && shown(v); };
+    const hb = this.hb, roads = atlas.roads;
+    const isRail = (r, c) => r >= 0 && c >= 0 && r < H && c < W && roads[r * W + c] === 5;
     const pos = [], uv = [];
-    if (roads) {
+    if (roads && this.layers.rails) {
       for (let r = Math.max(0, rc - DETAIL_RADIUS); r <= Math.min(H - 1, rc + DETAIL_RADIUS); r++) {
         for (let c = Math.max(0, cc - DETAIL_RADIUS); c <= Math.min(W - 1, cc + DETAIL_RADIUS); c++) {
-          const code = roads[r * W + c];
-          if (!code || !shown(code) || (r - rc) ** 2 + (c - cc) ** 2 > DETAIL_RADIUS ** 2) continue;
-          const tileIndex = code === 5 ? pieces.railTile(maskAt(r, c, isRail)) : pieces.roadTile(roadClass(code), maskAt(r, c, isRoad));
-          const [u0, v0, u1, v1] = pieces.uv(tileIndex);
+          if (roads[r * W + c] !== 5 || (r - rc) ** 2 + (c - cc) ** 2 > DETAIL_RADIUS ** 2) continue;
+          const [u0, v0, u1, v1] = pieces.uv(maskAt(r, c, isRail));
           const x = c - W / 2, z = r - H / 2, y = Math.max(hb[r * W + c], .2) + .01;
           // corners NW, SW, SE, NE; piece rows run north (top of the tile) to south
           pos.push(x, y, z, x, y, z + 1, x + 1, y, z + 1, x + 1, y, z);
@@ -498,7 +493,7 @@ class View3D {
   /** Layers changed: the 2D terrain canvas (our top texture) was redrawn; rebuild buildings. */
   setLayers(layers) {
     this.topTex.needsUpdate = true;
-    const changed = ['mainRoads', 'mediumRoads', 'rails'].some(k => layers[k] !== this.layers[k]);
+    const changed = layers.rails !== this.layers.rails;
     this.layers = { ...layers };
     if (changed) this._clearDetail();
   }

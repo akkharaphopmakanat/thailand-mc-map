@@ -137,12 +137,12 @@ export function renderWorld(atlas, cells = classifyCells(atlas), layers = LAYERS
 }
 
 // Block colours for the per-block layers, Minecraft style
-const ROAD_RGB = { 2: [122, 122, 122], 3: [122, 122, 122], 4: [138, 138, 142] };
+const ROAD_RGB = { 2: [150, 122, 70], 3: [150, 122, 70], 4: [128, 128, 130] };   // medium dirt path, main stone
 const PLANK = [162, 130, 78], RAIL = [176, 176, 184], TIE = [104, 80, 52];
 
 /**
- * Paint the per-block OSM layers: rivers as water, then roads (medium cobblestone, main stone)
- * and rails on top, with oak-plank bridges over water.
+ * Paint the per-block OSM layers: rivers as water, then roads (main road stone, medium road
+ * dirt path) and rails on top, with oak-plank bridges over water.
  * One block = B world pixels.
  */
 function paintBlocks(atlas, cells, px, PW, wet, layers) {
@@ -168,8 +168,7 @@ function paintBlocks(atlas, cells, px, PW, wet, layers) {
     put(c, r, (x, y, i) => {
       if (water || wet[i]) return tint(PLANK, (y % 3 === 0) ? .75 : .95);
       if (rd === 5) return (x + y) % 2 ? RAIL : TIE;
-      if (rd === 4) return tint(ROAD_RGB[4], .92 + h2(x, y, 44) * .12);
-      return tint(ROAD_RGB[rd], .86 + h2(x, y, 45) * .24);
+      return tint(ROAD_RGB[rd], .88 + h2(x, y, 45) * .2);
     });
   }
 }
