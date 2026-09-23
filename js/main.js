@@ -8,10 +8,12 @@ import { Inventory } from './inventory.js';
 import { ProvincePanel } from './panel.js';
 import { Tooltip, provinceTip, districtTip } from './tooltip.js';
 import { renderF3 } from './f3.js';
+import { renderCredits } from './credits.js';
 
 const $ = id => document.getElementById(id);
 
 paintDirtBackground();
+renderCredits($('credits'));
 
 const loading = $('loading');
 let atlas;

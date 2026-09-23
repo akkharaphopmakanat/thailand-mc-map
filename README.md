@@ -1,5 +1,7 @@
 # thailand-mc-map
 
+Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
+
 A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต) and sub-districts (ตำบล / แขวง).
@@ -32,8 +34,10 @@ js/
   inventory.js              creative-inventory grid with region tabs and search
   panel.js                  selected province card + district/tambon browser
   tooltip.js                Minecraft item tooltip
+  credits.js                Credits panel built from data/sources.json
   f3.js                     F3 debug overlay (lat/lon, biome, province, district)
 data/
+  sources.json              data references and credits
   map.json                  country block grid (0.04° ≈ 4.4 km), anchors, neighbours  [generated]
   provinces/<slug>/
     province.json           name, region, item name + sprite, description             [hand-written]
@@ -57,13 +61,33 @@ python3 tools/build_data.py
 The first run downloads the source datasets into `tools/.cache/` (git-ignored).
 It never touches `province.json`.
 
-## Data sources
+## Credits
 
-- Province outlines: [apisit/thailand.json](https://github.com/apisit/thailand.json)
-- District outlines: [geoBoundaries THA ADM2](https://www.geoboundaries.org/) — Royal Thai Survey Department / OCHA ROAP, CC BY 3.0 IGO
-- District and sub-district names, postcodes: [kongvut/thai-province-data](https://github.com/kongvut/thai-province-data) — MIT
+Created by **[akkharaphopmakanat](https://github.com/akkharaphopmakanat/)**.
+
+### Data references
+
+All references are also kept machine-readable in [`data/sources.json`](data/sources.json),
+which the page's Credits panel is built from.
+
+| Data | Source | License | Used for |
+| --- | --- | --- | --- |
+| Province boundaries | [apisit/thailand.json](https://github.com/apisit/thailand.json) | none stated | Province outlines (`data/map.json`) |
+| District boundaries | [geoBoundaries](https://www.geoboundaries.org/) THA ADM2, gbOpen — Royal Thai Survey Department / OCHA ROAP | CC BY 3.0 IGO | District outlines (`districts.json`) |
+| District and sub-district names, postcodes | [kongvut/thai-province-data](https://github.com/kongvut/thai-province-data) by Kongvut Sangkla | MIT | Names and postcodes (`districts.json`, `subdistricts.json`) |
+
+geoBoundaries citation: Runfola, D. et al. (2020) *geoBoundaries: A global database of
+political administrative boundaries.* PLoS ONE 15(4): e0231866.
+https://doi.org/10.1371/journal.pone.0231866
+
+Fonts (SIL Open Font License 1.1): Press Start 2P, Pixelify Sans, Kanit.
 
 Sub-districts are names and postcodes only; there is no open, lightweight
 tambon boundary dataset, so tambon are listed rather than drawn. Three named
 districts have no outline in the boundary data (Ko Sichang, and two entries in
 Ratchaburi and Songkhla), so they are listed but not drawn.
+
+Terrain height and trees are generated for looks, not surveyed. Province items,
+sprites and descriptions are original to this project.
+
+*Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.*

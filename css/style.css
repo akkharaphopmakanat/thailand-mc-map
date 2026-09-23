@@ -156,8 +156,18 @@ body{
 .inv-head h2{margin:0}
 .inv-head .count{font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
 .grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:0;margin-top:10px}
-.foot{margin:0;font-size:12px;line-height:1.5;color:#bfb4a8;text-shadow:1px 1px 0 #000;padding-bottom:4px}
-.foot a{color:var(--aqua)}
+/* credits */
+.credits{font-size:13px;line-height:1.45}
+.credits h3{margin:12px 0 4px;font-size:14px;font-weight:600;color:var(--ink)}
+.credits a{color:#1d3fbf}
+.credits a:hover{color:#000}
+.cr-author{margin:0;font-size:15px;color:#262626}
+.cr-author a{font-weight:600}
+.cr-list,.cr-notes{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+.cr-notes{margin-top:10px;gap:2px;color:var(--ink-soft)}
+.cr-meta,.cr-use{color:var(--ink-soft)}
+.cr-cite{font-size:12px;color:#4a4a4a;font-style:italic}
+.cr-fonts{margin:0;color:var(--ink-soft)}
 /* tooltip */
 .tip{
   position:fixed;z-index:10;left:0;top:0;pointer-events:none;
