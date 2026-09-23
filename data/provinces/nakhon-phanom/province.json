@@ -28,5 +28,12 @@
       "..ggggggggggg..."
     ]
   },
-  "lore": "Phra That Phanom, the most revered stupa of Isan. Illuminated boats float down the Mekong each October."
+  "lore": "Phra That Phanom, the most revered stupa of Isan. Illuminated boats float down the Mekong each October.",
+  "district_items": {
+    "That Phanom": {
+      "item": "Phra That Phanom",
+      "sprite": "stupa",
+      "note": "Phra That Phanom stupa."
+    }
+  }
 }

@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Phrae Wa, the 'queen of silks', is hand-woven by Phu Tai weavers. Kalasin also has a dinosaur museum at Phu Kum Khao."
+  "lore": "Phrae Wa, the 'queen of silks', is hand-woven by Phu Tai weavers. Kalasin also has a dinosaur museum at Phu Kum Khao.",
+  "district_items": {
+    "Sahatsakhan": {
+      "item": "Dinosaur Bone",
+      "sprite": "bone",
+      "note": "Sirindhorn Museum at Phu Kum Khao."
+    },
+    "Kham Muang": {
+      "item": "Phrae Wa Silk",
+      "sprite": "silk",
+      "note": "Phrae Wa silk weaving at Ban Phon."
+    }
+  }
 }

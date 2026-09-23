@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "The 'Diamond Wall' city: UNESCO-listed laterite fortifications from the Sukhothai era."
+  "lore": "The 'Diamond Wall' city: UNESCO-listed laterite fortifications from the Sukhothai era.",
+  "district_items": {
+    "Mueang Kamphaeng Phet": {
+      "item": "Laterite Wall",
+      "sprite": "wall",
+      "note": "Kamphaeng Phet Historical Park."
+    }
+  }
 }

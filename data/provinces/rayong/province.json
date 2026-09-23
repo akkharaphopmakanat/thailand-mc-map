@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Squid and fish sauce from the coast, with Koh Samet's white sand just offshore."
+  "lore": "Squid and fish sauce from the coast, with Koh Samet's white sand just offshore.",
+  "district_items": {
+    "Mueang Rayong": {
+      "item": "Beach Palm",
+      "sprite": "palm",
+      "note": "Ko Samet belongs to this district."
+    }
+  }
 }

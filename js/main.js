@@ -1,7 +1,8 @@
 // Entry point: load data, build the world, and wire map ⇄ panels.
 import { h2 } from './noise.js';
 import { loadAtlas, loadDistricts, loadSubdistricts } from './data.js';
-import { renderWorld } from './world.js';
+import { classifyCells, renderWorld } from './world.js';
+import { createView3D } from './view3d.js';
 import { buildDistrictLayer } from './districts.js';
 import { MapView } from './mapView.js';
 import { Inventory } from './inventory.js';
@@ -30,7 +31,8 @@ try {
 }
 $('loadMsg').textContent = 'Generating terrain…';
 await new Promise(r => requestAnimationFrame(() => setTimeout(r)));
-const world = renderWorld(atlas);
+const cells = classifyCells(atlas);
+const world = renderWorld(atlas, cells);
 loading.hidden = true;
 
 const { provinces } = atlas;
@@ -38,8 +40,7 @@ const tooltip = new Tooltip($('tip'));
 let selected = -1;
 let layer = null;
 
-const map = new MapView({
-  canvas: $('map'), wrap: $('mapWrap'), atlas, world,
+const handlers = {
   onHover(pick, e) {
     renderF3($('f3'), atlas, pick, layer);
     panel.highlightDistrict(pick && layer && pick.province === selected ? pick.district : -1);
@@ -55,19 +56,23 @@ const map = new MapView({
     if (pick.province === selected && layer && pick.district >= 0) selectDistrict(pick.district, false);
     else select(pick.province, false);
   },
-});
+};
+const map = new MapView({ canvas: $('map'), wrap: $('mapWrap'), atlas, world, ...handlers });
+let view3d = null;   // created on first switch to 3D
+let mode = '2d';
+const active = () => (mode === '3d' ? view3d : map);
 
 const inventory = new Inventory({
   tabsEl: $('tabs'), gridEl: $('grid'), searchEl: $('q'), titleEl: $('invTitle'), countEl: $('invCount'),
   provinces, tooltip,
   onSelect: i => select(i),
-  onHover: i => map.setHover(i),
+  onHover: i => { map.setHover(i); view3d?.setHover(i); },
 });
 
 const panel = new ProvincePanel($('selPanel'), {
   provinces,
   onSelect: i => select(i),
-  onFly: i => map.focusProvince(i),
+  onFly: i => active().focusProvince(i),
   onDistrict: k => selectDistrict(k, true),
   onDistrictHover: k => map.setDistrictHover(k),
 });
@@ -77,15 +82,17 @@ async function select(i, fly = true) {
   layer = null;
   const p = provinces[i];
   map.setSelected(i);
+  view3d?.setSelected(i);
   inventory.setSelected(i);
   panel.show(p);
   renderF3($('f3'), atlas, null, null);
-  if (fly) map.focusProvince(i);
+  if (fly) active().focusProvince(i);
   try {
     const [d, subs] = await Promise.all([loadDistricts(p.slug), loadSubdistricts(p.slug)]);
     if (selected !== i) return;
     layer = buildDistrictLayer(d, atlas.map);
     map.setDistrictLayer(layer);
+    view3d?.setDistrictLayer(layer);
     panel.setDistricts(p, d, subs);
   } catch (err) {
     panel.setError(p, `Could not load districts: ${err.message}`);
@@ -94,13 +101,54 @@ async function select(i, fly = true) {
 
 function selectDistrict(k, fly) {
   map.setDistrictFocus(k);
+  view3d?.setDistrictFocus(k);
   panel.openDistrict(k);
-  if (fly) map.focusDistrict(k);
+  if (fly) active().focusDistrict(k);
 }
 
-$('zin').onclick = () => map.zoomAt(1.5, map.cw / 2, map.ch / 2);
-$('zout').onclick = () => map.zoomAt(1 / 1.5, map.cw / 2, map.ch / 2);
-$('zfit').onclick = () => map.goTo(map.fitView());
+$('zin').onclick = () => mode === '3d' ? view3d.zoom(1.5) : map.zoomAt(1.5, map.cw / 2, map.ch / 2);
+$('zout').onclick = () => mode === '3d' ? view3d.zoom(1 / 1.5) : map.zoomAt(1 / 1.5, map.cw / 2, map.ch / 2);
+$('zfit').onclick = () => mode === '3d' ? view3d.fit() : map.goTo(map.fitView());
+
+/* ---------- 2D / 3D switch ---------- */
+const V_SCALES = [30, 60, 120];   // metres of real elevation per block
+$('mode').onclick = async () => {
+  const btn = $('mode');
+  if (mode === '2d') {
+    if (!view3d) {
+      btn.disabled = true; btn.textContent = 'Loading…';
+      try {
+        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, ...handlers });
+      } catch (err) {
+        btn.disabled = false; btn.textContent = '3D';
+        $('hint').textContent = `3D view unavailable: ${err.message}`;
+        return;
+      }
+      btn.disabled = false;
+      view3d.setSelected(selected);
+      if (layer) view3d.setDistrictLayer(layer);
+    }
+    mode = '3d';
+    $('map').hidden = true; $('map3d').hidden = false; $('vscale').hidden = false;
+    btn.textContent = '2D'; btn.setAttribute('aria-label', 'Switch to 2D map');
+    $('hint').textContent = 'Drag to orbit · right-drag or shift-drag to pan · scroll to zoom';
+    view3d.setActive(true);
+    if (selected >= 0) view3d.focusProvince(selected);
+  } else {
+    mode = '2d';
+    view3d.setActive(false);
+    $('map3d').hidden = true; $('map').hidden = false; $('vscale').hidden = true;
+    btn.textContent = '3D'; btn.setAttribute('aria-label', 'Switch to 3D view');
+    $('hint').textContent = 'Drag to pan · scroll to zoom · click a province, then a district';
+    map.dirty = true;
+  }
+  tooltip.hide();
+};
+$('vscale').onclick = () => {
+  const i = (V_SCALES.indexOf(view3d.metresPerBlock) + 1) % V_SCALES.length;
+  view3d.setVerticalScale(V_SCALES[i]);
+  $('vscale').textContent = `${V_SCALES[i]} m/block`;
+};
 document.addEventListener('keydown', e => { if (e.key === 'Escape') tooltip.hide(); });
 if (document.fonts) document.fonts.ready.then(() => { map.dirty = true; });
 

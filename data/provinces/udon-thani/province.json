@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Talay Bua Daeng, the Red Lotus Sea, blooms every winter. Ban Chiang's ancient pottery is a UNESCO site."
+  "lore": "Talay Bua Daeng, the Red Lotus Sea, blooms every winter. Ban Chiang's ancient pottery is a UNESCO site.",
+  "district_items": {
+    "Kumphawapi": {
+      "item": "Red Lotus",
+      "sprite": "redLotus",
+      "note": "Talay Bua Daeng, the Red Lotus Sea."
+    },
+    "Nong Han": {
+      "item": "Ban Chiang Pot",
+      "sprite": "jar",
+      "note": "Ban Chiang archaeological site (UNESCO)."
+    }
+  }
 }

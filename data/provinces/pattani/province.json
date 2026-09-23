@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Hand-painted kolae fishing boats, and the old Krue Se Mosque."
+  "lore": "Hand-painted kolae fishing boats, and the old Krue Se Mosque.",
+  "district_items": {
+    "Mueang Pattani": {
+      "item": "Kolae Boat",
+      "sprite": "kolae",
+      "note": "Kolae boats and the Krue Se Mosque."
+    }
+  }
 }

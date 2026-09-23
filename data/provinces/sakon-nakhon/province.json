@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "The Wax Castle Festival builds temple-shaped castles from beeswax at the end of Buddhist Lent."
+  "lore": "The Wax Castle Festival builds temple-shaped castles from beeswax at the end of Buddhist Lent.",
+  "district_items": {
+    "Mueang Sakon Nakhon": {
+      "item": "Honeycomb",
+      "sprite": "honeycomb",
+      "note": "The Wax Castle Festival."
+    }
+  }
 }

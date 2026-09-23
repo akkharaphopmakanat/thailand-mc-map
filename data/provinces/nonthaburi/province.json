@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Nonthaburi's orchard durians are among the most expensive fruit in the world."
+  "lore": "Nonthaburi's orchard durians are among the most expensive fruit in the world.",
+  "district_items": {
+    "Pak Kret": {
+      "item": "Clay Jar",
+      "sprite": "jar",
+      "note": "Ko Kret island and its Mon pottery."
+    }
+  }
 }

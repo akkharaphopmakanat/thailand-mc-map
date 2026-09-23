@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Koh Chang, Koh Kood and Koh Mak: quiet island chains at the eastern end of the gulf."
+  "lore": "Koh Chang, Koh Kood and Koh Mak: quiet island chains at the eastern end of the gulf.",
+  "district_items": {
+    "Ko Chang": {
+      "item": "Elephant",
+      "sprite": "elephant",
+      "note": "Ko Chang, 'Elephant Island'."
+    },
+    "Ko Kut": {
+      "item": "Sea Turtle",
+      "sprite": "turtle",
+      "note": "Quiet island of Ko Kut."
+    }
+  }
 }

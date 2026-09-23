@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Hin Sam Wan, the Three Whale Rock, looks like a whale family from the cliff above. Thailand's newest province, created in 2011."
+  "lore": "Hin Sam Wan, the Three Whale Rock, looks like a whale family from the cliff above. Thailand's newest province, created in 2011.",
+  "district_items": {
+    "Bung Khla": {
+      "item": "Whale Rock",
+      "sprite": "whale",
+      "note": "Hin Sam Wan, the Three Whale Rock."
+    }
+  }
 }

@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "The Chao Phraya River begins here. Its Chinese New Year dragon parade is more than a century old."
+  "lore": "The Chao Phraya River begins here. Its Chinese New Year dragon parade is more than a century old.",
+  "district_items": {
+    "Mueang Nakhon Sawan": {
+      "item": "Dragon Head",
+      "sprite": "dragon",
+      "note": "Pak Nam Pho, source of the Chao Phraya."
+    }
+  }
 }

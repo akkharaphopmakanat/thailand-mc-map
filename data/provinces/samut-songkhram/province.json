@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Amphawa's riverside trees glow with fireflies at night. Trains roll straight through the Maeklong railway market."
+  "lore": "Amphawa's riverside trees glow with fireflies at night. Trains roll straight through the Maeklong railway market.",
+  "district_items": {
+    "Amphawa": {
+      "item": "Firefly Bush",
+      "sprite": "fireflies",
+      "note": "Amphawa floating market and firefly boat trips."
+    },
+    "Mueang Samut Songkhram": {
+      "item": "Minecart",
+      "sprite": "minecart",
+      "note": "The Maeklong railway market."
+    }
+  }
 }

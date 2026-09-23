@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Prasat Phanom Rung sits on an extinct volcano. Four times a year the sunrise shines through all 15 of its doorways."
+  "lore": "Prasat Phanom Rung sits on an extinct volcano. Four times a year the sunrise shines through all 15 of its doorways.",
+  "district_items": {
+    "Chaloem Phra Kiat": {
+      "item": "Sandstone Castle",
+      "sprite": "castle",
+      "note": "Prasat Phanom Rung on its extinct volcano."
+    },
+    "Mueang Buri Ram": {
+      "item": "Football",
+      "sprite": "ball",
+      "note": "Chang Arena and Buriram United."
+    }
+  }
 }

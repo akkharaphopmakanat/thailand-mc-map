@@ -10,10 +10,10 @@ async function json(url) {
 
 /**
  * @param {(done: number, total: number) => void} [onProgress]
- * @returns {Promise<{map: object, grid: Int16Array, provinces: object[]}>}
+ * @returns {Promise<{map: object, grid: Int16Array, provinces: object[], elev: Int16Array|null}>}
  */
 export async function loadAtlas(onProgress = () => {}) {
-  const map = await json('data/map.json');
+  const [map, elevation] = await Promise.all([json('data/map.json'), json('data/elevation.json').catch(() => null)]);
   const grid = decodeRows(map.rows, map.W, map.H, map.chars, { '.': -1, ',': -2 });
   let done = 0;
   const total = map.provinces.length;
@@ -34,7 +34,15 @@ export async function loadAtlas(onProgress = () => {}) {
       if (r > b[3]) b[3] = r;
     }
   }
-  return { map, grid, provinces };
+  return { map, grid, provinces, elev: elevation ? decodeInt16(elevation.data) : null };
+}
+
+/** base64 little-endian int16 → Int16Array (metres per block, negative = sea depth). */
+function decodeInt16(b64) {
+  const bin = atob(b64);
+  const out = new Int16Array(bin.length >> 1);
+  for (let i = 0; i < out.length; i++) out[i] = (bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8)) << 16 >> 16;
+  return out;
 }
 
 const districtCache = new Map();

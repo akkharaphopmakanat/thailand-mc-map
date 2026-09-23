@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Monkeys own Phra Prang Sam Yot, and get their own fruit banquet at the yearly Monkey Festival."
+  "lore": "Monkeys own Phra Prang Sam Yot, and get their own fruit banquet at the yearly Monkey Festival.",
+  "district_items": {
+    "Mueang Lop Buri": {
+      "item": "Monkey",
+      "sprite": "monkey",
+      "note": "Phra Prang Sam Yot and its monkeys."
+    },
+    "Phatthana Nikhom": {
+      "item": "Sunflower",
+      "sprite": "sunflower",
+      "note": "Sunflower fields in the cool season."
+    }
+  }
 }

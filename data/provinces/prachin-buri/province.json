@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Abhaibhubejhr Hospital is Thailand's center for traditional herbal medicine."
+  "lore": "Abhaibhubejhr Hospital is Thailand's center for traditional herbal medicine.",
+  "district_items": {
+    "Mueang Prachin Buri": {
+      "item": "Herbal Potion",
+      "sprite": "potion",
+      "note": "Abhaibhubejhr herbal medicine."
+    }
+  }
 }

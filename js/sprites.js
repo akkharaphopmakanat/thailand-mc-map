@@ -1,13 +1,16 @@
-// Turns a province's 16×16 `item.sprite` rows into an 18×18 canvas (with a 1px outline) and data URL.
+// Turns 16×16 sprite rows into an 18×18 canvas (with a 1px outline) and data URL.
 import { PAL } from './config.js';
 
 const cache = new Map();
 
-/** @returns {{canvas: HTMLCanvasElement, url: string}} */
+/** A province's own item. @returns {{canvas: HTMLCanvasElement, url: string}} */
 export function itemSprite(province) {
-  const key = province.slug;
+  return spriteFromRows('p:' + province.slug, province.item?.sprite);
+}
+
+/** Any sprite by id, e.g. a district item from districts.json `sprites`. */
+export function spriteFromRows(key, rows = []) {
   if (cache.has(key)) return cache.get(key);
-  const rows = province.item?.sprite || [];
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 18;
   const x = canvas.getContext('2d');

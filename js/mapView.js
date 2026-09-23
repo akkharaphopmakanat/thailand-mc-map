@@ -240,17 +240,30 @@ export class MapView {
       this._text(txt, sx, sy, 'rgba(235,240,255,.72)', 'rgba(0,0,0,.45)');
     }
 
-    // District names when there is room
-    let districtLabels = false;
+    // District items and names when there is room
+    let districtIcons = false;
     if (L) {
       const cellPx = L.k * s;
       ctx.font = '600 11px "Pixelify Sans", monospace';
       L.districts.forEach((d, i) => {
         const a = L.anchor(i);
-        if (!a || d.cells * cellPx * cellPx < 2600) return;
-        districtLabels = true;
+        if (!a) return;
+        const area = d.cells * cellPx * cellPx;
+        const sz = Math.round(Math.min(34, Math.sqrt(area) * .42));
         const [sx, sy] = this._w2s(a[0], a[1]);
-        this._text(d.name.en, sx, sy, i === this.dFocus ? '#ffff55' : '#fff');
+        if (sx < -40 || sy < -40 || sx > cw + 40 || sy > ch + 40) return;
+        const focus = i === this.dFocus || i === this.dHover;
+        if (sz >= 12 || focus) {
+          districtIcons = true;
+          const z = Math.max(sz, 18) * (focus ? 1.3 : 1);
+          ctx.fillStyle = 'rgba(0,0,0,.3)';
+          ctx.beginPath(); ctx.ellipse(sx, sy + z * .42, z * .32, z * .09, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(L.sprite(i).canvas, Math.round(sx - z / 2), Math.round(sy - z / 2 - z * .12), Math.round(z), Math.round(z));
+          if (area >= 2600 || focus) this._text(d.name.en, sx, Math.round(sy + z * .5 + 7), i === this.dFocus ? '#ffff55' : '#fff');
+        } else if (area >= 2600) {
+          this._text(d.name.en, sx, sy, '#fff');
+        }
       });
     }
 
@@ -275,6 +288,6 @@ export class MapView {
     };
     for (const i of this.order) if (i !== hov && i !== sel) drawIcon(i, false);
     if (hov >= 0 && hov !== sel) drawIcon(hov, true);
-    if (sel >= 0) drawIcon(sel, !districtLabels);
+    if (sel >= 0 && !districtIcons) drawIcon(sel, true);
   }
 }

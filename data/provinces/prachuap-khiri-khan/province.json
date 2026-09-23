@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "One of Thailand's top pineapple producers. Also Hua Hin, the royal seaside town."
+  "lore": "One of Thailand's top pineapple producers. Also Hua Hin, the royal seaside town.",
+  "district_items": {
+    "Hua Hin": {
+      "item": "Beach Palm",
+      "sprite": "palm",
+      "note": "The royal seaside town and its old railway station."
+    },
+    "Sam Roi Yot": {
+      "item": "Cave",
+      "sprite": "cave",
+      "note": "Phraya Nakhon Cave and its pavilion."
+    }
+  }
 }

@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "The 'Dawn of Happiness', first Thai capital. Loy Krathong here is the most famous in the country."
+  "lore": "The 'Dawn of Happiness', first Thai capital. Loy Krathong here is the most famous in the country.",
+  "district_items": {
+    "Mueang Sukhothai": {
+      "item": "Krathong",
+      "sprite": "krathong",
+      "note": "Sukhothai Historical Park, home of the most famous Loy Krathong."
+    },
+    "Si Satchanalai": {
+      "item": "Sangkhalok Jar",
+      "sprite": "jar",
+      "note": "Si Satchanalai historical park and Sangkhalok celadon kilns."
+    }
+  }
 }

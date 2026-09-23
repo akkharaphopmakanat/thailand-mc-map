@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Khao Tang Kwa pomelo, and the giant bird statues of Chai Nat Bird Park."
+  "lore": "Khao Tang Kwa pomelo, and the giant bird statues of Chai Nat Bird Park.",
+  "district_items": {
+    "Mueang Chai Nat": {
+      "item": "Pomelo",
+      "sprite": "pomelo",
+      "note": "Khao Tang Kwa pomelo."
+    }
+  }
 }

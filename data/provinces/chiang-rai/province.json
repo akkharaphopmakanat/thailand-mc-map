@@ -28,5 +28,27 @@
       "................"
     ]
   },
-  "lore": "Wat Rong Khun, a quartz-white temple crafted by artist Chalermchai Kositpipat. The Golden Triangle is at the northern edge."
+  "lore": "Wat Rong Khun, a quartz-white temple crafted by artist Chalermchai Kositpipat. The Golden Triangle is at the northern edge.",
+  "district_items": {
+    "Mueang Chiang Rai": {
+      "item": "White Temple",
+      "sprite": "whiteTemple",
+      "note": "Wat Rong Khun stands just south of the city."
+    },
+    "Mae Sai": {
+      "item": "Border Market",
+      "sprite": "chest",
+      "note": "Thailand's northernmost town, with a busy border market facing Myanmar."
+    },
+    "Chiang Saen": {
+      "item": "Golden Triangle",
+      "sprite": "goldIngot",
+      "note": "Where Thailand, Laos and Myanmar meet on the Mekong."
+    },
+    "Mae Fa Luang": {
+      "item": "Tea Leaves",
+      "sprite": "tea",
+      "note": "Oolong tea terraces at Doi Mae Salong, and Doi Tung."
+    }
+  }
 }

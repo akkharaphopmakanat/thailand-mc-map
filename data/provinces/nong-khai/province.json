@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Naga fireballs rise from the Mekong at the end of Buddhist Lent. The first Friendship Bridge to Laos starts here."
+  "lore": "Naga fireballs rise from the Mekong at the end of Buddhist Lent. The first Friendship Bridge to Laos starts here.",
+  "district_items": {
+    "Phon Phisai": {
+      "item": "Fire Charge",
+      "sprite": "fireball",
+      "note": "Naga fireballs rise from the Mekong here."
+    }
+  }
 }

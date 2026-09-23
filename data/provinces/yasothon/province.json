@@ -28,5 +28,12 @@
       ".......y........"
     ]
   },
-  "lore": "Bun Bang Fai: homemade rockets launched each May to ask the sky for rain."
+  "lore": "Bun Bang Fai: homemade rockets launched each May to ask the sky for rain.",
+  "district_items": {
+    "Mueang Yasothon": {
+      "item": "Firework Rocket",
+      "sprite": "rocket",
+      "note": "Bun Bang Fai rocket festival."
+    }
+  }
 }

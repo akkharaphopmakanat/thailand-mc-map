@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Phra Pathommachedi, about 120 m high, is the tallest stupa in the world."
+  "lore": "Phra Pathommachedi, about 120 m high, is the tallest stupa in the world.",
+  "district_items": {
+    "Mueang Nakhon Pathom": {
+      "item": "Great Stupa",
+      "sprite": "bigChedi",
+      "note": "Phra Pathommachedi."
+    }
+  }
 }

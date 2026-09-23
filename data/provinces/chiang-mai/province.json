@@ -28,5 +28,42 @@
       "................"
     ]
   },
-  "lore": "Thousands of khom loi drift over the Ping River during Yi Peng. Doi Suthep watches from the mountain above the old city."
+  "lore": "Thousands of khom loi drift over the Ping River during Yi Peng. Doi Suthep watches from the mountain above the old city.",
+  "district_items": {
+    "Mueang Chiang Mai": {
+      "item": "Tha Phae Gate",
+      "sprite": "wall",
+      "note": "Brick gates and moat of the old walled city."
+    },
+    "Chom Thong": {
+      "item": "Doi Inthanon",
+      "sprite": "mountain",
+      "note": "Doi Inthanon, Thailand's highest peak at 2,565 m."
+    },
+    "San Kamphaeng": {
+      "item": "Paper Umbrella",
+      "sprite": "umbrella",
+      "note": "Bo Sang village paints its famous paper and cotton umbrellas here."
+    },
+    "Mae Taeng": {
+      "item": "Elephant",
+      "sprite": "elephant",
+      "note": "Elephant camps and sanctuaries along the Mae Taeng valley."
+    },
+    "Fang": {
+      "item": "Orange",
+      "sprite": "orange",
+      "note": "Fang valley is known for its Sai Nam Phueng oranges."
+    },
+    "Chiang Dao": {
+      "item": "Cave",
+      "sprite": "cave",
+      "note": "Chiang Dao Cave, under the limestone peak of Doi Chiang Dao."
+    },
+    "Hang Dong": {
+      "item": "Carved Wood",
+      "sprite": "oakLog",
+      "note": "Ban Tawai woodcarving village."
+    }
+  }
 }

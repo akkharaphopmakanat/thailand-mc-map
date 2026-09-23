@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Sweet maprang plums and waterfalls like Sarika and Nang Rong at the foot of Khao Yai."
+  "lore": "Sweet maprang plums and waterfalls like Sarika and Nang Rong at the foot of Khao Yai.",
+  "district_items": {
+    "Mueang Nakhon Nayok": {
+      "item": "Waterfall",
+      "sprite": "waterfall",
+      "note": "Sarika and Nang Rong waterfalls."
+    }
+  }
 }

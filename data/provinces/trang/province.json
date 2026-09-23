@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Thailand's largest dugong herd grazes on seagrass around Koh Libong."
+  "lore": "Thailand's largest dugong herd grazes on seagrass around Koh Libong.",
+  "district_items": {
+    "Kantang": {
+      "item": "Dugong",
+      "sprite": "dugong",
+      "note": "Ko Libong and its dugongs."
+    }
+  }
 }

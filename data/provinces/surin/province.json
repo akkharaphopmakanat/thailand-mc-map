@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "The Elephant Round-up every November. Surin's Kui people have lived alongside elephants for centuries."
+  "lore": "The Elephant Round-up every November. Surin's Kui people have lived alongside elephants for centuries.",
+  "district_items": {
+    "Tha Tum": {
+      "item": "Elephant",
+      "sprite": "elephant",
+      "note": "Ban Ta Klang, the Kui elephant village."
+    },
+    "Mueang Surin": {
+      "item": "Elephant",
+      "sprite": "elephant",
+      "note": "The Elephant Round-up festival."
+    }
+  }
 }

@@ -28,5 +28,22 @@
       ".......rr......."
     ]
   },
-  "lore": "Dan Sai's ghost festival: towering masks made from rice-steaming baskets and coconut husks. Phu Kradueng's plateau is nearby."
+  "lore": "Dan Sai's ghost festival: towering masks made from rice-steaming baskets and coconut husks. Phu Kradueng's plateau is nearby.",
+  "district_items": {
+    "Dan Sai": {
+      "item": "Phi Ta Khon Mask",
+      "sprite": "mask",
+      "note": "Phi Ta Khon ghost festival."
+    },
+    "Phu Kradueng": {
+      "item": "Mountain",
+      "sprite": "mountain",
+      "note": "The flat-topped Phu Kradueng plateau."
+    },
+    "Chiang Khan": {
+      "item": "Sea of Mist",
+      "sprite": "mountainCloud",
+      "note": "Mekong riverside town; mist at Phu Thok."
+    }
+  }
 }

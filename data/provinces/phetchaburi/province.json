@@ -28,5 +28,22 @@
       "................"
     ]
   },
-  "lore": "Sugar-palm country, famous for sweets like khanom mo kaeng. King Mongkut's palace sits on Khao Wang."
+  "lore": "Sugar-palm country, famous for sweets like khanom mo kaeng. King Mongkut's palace sits on Khao Wang.",
+  "district_items": {
+    "Mueang Phetchaburi": {
+      "item": "Hilltop Palace",
+      "sprite": "shrine",
+      "note": "Phra Nakhon Khiri palace on Khao Wang."
+    },
+    "Cha-am": {
+      "item": "Beach Palm",
+      "sprite": "palm",
+      "note": "Cha-am beach."
+    },
+    "Kaeng Krachan": {
+      "item": "Forest",
+      "sprite": "tree",
+      "note": "Kaeng Krachan, Thailand's largest national park."
+    }
+  }
 }

@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Glazed dragon jars (โอ่งมังกร) and the Damnoen Saduak floating market."
+  "lore": "Glazed dragon jars (โอ่งมังกร) and the Damnoen Saduak floating market.",
+  "district_items": {
+    "Damnoen Saduak": {
+      "item": "Longtail Boat",
+      "sprite": "longtail",
+      "note": "Damnoen Saduak floating market."
+    }
+  }
 }

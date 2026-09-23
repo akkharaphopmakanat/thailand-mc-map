@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Indigo-dyed mo hom shirts are worn across the north. Phrae's teak mansions are built from the same forests."
+  "lore": "Indigo-dyed mo hom shirts are worn across the north. Phrae's teak mansions are built from the same forests.",
+  "district_items": {
+    "Mueang Phrae": {
+      "item": "Teak Log",
+      "sprite": "oakLog",
+      "note": "Teak mansions such as Khum Vongburi."
+    }
+  }
 }

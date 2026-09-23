@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 """Regenerate the generated data files under data/.
 
-Hand-written content lives in data/provinces/<slug>/province.json and is never
-touched by this script. It (re)writes:
+Hand-written content lives in data/provinces/<slug>/province.json (including
+optional `district_items` landmarks keyed by district English name) and
+data/sprites.json; this script never touches them. It (re)writes:
 
   data/map.json                               province block grid for the whole country
   data/provinces/<slug>/districts.json        amphoe / khet raster + names
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
+  data/elevation.json                         mean height (m) per map block, land and sea
 
 Sources (downloaded into tools/.cache on first run):
   th.json       province polygons      github.com/apisit/thailand.json
   adm2.geojson  district polygons      geoBoundaries THA ADM2 (CC BY 3.0 IGO)
   pds.json      Thai admin names       github.com/kongvut/thai-province-data (MIT)
+  terrarium/    elevation tiles, z7    AWS Terrain Tiles (Mapzen terrarium encoding)
 
 Usage: python3 tools/build_data.py
 """
-import json, math, os, re, sys, urllib.request
+import base64, json, math, os, re, sys, urllib.request
 from collections import deque
 from difflib import SequenceMatcher
 
@@ -48,6 +51,59 @@ def source(name):
         urllib.request.urlretrieve(SOURCES[name], path)
     with open(path, encoding='utf-8') as f:
         return json.load(f)
+
+
+# ---------------------------------------------------------------- elevation
+TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
+TILE_Z = 7  # ~1.2 km pixels, averaged down to 0.04° blocks
+
+
+def tile_xy(lat, lon, z):
+    n = 2 ** z
+    x = (lon + 180) / 360 * n
+    y = (1 - math.asinh(math.tan(math.radians(lat))) / math.pi) / 2 * n
+    return x, y
+
+
+def build_elevation():
+    """Mean elevation (metres, negative = sea depth) per 0.04° block, written as base64 int16."""
+    import numpy as np
+    from PIL import Image
+    W = round((LON1 - LON0) / S); H = round((LAT1 - LAT0) / S)
+    x0, y0 = tile_xy(LAT1, LON0, TILE_Z)
+    x1, y1 = tile_xy(LAT0, LON1, TILE_Z)
+    tx0, ty0, tx1, ty1 = int(x0), int(y0), int(x1), int(y1)
+    mosaic = np.zeros(((ty1 - ty0 + 1) * 256, (tx1 - tx0 + 1) * 256), dtype=np.float32)
+    tdir = os.path.join(CACHE, 'terrarium')
+    os.makedirs(tdir, exist_ok=True)
+    for ty in range(ty0, ty1 + 1):
+        for tx in range(tx0, tx1 + 1):
+            path = os.path.join(tdir, f'{TILE_Z}_{tx}_{ty}.png')
+            if not os.path.exists(path):
+                print('downloading tile', tx, ty, file=sys.stderr)
+                urllib.request.urlretrieve(TILE_URL.format(z=TILE_Z, x=tx, y=ty), path)
+            px = np.asarray(Image.open(path).convert('RGB'), dtype=np.float32)
+            elev = px[..., 0] * 256 + px[..., 1] + px[..., 2] / 256 - 32768
+            mosaic[(ty - ty0) * 256:(ty - ty0 + 1) * 256, (tx - tx0) * 256:(tx - tx0 + 1) * 256] = elev
+    # 4x4 samples per block, averaged
+    k = 4
+    lats = LAT1 - (np.arange(H * k) + .5) * S / k
+    lons = LON0 + (np.arange(W * k) + .5) * S / k
+    n = 2 ** TILE_Z
+    py = ((1 - np.arcsinh(np.tan(np.radians(lats))) / np.pi) / 2 * n - ty0) * 256
+    px_ = ((lons + 180) / 360 * n - tx0) * 256
+    py = np.clip(py.astype(int), 0, mosaic.shape[0] - 1)
+    px_ = np.clip(px_.astype(int), 0, mosaic.shape[1] - 1)
+    fine = mosaic[np.ix_(py, px_)]
+    blocks = fine.reshape(H, k, W, k).mean(axis=(1, 3))
+    heights = np.round(blocks).astype('<i2')
+    dump(os.path.join(DATA, 'elevation.json'), {
+        'W': W, 'H': H, 'unit': 'm', 'encoding': 'int16le-base64', 'source': 'terrarium',
+        'min': int(heights.min()), 'max': int(heights.max()),
+        'data': base64.b64encode(heights.tobytes()).decode('ascii'),
+    })
+    print(f'elevation.json: {heights.min()} .. {heights.max()} m')
+    return heights.astype(int).tolist()
 
 
 def polygons(geom):
@@ -274,7 +330,42 @@ def match_names(geo_names, ref):
     return out
 
 
-def build_districts(slug, prov_feature, adm2, ref_prov):
+# ---------------------------------------------------------------- district items
+# Terrain-derived icons for districts without a hand-picked landmark in province.json.
+REGION_FARM = {
+    'C': ('rice', 'Rice', 'Lowland rice farming'),
+    'N': ('rice', 'Rice', 'Valley rice farming'),
+    'NE': ('sugarCane', 'Sugar Cane', 'Isan plateau farmland: sugar cane, cassava and rice'),
+    'W': ('sugarCane', 'Sugar Cane', 'Sugar cane and fruit farms'),
+    'E': ('berries', 'Sweet Berries', 'Fruit orchards: durian, rambutan, mangosteen'),
+    'S': ('rubberTree', 'Rubber Tree', 'Rubber and oil palm plantations'),
+}
+
+
+def district_item(name, slug, region, curated, stats):
+    """Pick {name, sprite, note, kind} for one district."""
+    if name in curated:
+        c = curated[name]
+        return {'name': c['item'], 'sprite': c['sprite'], 'note': c['note'], 'kind': 'landmark'}
+    elev, coastal, island = stats
+    e = f'average elevation about {int(round(elev, -1))} m'
+    if name.startswith(('Mueang ', 'Khet Phra Nakhon')):
+        return {'name': 'Town Bell', 'sprite': 'bell', 'note': 'Provincial capital district (amphoe mueang).', 'kind': 'terrain'}
+    if slug == 'bangkok':
+        return {'name': 'Skyscraper', 'sprite': 'tower', 'note': 'Urban district (khet) of Bangkok.', 'kind': 'terrain'}
+    if island:
+        return {'name': 'Beach Palm', 'sprite': 'palm', 'note': 'Island district.', 'kind': 'terrain'}
+    if elev >= 700:
+        return {'name': 'Stone', 'sprite': 'mountain', 'note': f'Mountain district, {e}.', 'kind': 'terrain'}
+    if elev >= 300:
+        return {'name': 'Spruce Sapling', 'sprite': 'tree', 'note': f'Forested hills, {e}.', 'kind': 'terrain'}
+    if coastal:
+        return {'name': 'Raw Fish', 'sprite': 'fish', 'note': f'Coastal district, {e}.', 'kind': 'terrain'}
+    spr, item, why = REGION_FARM[region]
+    return {'name': item, 'sprite': spr, 'note': f'{why}; {e}.', 'kind': 'terrain'}
+
+
+def build_districts(slug, prov_feature, adm2, ref_prov, meta, heights, sea, sprite_lib):
     ppolys = polygons(prov_feature['geometry'])
     x0, y0, x1, y1 = bbox(ppolys)
     res = min(0.01, max(0.0025, math.sqrt((x1 - x0) * (y1 - y0) / 60000)))
@@ -312,18 +403,48 @@ def build_districts(slug, prov_feature, adm2, ref_prov):
     matched = match_names(geo_names, ref)
     anc, cells = anchors(grid, w, h, len(members))
 
-    districts, symbols = [], []
+    # Per-district terrain stats from the country block grid: mean elevation, coast, island
+    Hc, Wc = len(sea), len(sea[0])
+    acc = [[0.0, 0, 0, 0] for _ in members]  # elev sum, cells, coastal cells, cells over sea blocks
+    for r in range(h):
+        lat = lat1 - (r + .5) * res
+        gr = min(max(int((LAT1 - lat) / S), 0), Hc - 1)
+        for c in range(w):
+            v = grid[r][c]
+            if v < 0:
+                continue
+            gc = min(max(int((lon0 + (c + .5) * res - LON0) / S), 0), Wc - 1)
+            a = acc[v]
+            a[0] += max(heights[gr][gc], 0); a[1] += 1
+            if sea[gr][gc]:
+                a[3] += 1
+            elif any(0 <= gr + dr < Hc and 0 <= gc + dc < Wc and sea[gr + dr][gc + dc] for dr, dc in DIRS4):
+                a[2] += 1
+    stats = [(a[0] / a[1] if a[1] else 0, a[2] + a[3] > 0, a[1] and a[3] / a[1] > .5) for a in acc]
+
+    curated = meta[slug].get('district_items', {})
+    region = meta[slug]['region']
+    districts = []
     for k, f in enumerate(members):
         d = ref[matched[k]] if k in matched else None
+        en = d['name_en'] if d else geo_names[k]
         districts.append({
             'id': d['id'] if d else None,
-            'name': {'en': d['name_en'] if d else geo_names[k], 'th': d['name_th'] if d else ''},
+            'name': {'en': en, 'th': d['name_th'] if d else ''},
             'anchor': anc[k], 'cells': cells[k],
+            'elevation': int(round(stats[k][0])),
+            'item': district_item(en, slug, region, curated, stats[k]),
         })
     # kongvut districts without a boundary in geoBoundaries (e.g. newer amphoe): names only
     matched_ref = set(matched.values())
-    extra = [{'id': d['id'], 'name': {'en': d['name_en'], 'th': d['name_th']}, 'anchor': None, 'cells': 0}
+    extra = [{'id': d['id'], 'name': {'en': d['name_en'], 'th': d['name_th']}, 'anchor': None, 'cells': 0,
+              'item': district_item(d['name_en'], slug, region, curated, (0, False, False))}
              for i, d in enumerate(ref) if i not in matched_ref]
+    missing = set(curated) - {x['name']['en'] for x in districts + extra}
+    if missing:
+        print(f'  {slug}: district_items with unknown names: {sorted(missing)}', file=sys.stderr)
+    used = {x['item']['sprite'] for x in districts + extra}
+    sprites = {sid: sprite_lib[sid] for sid in sorted(used)}
 
     chars = [chr(c) for c in range(0x30, 0x7f) if chr(c) not in '\\`~.'] + \
             [chr(c) for c in range(0xc0, 0x250)]
@@ -331,7 +452,7 @@ def build_districts(slug, prov_feature, adm2, ref_prov):
     dump(os.path.join(PROV_DIR, slug, 'districts.json'), {
         'province': slug, 'res': res, 'lon0': lon0, 'lat1': lat1, 'w': w, 'h': h,
         'chars': ''.join(chars[:len(members)]),
-        'districts': districts + extra, 'rows': rows,
+        'districts': districts + extra, 'sprites': sprites, 'rows': rows,
     })
 
     subs = {}
@@ -354,6 +475,14 @@ def main():
     by_dataset = {m['dataset_name']: s for s, m in meta.items()}
     slugs = [by_dataset[f['properties']['name']] for f in th]
     grid = build_map(th, slugs)
+    heights = build_elevation()
+    sea = [[grid[r][c] == -1 and not is_foreign(LAT1 - (r + .5) * S, LON0 + (c + .5) * S)
+            for c in range(len(grid[0]))] for r in range(len(grid))]
+    # district sprites: shared library plus every province's own item sprite
+    with open(os.path.join(DATA, 'sprites.json'), encoding='utf-8') as f:
+        sprite_lib = json.load(f)['sprites']
+    for m in meta.values():
+        sprite_lib.setdefault(m['item']['id'], m['item']['sprite'])
 
     adm2 = [(f, bbox(polygons(f['geometry'])), area(polygons(f['geometry']))) for f in adm2_raw]
     for p in pds:
@@ -369,7 +498,7 @@ def main():
         if ref is None:
             print('  no name data for', slug, file=sys.stderr)
         n_geo, n_match, n_ref, n_sub = build_districts(
-            slug, f, [a[0] for a, o in zip(adm2, owner) if o == pi], ref)
+            slug, f, [a[0] for a, o in zip(adm2, owner) if o == pi], ref, meta, heights, sea, sprite_lib)
         tot = [a + b for a, b in zip(tot, (n_geo, n_match, n_ref, n_sub))]
         if n_match < max(n_geo, n_ref):
             print(f'  {slug}: {n_geo} shapes, {n_ref} named, {n_match} matched')

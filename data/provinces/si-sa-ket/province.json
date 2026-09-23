@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Wat Pa Maha Chedi Kaew, the 'Temple of a Million Bottles', is built from recycled green and brown glass."
+  "lore": "Wat Pa Maha Chedi Kaew, the 'Temple of a Million Bottles', is built from recycled green and brown glass.",
+  "district_items": {
+    "Khun Han": {
+      "item": "Glass Bottle",
+      "sprite": "bottle",
+      "note": "Wat Pa Maha Chedi Kaew, the Temple of a Million Bottles."
+    }
+  }
 }

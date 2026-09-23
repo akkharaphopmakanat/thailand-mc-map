@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Sweet tamarind orchards, plus the misty peaks of Khao Kho and Phu Thap Boek."
+  "lore": "Sweet tamarind orchards, plus the misty peaks of Khao Kho and Phu Thap Boek.",
+  "district_items": {
+    "Khao Kho": {
+      "item": "Sea of Mist",
+      "sprite": "mountainCloud",
+      "note": "Misty ridges of Khao Kho."
+    }
+  }
 }

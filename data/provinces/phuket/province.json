@@ -28,5 +28,17 @@
       "uuuuuuuuuuuuuuuu"
     ]
   },
-  "lore": "Thailand's largest island. Sino-Portuguese shophouses and Andaman beaches."
+  "lore": "Thailand's largest island. Sino-Portuguese shophouses and Andaman beaches.",
+  "district_items": {
+    "Mueang Phuket": {
+      "item": "Old Town",
+      "sprite": "tower",
+      "note": "Sino-Portuguese shophouses of Phuket Old Town."
+    },
+    "Kathu": {
+      "item": "Beach Palm",
+      "sprite": "palm",
+      "note": "Patong Beach."
+    }
+  }
 }

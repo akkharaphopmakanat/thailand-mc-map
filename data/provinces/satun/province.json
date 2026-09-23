@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Koh Lipe's coral reefs and the Satun UNESCO Global Geopark."
+  "lore": "Koh Lipe's coral reefs and the Satun UNESCO Global Geopark.",
+  "district_items": {
+    "Mueang Satun": {
+      "item": "Tropical Fish",
+      "sprite": "tropicalFish",
+      "note": "Ko Lipe and the Adang–Rawi islands."
+    }
+  }
 }

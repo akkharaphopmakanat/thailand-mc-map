@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Mukdahan means 'pearl of the river'. The second Friendship Bridge crosses to Savannakhet here."
+  "lore": "Mukdahan means 'pearl of the river'. The second Friendship Bridge crosses to Savannakhet here.",
+  "district_items": {
+    "Mueang Mukdahan": {
+      "item": "Pearl",
+      "sprite": "pearl",
+      "note": "Riverside Indochina market and the second Friendship Bridge."
+    }
+  }
 }

@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Muak Lek's dairy farms make this Thailand's cow country. Also Phra Phutthabat, the Buddha Footprint shrine."
+  "lore": "Muak Lek's dairy farms make this Thailand's cow country. Also Phra Phutthabat, the Buddha Footprint shrine.",
+  "district_items": {
+    "Muak Lek": {
+      "item": "Milk Bucket",
+      "sprite": "milk",
+      "note": "Dairy farms of Muak Lek."
+    },
+    "Phra Phutthabat": {
+      "item": "Footprint Shrine",
+      "sprite": "shrine",
+      "note": "Wat Phra Phutthabat, the Buddha Footprint."
+    }
+  }
 }

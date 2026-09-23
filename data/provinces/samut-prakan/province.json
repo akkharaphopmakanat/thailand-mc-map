@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Suvarnabhumi Airport, where most visitors first spawn. Also the Erawan Museum and the Ancient City."
+  "lore": "Suvarnabhumi Airport, where most visitors first spawn. Also the Erawan Museum and the Ancient City.",
+  "district_items": {
+    "Bang Phli": {
+      "item": "Elytra",
+      "sprite": "elytra",
+      "note": "Suvarnabhumi Airport."
+    },
+    "Phra Samut Chedi": {
+      "item": "White Chedi",
+      "sprite": "stupa",
+      "note": "Phra Samut Chedi on the Chao Phraya river mouth."
+    }
+  }
 }

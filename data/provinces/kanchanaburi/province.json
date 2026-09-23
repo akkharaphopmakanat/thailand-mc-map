@@ -28,5 +28,22 @@
       "................"
     ]
   },
-  "lore": "The Death Railway and the Bridge on the River Kwai. Erawan Falls drops through seven tiers."
+  "lore": "The Death Railway and the Bridge on the River Kwai. Erawan Falls drops through seven tiers.",
+  "district_items": {
+    "Mueang Kanchanaburi": {
+      "item": "Minecart",
+      "sprite": "minecart",
+      "note": "The Bridge on the River Kwai and the Death Railway."
+    },
+    "Si Sawat": {
+      "item": "Waterfall",
+      "sprite": "waterfall",
+      "note": "Erawan Falls, seven tiers of turquoise pools."
+    },
+    "Sangkhla Buri": {
+      "item": "Wooden Bridge",
+      "sprite": "oakLog",
+      "note": "The long wooden Mon Bridge."
+    }
+  }
 }

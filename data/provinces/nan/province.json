@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Wat Phumin's mural of a man whispering to a woman, 'Pu Man Ya Man', is Nan's most famous painting."
+  "lore": "Wat Phumin's mural of a man whispering to a woman, 'Pu Man Ya Man', is Nan's most famous painting.",
+  "district_items": {
+    "Bo Kluea": {
+      "item": "Mountain Salt",
+      "sprite": "salt",
+      "note": "Salt boiled from ancient brine wells high in the mountains."
+    }
+  }
 }

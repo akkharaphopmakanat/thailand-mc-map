@@ -28,5 +28,12 @@
       ".kk............."
     ]
   },
-  "lore": "Phraya Phichai Dap Hak fought on until his sword broke. Also known for Laplae durian and langsat."
+  "lore": "Phraya Phichai Dap Hak fought on until his sword broke. Also known for Laplae durian and langsat.",
+  "district_items": {
+    "Laplae": {
+      "item": "Durian",
+      "sprite": "durian",
+      "note": "Laplae durian and langsat orchards."
+    }
+  }
 }

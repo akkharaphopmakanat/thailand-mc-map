@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "City of Three Mists. Mountain biome with thick morning fog over Pai and Pang Ung."
+  "lore": "City of Three Mists. Mountain biome with thick morning fog over Pai and Pang Ung.",
+  "district_items": {
+    "Pai": {
+      "item": "Pai Canyon",
+      "sprite": "canyon",
+      "note": "Eroded red ridges of Pai Canyon (Kong Lan)."
+    },
+    "Pang Mapha": {
+      "item": "Cave",
+      "sprite": "cave",
+      "note": "Tham Lod, a river cave full of swifts."
+    }
+  }
 }

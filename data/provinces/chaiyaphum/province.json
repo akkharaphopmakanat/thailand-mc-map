@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Siam tulip (krachiao) fields turn Pa Hin Ngam pink every rainy season."
+  "lore": "Siam tulip (krachiao) fields turn Pa Hin Ngam pink every rainy season.",
+  "district_items": {
+    "Thep Sathit": {
+      "item": "Pink Tulip",
+      "sprite": "tulip",
+      "note": "Siam tulip fields at Pa Hin Ngam."
+    }
+  }
 }

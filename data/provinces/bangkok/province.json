@@ -28,5 +28,42 @@
       "................"
     ]
   },
-  "lore": "Capital spawn point. Tuk-tuks, the Grand Palace, Wat Arun and about 11 million players."
+  "lore": "Capital spawn point. Tuk-tuks, the Grand Palace, Wat Arun and about 11 million players.",
+  "district_items": {
+    "Khet Phra Nakhon": {
+      "item": "Grand Palace",
+      "sprite": "shrine",
+      "note": "The Grand Palace and Wat Phra Kaew."
+    },
+    "Khet Bangkok Yai": {
+      "item": "Temple of Dawn",
+      "sprite": "bigChedi",
+      "note": "Wat Arun on the Thonburi bank."
+    },
+    "Khet Samphanthawong": {
+      "item": "Red Lantern",
+      "sprite": "redLantern",
+      "note": "Yaowarat, Bangkok Chinatown."
+    },
+    "Khet Chatuchak": {
+      "item": "Chest",
+      "sprite": "chest",
+      "note": "Chatuchak Weekend Market."
+    },
+    "Khet Don Mueang": {
+      "item": "Elytra",
+      "sprite": "elytra",
+      "note": "Don Mueang International Airport."
+    },
+    "Khet Bang Rak": {
+      "item": "Skyscraper",
+      "sprite": "tower",
+      "note": "Silom and the MahaNakhon tower."
+    },
+    "Khet Bang Khun Thian": {
+      "item": "Raw Fish",
+      "sprite": "fish",
+      "note": "Bangkok's only stretch of sea coast, with mangroves."
+    }
+  }
 }

@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Khao Phing Kan, better known as James Bond Island, rising from Phang Nga Bay."
+  "lore": "Khao Phing Kan, better known as James Bond Island, rising from Phang Nga Bay.",
+  "district_items": {
+    "Khura Buri": {
+      "item": "Tropical Fish",
+      "sprite": "tropicalFish",
+      "note": "Gateway to the Similan and Surin islands."
+    },
+    "Mueang Phang-nga": {
+      "item": "Karst Island",
+      "sprite": "karst",
+      "note": "Phang Nga Bay and James Bond Island."
+    }
+  }
 }

@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Capital of Siam for 417 years. A UNESCO structure full of ruined prangs, and a Buddha head held in tree roots."
+  "lore": "Capital of Siam for 417 years. A UNESCO structure full of ruined prangs, and a Buddha head held in tree roots.",
+  "district_items": {
+    "Phra Nakhon Si Ayutthaya": {
+      "item": "Ancient Ruins",
+      "sprite": "ruins",
+      "note": "The UNESCO historic city on its river island."
+    },
+    "Bang Pa-in": {
+      "item": "Royal Palace",
+      "sprite": "shrine",
+      "note": "Bang Pa-In Royal Palace, the summer palace."
+    }
+  }
 }

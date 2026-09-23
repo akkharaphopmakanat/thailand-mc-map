@@ -28,5 +28,22 @@
       "................"
     ]
   },
-  "lore": "Khao Yai, Thailand's first national park, spawns great hornbills, gibbons and wild elephants. Korat is the largest province by area."
+  "lore": "Khao Yai, Thailand's first national park, spawns great hornbills, gibbons and wild elephants. Korat is the largest province by area.",
+  "district_items": {
+    "Pak Chong": {
+      "item": "Hornbill",
+      "sprite": "hornbill",
+      "note": "Gateway to Khao Yai National Park."
+    },
+    "Phimai": {
+      "item": "Sandstone Castle",
+      "sprite": "castle",
+      "note": "Prasat Phimai, the largest Khmer temple in Thailand."
+    },
+    "Chok Chai": {
+      "item": "Clay Jar",
+      "sprite": "jar",
+      "note": "Dan Kwian rust-coloured pottery."
+    }
+  }
 }

@@ -28,5 +28,27 @@
       "................"
     ]
   },
-  "lore": "Koh Samui's coconut groves offshore, and the Khao Sok rainforest inland."
+  "lore": "Koh Samui's coconut groves offshore, and the Khao Sok rainforest inland.",
+  "district_items": {
+    "Ko Samui": {
+      "item": "Coconut",
+      "sprite": "coconut",
+      "note": "Coconut groves of Ko Samui."
+    },
+    "Ko Pha-ngan": {
+      "item": "Full Moon",
+      "sprite": "moon",
+      "note": "The Full Moon Party at Haad Rin."
+    },
+    "Ban Ta Khun": {
+      "item": "Karst Island",
+      "sprite": "karst",
+      "note": "Khao Sok and Cheow Lan Lake."
+    },
+    "Chaiya": {
+      "item": "Chedi",
+      "sprite": "stupa",
+      "note": "Phra Borommathat Chaiya."
+    }
+  }
 }

@@ -28,5 +28,27 @@
       "................"
     ]
   },
-  "lore": "The Buffalo Racing Festival runs every October. Pattaya's beaches line the coast."
+  "lore": "The Buffalo Racing Festival runs every October. Pattaya's beaches line the coast.",
+  "district_items": {
+    "Bang Lamung": {
+      "item": "Beach Palm",
+      "sprite": "palm",
+      "note": "Pattaya and the Sanctuary of Truth."
+    },
+    "Si Racha": {
+      "item": "Chili Sauce",
+      "sprite": "sauce",
+      "note": "Hometown of sriracha sauce."
+    },
+    "Sattahip": {
+      "item": "Longtail Boat",
+      "sprite": "longtail",
+      "note": "Navy base and the beaches of Sattahip."
+    },
+    "Mueang Chon Buri": {
+      "item": "Water Buffalo",
+      "sprite": "buffalo",
+      "note": "The Buffalo Racing Festival."
+    }
+  }
 }

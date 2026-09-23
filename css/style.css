@@ -52,6 +52,9 @@ body{
   touch-action:none;
 }
 #map{display:block;width:100%;height:100%;cursor:grab;image-rendering:pixelated}
+#map3d{position:absolute;inset:0;display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+#map3d.over{cursor:pointer}
+.mcbtn:disabled{opacity:.7;cursor:wait}
 #map.dragging{cursor:grabbing}
 #map.over{cursor:pointer}
 .f3{
@@ -61,7 +64,7 @@ body{
 }
 .f3 span{background:rgba(80,80,80,.62);padding:1px 4px;text-shadow:2px 2px 0 var(--text-shadow);white-space:nowrap}
 .f3 .th{font-family:var(--thai);font-size:12px}
-.ctrls{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.ctrls{position:absolute;right:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px)}
 .hint{position:absolute;left:8px;bottom:10px;font-size:12px;color:#e0e0e0;text-shadow:2px 2px 0 #1a1a1a;pointer-events:none}
 /* ---------- Minecraft buttons & inputs ---------- */
 .mcbtn{
@@ -181,6 +184,7 @@ body{
 .tip .t-th{font-family:var(--thai);color:var(--gray);font-size:13px}
 .tip .t-item{color:var(--yellow)}
 .tip .t-reg{color:#7c7cff}
+.tip .t-lore{color:var(--gray);font-size:13px}
 .tip .t-hint{color:#6f6f6f;font-size:12px;margin-top:2px}
 /* ---------- loading ---------- */
 .loading{
@@ -201,7 +205,7 @@ body{
 .dlist{margin-top:8px;max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding-right:2px}
 .drow{
   box-sizing:border-box;width:100%;
-  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;
+  display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;
   text-align:left;font:inherit;font-size:14px;color:#262626;cursor:pointer;
   background:#dcdcdc;border:2px solid #000;box-shadow:inset -2px -2px 0 #9a9a9a;padding:4px 8px;
 }
@@ -209,6 +213,12 @@ body{
 .drow[aria-expanded="true"]{background:#fff6b8}
 .drow:focus-visible{outline:2px solid var(--yellow);outline-offset:1px}
 .drow .th{font-family:var(--thai);font-size:13px;color:var(--ink-soft);margin-left:6px}
+.dicon{width:28px;height:28px;image-rendering:pixelated;background:var(--slot);box-shadow:inset 1px 1px 0 var(--slot-dark),inset -1px -1px 0 #fff}
+.dname{min-width:0}
+.ditem{display:block;font-size:12px;color:#6b5a1e}
+.ditem.lm{color:#8a5a00;font-weight:600}
+.ditem.lm::before{content:"★ "}
+.tlist .dnote{grid-column:1/-1;color:#ffffa8;font-size:13px}
 .drow .n{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
 .drow.nogeo .n::after{content:" · no outline"}
 .tlist{

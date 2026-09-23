@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Rong Kluea Market on the Cambodian border is one of Thailand's biggest trading chests."
+  "lore": "Rong Kluea Market on the Cambodian border is one of Thailand's biggest trading chests.",
+  "district_items": {
+    "Aranyaprathet": {
+      "item": "Chest",
+      "sprite": "chest",
+      "note": "Rong Kluea border market."
+    },
+    "Ta Phraya": {
+      "item": "Sandstone Castle",
+      "sprite": "castle",
+      "note": "Prasat Sdok Kok Thom."
+    }
+  }
 }

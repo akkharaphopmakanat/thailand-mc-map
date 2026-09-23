@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Wat Phra Si Rattana Mahathat houses Phra Buddha Chinnarat, often called Thailand's most beautiful Buddha image."
+  "lore": "Wat Phra Si Rattana Mahathat houses Phra Buddha Chinnarat, often called Thailand's most beautiful Buddha image.",
+  "district_items": {
+    "Mueang Phitsanulok": {
+      "item": "Golden Shrine",
+      "sprite": "shrine",
+      "note": "Wat Phra Si Rattana Mahathat and Phra Buddha Chinnarat."
+    },
+    "Nakhon Thai": {
+      "item": "Mountain",
+      "sprite": "mountain",
+      "note": "Phu Hin Rong Kla National Park."
+    }
+  }
 }

@@ -28,5 +28,12 @@
       ".......b........"
     ]
   },
-  "lore": "Home of nang talung shadow puppets and Wat Phra Mahathat."
+  "lore": "Home of nang talung shadow puppets and Wat Phra Mahathat.",
+  "district_items": {
+    "Mueang Nakhon Si Thammarat": {
+      "item": "Shadow Puppet",
+      "sprite": "puppet",
+      "note": "Nang talung puppets and Wat Phra Mahathat."
+    }
+  }
 }

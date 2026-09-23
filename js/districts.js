@@ -1,5 +1,6 @@
 // Builds the drawable district (amphoe) layer for one province from its districts.json raster.
 import { B } from './config.js';
+import { spriteFromRows } from './sprites.js';
 
 /**
  * @param {object} d    result of loadDistricts()
@@ -52,6 +53,11 @@ export function buildDistrictLayer(d, map) {
     slug: d.province,
     districts: d.districts,
     k, fills, edges, inner, bb,
+    /** Sprite for district i's iconic item. */
+    sprite(i) {
+      const id = d.districts[i].item?.sprite;
+      return spriteFromRows('d:' + id, d.sprites?.[id]);
+    },
     /** World-pixel label point for district i, or null when it has no outline. */
     anchor(i) {
       const a = d.districts[i].anchor;

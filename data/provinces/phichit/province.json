@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Setting of the legend of Krai Thong and Chalawan, the crocodile king."
+  "lore": "Setting of the legend of Krai Thong and Chalawan, the crocodile king.",
+  "district_items": {
+    "Mueang Phichit": {
+      "item": "Crocodile",
+      "sprite": "croc",
+      "note": "Bueng Si Fai and the Chalawan legend."
+    }
+  }
 }

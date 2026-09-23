@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Thale Noi's wetland is carpeted with water lilies and full of waterbirds."
+  "lore": "Thale Noi's wetland is carpeted with water lilies and full of waterbirds.",
+  "district_items": {
+    "Khuan Khanun": {
+      "item": "Lily Pad",
+      "sprite": "lilypad",
+      "note": "Thale Noi wetland."
+    }
+  }
 }

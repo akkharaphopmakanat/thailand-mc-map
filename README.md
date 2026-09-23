@@ -4,7 +4,8 @@ Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
 
 A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
-districts (อำเภอ / เขต) and sub-districts (ตำบล / แขวง).
+districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
+Switch to the **3D** view to fly over real terrain built from elevation data.
 
 ## Run it
 
@@ -27,9 +28,10 @@ js/
   data.js                   loads map.json and per-province files (districts lazily)
   rle.js                    decoder for the run-length-encoded rasters
   noise.js                  hash / value noise for terrain
-  world.js                  renders the terrain canvas and province paths
+  world.js                  classifies blocks (shared by 2D/3D) and renders the 2D terrain
   districts.js              builds the district layer for a selected province
-  mapView.js                canvas camera, pan/zoom/pinch, picking, drawing
+  mapView.js                2D canvas camera, pan/zoom/pinch, picking, drawing
+  view3d.js                 3D voxel view (three.js from cdnjs, loaded on demand)
   sprites.js                16×16 item sprite → canvas / data URL
   inventory.js              creative-inventory grid with region tabs and search
   panel.js                  selected province card + district/tambon browser
@@ -38,10 +40,12 @@ js/
   f3.js                     F3 debug overlay (lat/lon, biome, province, district)
 data/
   sources.json              data references and credits
+  elevation.json            real mean elevation / sea depth per block (int16, base64)   [generated]
+  sprites.json              shared 16×16 sprites for district items                   [hand-written]
   map.json                  country block grid (0.04° ≈ 4.4 km), anchors, neighbours  [generated]
   provinces/<slug>/
-    province.json           name, region, item name + sprite, description             [hand-written]
-    districts.json          district raster + Thai/English names                      [generated]
+    province.json           name, region, item + sprite, description, district_items  [hand-written]
+    districts.json          district raster, names and each district's item           [generated]
     subdistricts.json       tambon names + postcodes, keyed by district id            [generated]
 tools/build_data.py         regenerates the [generated] files
 ```
@@ -51,6 +55,20 @@ tools/build_data.py         regenerates the [generated] files
 Change `data/provinces/<slug>/province.json`. The `item.sprite` is 16 rows of 16
 characters; each letter is a colour from `PAL` in `js/config.js` and `.` is
 transparent.
+
+District icons: add a landmark under `district_items` in the province file, keyed by
+the district's English name as it appears in `districts.json`:
+
+```json
+"district_items": {
+  "Chom Thong": { "item": "Doi Inthanon", "sprite": "mountain", "note": "Thailand's highest peak." }
+}
+```
+
+`sprite` is any id from `data/sprites.json` or any province's `item.id`. Districts
+without a landmark get an item chosen from their real average elevation, coastline
+and region (mountain, forest, coast, rice, sugar cane, rubber, orchards…), and the
+page says so in the district's note.
 
 ## Rebuilding the data
 
@@ -75,6 +93,7 @@ which the page's Credits panel is built from.
 | Province boundaries | [apisit/thailand.json](https://github.com/apisit/thailand.json) | none stated | Province outlines (`data/map.json`) |
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) THA ADM2, gbOpen — Royal Thai Survey Department / OCHA ROAP | CC BY 3.0 IGO | District outlines (`districts.json`) |
 | District and sub-district names, postcodes | [kongvut/thai-province-data](https://github.com/kongvut/thai-province-data) by Kongvut Sangkla | MIT | Names and postcodes (`districts.json`, `subdistricts.json`) |
+| Elevation and sea depth | [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) (Mapzen terrarium; SRTM, GMTED, ETOPO1 and others) | public, attribution required | `elevation.json`, 2D relief, 3D view |
 
 geoBoundaries citation: Runfola, D. et al. (2020) *geoBoundaries: A global database of
 political administrative boundaries.* PLoS ONE 15(4): e0231866.
@@ -87,7 +106,8 @@ tambon boundary dataset, so tambon are listed rather than drawn. Three named
 districts have no outline in the boundary data (Ko Sichang, and two entries in
 Ratchaburi and Songkhla), so they are listed but not drawn.
 
-Terrain height and trees are generated for looks, not surveyed. Province items,
-sprites and descriptions are original to this project.
+Elevation is real but averaged over 4.4 km blocks; trees and paddies are generated
+for looks. Province items, sprites and descriptions are original to this project.
+The 3D view loads [three.js](https://threejs.org/) r128 (MIT) from cdnjs.
 
 *Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.*

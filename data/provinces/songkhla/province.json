@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "The Cat and Mouse Islands off Samila Beach, guarded by a golden mermaid."
+  "lore": "The Cat and Mouse Islands off Samila Beach, guarded by a golden mermaid.",
+  "district_items": {
+    "Hat Yai": {
+      "item": "Chest",
+      "sprite": "chest",
+      "note": "The south's biggest shopping city."
+    },
+    "Mueang Songkhla": {
+      "item": "Cat",
+      "sprite": "cat",
+      "note": "Samila Beach, the mermaid and Cat and Mouse Islands."
+    }
+  }
 }

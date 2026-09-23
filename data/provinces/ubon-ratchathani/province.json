@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "The Candle Festival parades giant carved-wax sculptures at the start of Buddhist Lent. Thailand's easternmost point, Pha Taem, is here."
+  "lore": "The Candle Festival parades giant carved-wax sculptures at the start of Buddhist Lent. Thailand's easternmost point, Pha Taem, is here.",
+  "district_items": {
+    "Mueang Ubon Ratchathani": {
+      "item": "Candle",
+      "sprite": "candle",
+      "note": "The Candle Festival parade."
+    },
+    "Khong Chiam": {
+      "item": "Cliff Painting",
+      "sprite": "painting",
+      "note": "Prehistoric paintings at Pha Taem, where the Mun meets the Mekong."
+    }
+  }
 }

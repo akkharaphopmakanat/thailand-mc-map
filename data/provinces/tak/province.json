@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Thi Lo Su in Umphang, the largest waterfall in Thailand."
+  "lore": "Thi Lo Su in Umphang, the largest waterfall in Thailand.",
+  "district_items": {
+    "Umphang": {
+      "item": "Waterfall",
+      "sprite": "waterfall",
+      "note": "Thi Lo Su, the largest waterfall in Thailand."
+    },
+    "Mae Sot": {
+      "item": "Border Market",
+      "sprite": "chest",
+      "note": "Rim Moei market by the Friendship Bridge to Myawaddy."
+    }
+  }
 }

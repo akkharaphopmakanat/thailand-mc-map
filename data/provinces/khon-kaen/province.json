@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Phu Wiang gave up Thailand's first dinosaur fossil, Phuwiangosaurus sirindhornae."
+  "lore": "Phu Wiang gave up Thailand's first dinosaur fossil, Phuwiangosaurus sirindhornae.",
+  "district_items": {
+    "Phu Wiang": {
+      "item": "Dinosaur Bone",
+      "sprite": "bone",
+      "note": "Phu Wiang dinosaur fossils."
+    },
+    "Chonnabot": {
+      "item": "Silk",
+      "sprite": "silk",
+      "note": "Chonnabot mudmee silk."
+    }
+  }
 }

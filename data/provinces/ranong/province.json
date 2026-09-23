@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Raksawarin hot springs reach about 65 °C. One of the rainiest provinces in Thailand."
+  "lore": "Raksawarin hot springs reach about 65 °C. One of the rainiest provinces in Thailand.",
+  "district_items": {
+    "Mueang Ranong": {
+      "item": "Hot Spring",
+      "sprite": "hotspring",
+      "note": "Raksawarin hot springs."
+    }
+  }
 }

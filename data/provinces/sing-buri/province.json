@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Salt-grilled pla chon is Sing Buri's signature. Land of the Bang Rachan heroes."
+  "lore": "Salt-grilled pla chon is Sing Buri's signature. Land of the Bang Rachan heroes.",
+  "district_items": {
+    "Khai Bang Rachan": {
+      "item": "Iron Sword",
+      "sprite": "sword",
+      "note": "Bang Rachan camp and its heroes."
+    }
+  }
 }

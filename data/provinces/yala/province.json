@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Betong's giant mailbox is one of the largest in the world."
+  "lore": "Betong's giant mailbox is one of the largest in the world.",
+  "district_items": {
+    "Betong": {
+      "item": "Giant Mailbox",
+      "sprite": "mailbox",
+      "note": "Betong's giant mailbox and the Aiyerweng sea of mist."
+    }
+  }
 }

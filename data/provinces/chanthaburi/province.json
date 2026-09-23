@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Thailand's gem trading hub. Rubies and sapphires change hands at the weekend market in the old town."
+  "lore": "Thailand's gem trading hub. Rubies and sapphires change hands at the weekend market in the old town.",
+  "district_items": {
+    "Mueang Chanthaburi": {
+      "item": "Ruby",
+      "sprite": "gem",
+      "note": "The weekend gem market in the old town."
+    }
+  }
 }

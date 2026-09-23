@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Huai Kha Khaeng, a UNESCO sanctuary with one of Southeast Asia's strongest wild tiger populations."
+  "lore": "Huai Kha Khaeng, a UNESCO sanctuary with one of Southeast Asia's strongest wild tiger populations.",
+  "district_items": {
+    "Lan Sak": {
+      "item": "Tiger",
+      "sprite": "tiger",
+      "note": "Huai Kha Khaeng Wildlife Sanctuary."
+    }
+  }
 }

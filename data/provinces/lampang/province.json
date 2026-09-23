@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "The red rooster bowl (ชามตราไก่) is fired in Lampang's kilns. Horse-drawn carriages still roam the town."
+  "lore": "The red rooster bowl (ชามตราไก่) is fired in Lampang's kilns. Horse-drawn carriages still roam the town.",
+  "district_items": {
+    "Mueang Lampang": {
+      "item": "Horse Carriage",
+      "sprite": "horse",
+      "note": "The last town in Thailand where horse carriages are everyday transport."
+    },
+    "Ko Kha": {
+      "item": "Lampang Luang Temple",
+      "sprite": "shrine",
+      "note": "Wat Phra That Lampang Luang, a walled Lanna temple."
+    }
+  }
 }

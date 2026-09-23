@@ -28,5 +28,12 @@
       "................"
     ]
   },
-  "lore": "Rice bowl of the central plains. Home of the Dragon Descendants Museum."
+  "lore": "Rice bowl of the central plains. Home of the Dragon Descendants Museum.",
+  "district_items": {
+    "Mueang Suphan Buri": {
+      "item": "Dragon Head",
+      "sprite": "dragon",
+      "note": "Dragon Descendants Museum."
+    }
+  }
 }

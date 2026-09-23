@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Longtail boats run to Railay, the Phi Phi islands and the Four Islands."
+  "lore": "Longtail boats run to Railay, the Phi Phi islands and the Four Islands.",
+  "district_items": {
+    "Mueang Krabi": {
+      "item": "Longtail Boat",
+      "sprite": "longtail",
+      "note": "Ao Nang and boats to Railay."
+    },
+    "Ko Lanta": {
+      "item": "Beach Palm",
+      "sprite": "palm",
+      "note": "Ko Lanta beaches."
+    }
+  }
 }

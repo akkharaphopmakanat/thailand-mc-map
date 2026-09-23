@@ -28,5 +28,17 @@
       "................"
     ]
   },
-  "lore": "Drum makers in Ban Ek Rat build temple drums by hand. Wat Muang's giant Buddha stands 93 m tall."
+  "lore": "Drum makers in Ban Ek Rat build temple drums by hand. Wat Muang's giant Buddha stands 93 m tall.",
+  "district_items": {
+    "Pa Mok": {
+      "item": "Temple Drum",
+      "sprite": "drum",
+      "note": "Drum makers of Ban Ek Rat."
+    },
+    "Wiset Chai Chan": {
+      "item": "Golden Shrine",
+      "sprite": "shrine",
+      "note": "Wat Muang's giant Buddha."
+    }
+  }
 }

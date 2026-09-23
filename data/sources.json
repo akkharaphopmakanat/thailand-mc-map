@@ -30,15 +30,39 @@
       "url": "https://github.com/kongvut/thai-province-data",
       "license": "MIT",
       "used_for": "Thai and English names of districts and sub-districts (tambon / khwaeng) and postcodes in data/provinces/*/districts.json and subdistricts.json"
+    },
+    {
+      "id": "elevation",
+      "title": "Terrain Tiles on AWS (terrarium encoding, zoom 7)",
+      "author": "Mapzen / Linux Foundation; includes SRTM and GMTED (NASA/USGS), ETOPO1 (NOAA) and other public sources",
+      "url": "https://registry.opendata.aws/terrain-tiles/",
+      "license": "Public data; attribution to the underlying sources required (see the dataset's attribution page)",
+      "used_for": "Mean land elevation and sea depth per map block in data/elevation.json (2D relief and the 3D view)"
     }
   ],
   "fonts": [
-    { "title": "Press Start 2P", "author": "CodeMan38", "url": "https://fonts.google.com/specimen/Press+Start+2P", "license": "SIL Open Font License 1.1" },
-    { "title": "Pixelify Sans", "author": "Stefie Justprince", "url": "https://fonts.google.com/specimen/Pixelify+Sans", "license": "SIL Open Font License 1.1" },
-    { "title": "Kanit", "author": "Cadson Demak", "url": "https://fonts.google.com/specimen/Kanit", "license": "SIL Open Font License 1.1" }
+    {
+      "title": "Press Start 2P",
+      "author": "CodeMan38",
+      "url": "https://fonts.google.com/specimen/Press+Start+2P",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "title": "Pixelify Sans",
+      "author": "Stefie Justprince",
+      "url": "https://fonts.google.com/specimen/Pixelify+Sans",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "title": "Kanit",
+      "author": "Cadson Demak",
+      "url": "https://fonts.google.com/specimen/Kanit",
+      "license": "SIL Open Font License 1.1"
+    }
   ],
   "notes": [
-    "Terrain height, trees and paddies are generated procedurally for looks, not surveyed.",
+    "Trees and rice paddies are generated for looks; elevation is real but averaged over 4.4 km blocks.",
+    "District landmark items are hand-picked for well-known districts; the rest are chosen from real elevation, coastline and region.",
     "Province items, pixel sprites and descriptions are original to this project.",
     "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft."
   ]
