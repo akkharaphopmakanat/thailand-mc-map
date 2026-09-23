@@ -21,6 +21,10 @@
   --thai:'Kanit','Noto Sans Thai',Tahoma,sans-serif;
 }
 html,body{height:100%}
+/* `hidden` must win over component display rules (.loading, .tlist, .tip) */
+[hidden]{display:none!important}
+body{margin:0}
+img{max-width:100%}
 body{
   background-color:var(--ground);
   background-size:64px 64px;
