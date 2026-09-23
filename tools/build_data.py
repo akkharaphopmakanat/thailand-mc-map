@@ -232,8 +232,9 @@ def build_transport(W, H):
                 else:
                     err += dr; c0 += sc
 
-    n = {'road': 0, 'rail': 0, 'river': 0, 'main': 0}
+    n = {'road': 0, 'rail': 0, 'river': 0, 'main': 0, 'bridged': 0, 'joins': 0, 'lakes': 0}
     main_pts = {}                              # river name -> [(lon, lat, angle°)] for labels
+    rivers = []                                # [coords, main?, named?, first node, last node, node ids, label]
     fp = osmium.FileProcessor(cached('thailand-latest.osm.pbf'), osmium.osm.NODE | osmium.osm.WAY) \
         .with_locations().with_filter(osmium.filter.KeyFilter('highway', 'railway', 'waterway'))
     for w in fp:
@@ -245,9 +246,19 @@ def build_transport(W, H):
             layer, code, kind = road, ROAD_CODE[hw], 'road'
         elif rw == 'rail' and t.get('service') is None:
             layer, code, kind = road, RAIL_CODE, 'rail'
-        elif ww == 'river':
-            main = is_main_river(t)
-            layer, code, kind = water, 2 if main else 1, 'river'
+        elif ww == 'river' or (ww == 'canal' and is_main_river(t)):
+            # rivers are drawn after the loop, once gaps in main rivers are bridged; some stretches
+            # of main rivers (e.g. the Ping below Bhumibol dam) are tagged as canals
+            try:
+                coords = [(nd.lon, nd.lat) for nd in w.nodes if nd.location.valid()]
+            except osmium.InvalidLocationError:
+                continue
+            if len(coords) >= 2 and any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in coords):
+                refs = [nd.ref for nd in w.nodes]
+                main = is_main_river(t)
+                rivers.append([coords, main, bool(t.get('name') or t.get('name:en')),
+                               refs[0], refs[-1], refs, river_label(t) if main else ''])
+            continue
         else:
             continue
         try:
@@ -255,23 +266,52 @@ def build_transport(W, H):
         except osmium.InvalidLocationError:
             continue
         if len(coords) >= 2 and any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in coords):
-            line(coords, layer, code, kind == 'river' and code == 2)
+            line(coords, layer, code)
             n[kind] += 1
-            if kind == 'river' and code == 2 and len(coords) >= 3:
-                name = river_label(t)
-                if name:
-                    for (x0, y0), (x1, y1) in zip(coords[::4], coords[2::4]):
-                        main_pts.setdefault(name, []).append(((x0 + x1) / 2, (y0 + y1) / 2,
-                                                              math.degrees(math.atan2(y1 - y0, x1 - x0))))
-            n['main'] += kind == 'river' and code == 2
+
+    # OSM splits a river into many ways and some pieces carry no name; an unnamed river way
+    # whose both ends touch a main river is part of it (repeat so chains of pieces fill in)
+    for _ in range(4):
+        main_nodes = set()
+        for rv in rivers:
+            if rv[1]:
+                main_nodes.update(rv[5])
+        changed = False
+        for rv in rivers:
+            if not rv[1] and not rv[2] and rv[3] in main_nodes and rv[4] in main_nodes:
+                rv[1] = changed = True
+                n['bridged'] += 1
+        if not changed:
+            break
+    # Lakes and reservoirs first (OSM water areas over ~3 km²) as water code 3, so rivers run into them
+    n['lakes'] = paint_lakes(water, W, H)
+    # Join pieces of the same main river whose ends are close, unless a lake already links them
+    def near_lake(pt):
+        r0, c0 = int((LAT1 - pt[1]) / S), int((pt[0] - LON0) / S)
+        return any(0 <= r < H and 0 <= c < W and water[r][c] == 3
+                   for r in range(r0 - 3, r0 + 4) for c in range(c0 - 3, c0 + 4))
+    bridges = [(a, bpt) for a, bpt in join_river_pieces([rv for rv in rivers if rv[1] and rv[6]])
+               if not near_lake(a) and not near_lake(bpt)]
+    for a, bpt in bridges:
+        line([a, bpt], water, 2, True)
+    n['joins'] = len(bridges)
+    for coords, main, named, _, _, _, label in rivers:
+        line(coords, water, 2 if main else 1, main)
+        n['river'] += 1
+        n['main'] += main
+        if main and label and len(coords) >= 3:
+            for (x0, y0), (x1, y1) in zip(coords[::4], coords[2::4]):
+                main_pts.setdefault(label, []).append(((x0 + x1) / 2, (y0 + y1) / 2,
+                                                       math.degrees(math.atan2(y1 - y0, x1 - x0))))
     dump(os.path.join(DATA, 'blocks.json'), {
         'W': W, 'H': H, 'source': 'roads/water: OpenStreetMap contributors (ODbL), via Geofabrik',
         'road_codes': {str(k): v for k, v in TRANSPORT_NAMES.items()},
         'roads': [rle(''.join('.12345'[v] for v in row)) for row in road],
-        'water_codes': {'1': 'small river', '2': 'main river'},
-        'water': [rle(''.join('.12'[v] for v in row)) for row in water],
+        'water_codes': {'1': 'small river', '2': 'main river', '3': 'lake or reservoir'},
+        'water': [rle(''.join('.123'[v] for v in row)) for row in water],
     })
-    print(f"blocks.json: {n['road']} road ways, {n['rail']} rail ways, {n['river']} river ways ({n['main']} main)")
+    print(f"blocks.json: {n['road']} road ways, {n['rail']} rail ways, {n['river']} river ways "
+          f"({n['main']} main, {n['bridged']} unnamed pieces joined, {n['joins']} gaps bridged), {n['lakes']} lakes")
     # River labels on the drawn (OSM) main rivers: repeat along a river, at least ~0.9° apart
     labels = []
     for name, pts in sorted(main_pts.items()):
@@ -284,6 +324,72 @@ def build_transport(W, H):
             labels.append([name, round((lon - LON0) * PX_PER_DEG, 1), round((LAT1 - lat) * PX_PER_DEG, 1), round(ang, 1)])
     print(f'river labels: {len(labels)} for {len(main_pts)} main rivers')
     return labels
+
+
+def join_river_pieces(ways, max_gap=0.03):
+    """Pieces of one main river that don't share a node: connect the closest pair of ends of
+    two pieces when they are within max_gap degrees (~3.3 km), repeatedly (Kruskal-style)."""
+    bridges = []
+    by_label = {}
+    for rv in ways:
+        by_label.setdefault(rv[6], []).append(rv)
+    for label, ws in by_label.items():
+        parent = list(range(len(ws)))
+        def find(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]; i = parent[i]
+            return i
+        owner = {}
+        for i, rv in enumerate(ws):
+            for ref in rv[5]:
+                if ref in owner:
+                    parent[find(i)] = find(owner[ref])
+                else:
+                    owner[ref] = i
+        # candidate joins between ends of ways in different pieces, shortest first
+        ends = [(i, rv[0][0]) for i, rv in enumerate(ws)] + [(i, rv[0][-1]) for i, rv in enumerate(ws)]
+        cand = []
+        for a in range(len(ends)):
+            ia, pa = ends[a]
+            for bb in range(a + 1, len(ends)):
+                ib, pb = ends[bb]
+                d = math.hypot(pa[0] - pb[0], pa[1] - pb[1])
+                if d < max_gap and find(ia) != find(ib):
+                    cand.append((d, ia, ib, pa, pb))
+        for d, ia, ib, pa, pb in sorted(cand):
+            if find(ia) != find(ib):
+                parent[find(ia)] = find(ib)
+                bridges.append((pa, pb))
+    return bridges
+
+
+def paint_lakes(water, W, H, min_area=0.00025):
+    """Rasterise OSM lakes/reservoirs (natural=water, landuse=reservoir) larger than min_area
+    square degrees (~3 km²) into the water layer as code 3. Returns how many were drawn."""
+    import osmium
+    count = 0
+    fp = osmium.FileProcessor(cached('thailand-latest.osm.pbf')).with_areas() \
+        .with_filter(osmium.filter.TagFilter(('natural', 'water'), ('landuse', 'reservoir')))
+    for o in fp:
+        if not o.is_area():
+            continue
+        if o.tags.get('water') in ('river', 'canal', 'stream', 'wastewater', 'moat'):
+            continue                                  # river surfaces: the centre lines already draw those
+        try:
+            rings = [[(nd.lon, nd.lat) for nd in ring] for ring in o.outer_rings()]
+            inner = [[(nd.lon, nd.lat) for nd in ir] for ring in o.outer_rings() for ir in o.inner_rings(ring)]
+        except osmium.InvalidLocationError:
+            continue
+        polys = [[r] for r in rings]
+        if not rings or area(polys) < min_area:
+            continue
+        for r, a, b in raster_spans([rings + inner], LON0, LAT1, S, W, H):
+            row = water[r]
+            for c in range(a, b + 1):
+                if row[c] < 3:
+                    row[c] = 3
+        count += 1
+    return count
 
 
 def h2key(x, y):

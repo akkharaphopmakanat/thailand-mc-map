@@ -23,8 +23,8 @@ const TIE = [112, 84, 52], TIE_D = [84, 62, 38], IRON = [182, 182, 190], IRON_D 
 const GRAVEL = [128, 124, 118], LEVER = [196, 40, 32], GOLD = [238, 196, 48];
 
 /**
- * Track segments for a mask: straights ('ns', 'ew') and curves joining two sides
- * ('ne', 'nw', 'se', 'sw'). Three sides = straight through plus a branching curve (a junction);
+ * Track segments for a mask: straights ('ns', 'ew') and turns joining two sides
+ * ('ne', 'nw', 'se', 'sw'). Three sides = straight through plus a branching turn (a junction);
  * four = a crossing of both straights.
  */
 function railSegments(m) {
@@ -43,14 +43,23 @@ function railSegments(m) {
   return [(e || w) ? 'ew' : 'ns'];                  // single arm (line end) or isolated block
 }
 
-/** (along, across) coordinates of pixel (i, j) for a segment, or null if outside a curve. */
+/**
+ * (along, across) coordinates of pixel (i, j) for a segment. Turns are straight 45° pieces from
+ * the middle of one block edge to the middle of the other, so a staircase of turns lines up
+ * into one straight diagonal track instead of a chain of loops. The gauge is narrowed on the
+ * diagonal so the rails still meet the straight pieces at the block edge.
+ */
+const MID = { n: [8, 0], s: [8, 16], e: [16, 8], w: [0, 8] };
 function railCoords(seg, i, j) {
   if (seg === 'ns') return [j, i];
   if (seg === 'ew') return [i, j];
-  const cx = seg.includes('e') ? 16 : 0, cy = seg.includes('n') ? 0 : 16;
-  const across = Math.hypot(i + .5 - cx, j + .5 - cy) - .5;
+  const [x1, y1] = MID[seg[0]], [x2, y2] = MID[seg[1]];
+  const len = Math.hypot(x2 - x1, y2 - y1), dx = (x2 - x1) / len, dy = (y2 - y1) / len;
+  const px = i + .5 - x1, py = j + .5 - y1;
+  const along = (px * dx + py * dy) / len * 16;
+  const across = 7.5 + (px * -dy + py * dx) / Math.SQRT1_2;
+  // no trim at the ends: the block edge does the cutting, so pieces meet without gaps
   if (across < 0 || across > 15.9) return null;
-  const along = Math.atan2(Math.abs(j + .5 - cy), Math.abs(i + .5 - cx)) / (Math.PI / 2) * 16;
   return [along, across];
 }
 
@@ -72,11 +81,17 @@ export function railTile(mask) {
     for (let j = 0; j < PX; j++) for (let i = 0; i < PX; i++) {
       const ac = railCoords(seg, i, j);
       if (!ac) continue;
-      const a = Math.floor(ac[1]), t = Math.floor(ac[0]) % 4;
+      const t = ((Math.floor(ac[0]) % 4) + 4) % 4;
+      // distance from the two rail centre lines (across 3.5 and 12.5); diagonal pieces use a
+      // slightly wider band so 45° rails draw as solid lines, not dots
+      const diag = seg.length === 2 && seg !== 'ns' && seg !== 'ew';
+      const d = Math.min(Math.abs(ac[1] - 3.5), Math.abs(ac[1] - 12.5));
+      const rail = diag ? .95 : .5, outline = diag ? 1.7 : 1.5;
       if (pass === 'ties') {
+        const a = Math.floor(ac[1]);
         if ((t === 1 || t === 2) && a >= 1 && a <= 14) put(i, j, a === 1 || a === 14 ? TIE_D : TIE);
-      } else if (a === 3 || a === 12) put(i, j, IRON);
-      else if (a === 2 || a === 4 || a === 11 || a === 13) {
+      } else if (d <= rail) put(i, j, IRON);
+      else if (d <= outline) {
         if (!(junction && (t === 1 || t === 2))) put(i, j, IRON_D);
       }
     }

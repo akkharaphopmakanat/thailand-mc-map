@@ -159,7 +159,9 @@ function paintBlocks(atlas, cells, px, PW, wet, layers) {
   for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
     const k = r * W + c;
     if (atlas.grid[k] === -1) continue;
-    const stream = streams?.[k] === 2 ? layers.rivers : streams?.[k] === 1 && layers.streams;
+    // 2 main river and 3 lake/reservoir follow "Main rivers"; 1 small river follows "Small rivers"
+    const w = streams?.[k];
+    const stream = w >= 2 ? layers.rivers : w === 1 && layers.streams;
     if (stream) put(c, r, (x, y, i) => { wet[i] = 1; return tint([58, 104, 214], .94 + h2(x, y, 51) * .1); });
     let rd = roads?.[k];
     if (!roadShown(rd, layers)) rd = 0;
