@@ -10,15 +10,16 @@ async function json(url) {
 
 /**
  * @param {(done: number, total: number) => void} [onProgress]
- * @returns {Promise<{map: object, grid: Int16Array, provinces: object[], roads: object|null, rivers: object|null, elev: Int16Array|null}>}
+ * @returns {Promise<object>} {map, grid, provinces, rivers, elev, roads, streams, settlements, towns}
  */
 export async function loadAtlas(onProgress = () => {}) {
-  const [map, elevation, roads, rivers] = await Promise.all([
+  const [map, blocks, rivers, towns] = await Promise.all([
     json('data/map.json'),
-    loadElevation().catch(() => null),
-    json('data/roads.json').catch(() => null),
+    json('data/blocks.json').catch(() => null),
     json('data/rivers.json').catch(() => null),
+    json('data/towns.json').catch(() => null),
   ]);
+  const elevation = map.elevation ? await loadElevation(map.elevation).catch(() => null) : null;
   const grid = decodeRows(map.rows, map.W, map.H, map.chars, { '.': -1, ',': -2 });
   let done = 0;
   const total = map.provinces.length;
@@ -39,12 +40,18 @@ export async function loadAtlas(onProgress = () => {}) {
       if (r > b[3]) b[3] = r;
     }
   }
-  return { map, grid, provinces, roads, rivers, elev: elevation };
+  return {
+    map, grid, provinces, rivers, elev: elevation,
+    // per-block OSM layers: roads 1 tertiary … 4 motorway/trunk, 5 railway; water 1 river
+    roads: blocks ? decodeRows(blocks.roads, blocks.W, blocks.H, '012345', { '.': 0 }) : null,
+    streams: blocks ? decodeRows(blocks.water, blocks.W, blocks.H, '01', { '.': 0 }) : null,
+    settlements: blocks?.settlements ? decodeRows(blocks.settlements, blocks.W, blocks.H, '0123', { '.': 0 }) : null,
+    towns: towns ? towns.towns.map(([name, th, x, y, kind, population, district]) => ({ name, th, x, y, kind, population, district })) : [],
+  };
 }
 
 /** data/elevation.png: metres per block = R * 256 + G - 32768 (negative = sea depth). */
-async function loadElevation() {
-  const meta = await json('data/elevation.json');
+async function loadElevation(meta) {
   const res = await fetch(`data/${meta.file}`);
   if (!res.ok) throw new Error(`elevation ${res.status}`);
   const blob = await res.blob();
@@ -62,6 +69,11 @@ async function loadElevation() {
 
 const districtCache = new Map();
 const subdistrictCache = new Map();
+
+/** Villages (GeoNames) of one province, keyed by district id: [[name, th, x, y], …] in world px. */
+export async function loadVillages(slug) {
+  return (await loadSubdistricts(slug)).villages?.districts || {};
+}
 
 /** Amphoe/khet raster for one province: {res, lon0, lat1, w, h, districts[], grid}. */
 export function loadDistricts(slug) {

@@ -5,11 +5,12 @@ Hand-written content lives in data/provinces/<slug>/province.json (including
 optional `district_items` landmarks keyed by district English name) and
 data/sprites.json; this script never touches them. It (re)writes:
 
-  data/map.json                               province block grid for the whole country (0.01° blocks)
+  data/map.json                               province block grid for the whole country (0.005° blocks)
+  data/towns.json                             provincial capitals and district seats (GeoNames)
   data/provinces/<slug>/districts.json        amphoe / khet raster + names
-  data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
-  data/elevation.json + elevation.png         mean height (m) per map block, land and sea (R*256+G-32768)
-  data/roads.json                             highways and roads as world-pixel polylines
+  data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes, villages (GeoNames)
+  data/elevation.png                          mean height (m) per map block, land and sea (R*256+G-32768)
+  data/blocks.json                            per-block layers: roads, railways, small rivers (OpenStreetMap), settlements
   data/rivers.json                            rivers (polylines + width) and reservoirs (polygons), world px
 
 Sources (downloaded into tools/.cache on first run):
@@ -17,9 +18,11 @@ Sources (downloaded into tools/.cache on first run):
   adm2.geojson  district polygons      geoBoundaries THA ADM2 (CC BY 3.0 IGO)
   pds.json      Thai admin names       github.com/kongvut/thai-province-data (MIT)
   terrarium/    elevation tiles, z8    AWS Terrain Tiles (Mapzen terrarium encoding)
-  ne_10m_roads.geojson  roads          Natural Earth 1:10m roads (public domain)
   ne_10m_rivers_lake_centerlines.geojson, ne_10m_lakes.geojson   Natural Earth rivers and lakes
   ne_50m_admin_0_countries.geojson  neighbouring countries (land vs sea outside Thailand)
+  geonames_TH.zip  populated places   GeoNames Thailand dump (CC BY 4.0)
+  thailand-latest.osm.pbf  roads, rail, rivers   OpenStreetMap via Geofabrik (ODbL); read with
+                         pyosmium: pip install --target tools/.cache/pylib osmium
   otop_*.csv, CDD_OPC_*.csv  OTOP     Community Development Department open data (data.go.th)
 
 Usage: python3 tools/build_data.py
@@ -37,10 +40,11 @@ SOURCES = {
     'th.json': 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json',
     'adm2.geojson': 'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson',
     'pds.json': 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json',
-    'ne_10m_roads.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_roads.geojson',
     'ne_10m_rivers_lake_centerlines.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_rivers_lake_centerlines.geojson',
     'ne_10m_lakes.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_lakes.geojson',
     'ne_50m_admin_0_countries.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson',
+    'geonames_TH.zip': 'https://download.geonames.org/export/dump/TH.zip',
+    'thailand-latest.osm.pbf': 'https://download.geofabrik.de/asia/thailand-latest.osm.pbf',
     # OTOP producer register (province, district, sub-district per producer) and the
     # OTOP Product Champion star ratings (product, producer, province, category, stars)
     'otop_2026.csv': 'https://logi.cdd.go.th/opendata_cdd/2026/CDD_otop_own_2026.csv',
@@ -49,8 +53,8 @@ SOURCES = {
     'CDD_OPC_2024.csv': 'https://logi.cdd.go.th/opendata_cdd/2024/CDD_OPC_2024.csv',
 }
 
-# Country grid: 0.01° blocks (~1.1 km)
-S = 0.01
+# Country grid: 0.005° blocks (~550 m)
+S = 0.005
 LON0, LON1, LAT0, LAT1 = 97.2, 105.8, 5.4, 20.6
 # Symbols used to encode province indices in map.json rows ('.' sea, ',' foreign land, '~' RLE marker)
 CHARS = [chr(c) for c in range(0x21, 0x7f) if chr(c) not in '"\\`\'$~.,-'][:77]
@@ -75,7 +79,7 @@ def source(name):
 
 # ---------------------------------------------------------------- elevation
 TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
-TILE_Z = 8  # ~0.6 km pixels, averaged down to 0.01° blocks
+TILE_Z = 9  # ~0.3 km pixels, averaged down to 0.005° blocks
 
 
 def tile_xy(lat, lon, z):
@@ -86,7 +90,7 @@ def tile_xy(lat, lon, z):
 
 
 def build_elevation():
-    """Mean elevation (metres, negative = sea depth) per 0.01° block, as a lossless RGB PNG:
+    """Mean elevation (metres, negative = sea depth) per 0.005° block, as a lossless RGB PNG:
     metres = R * 256 + G - 32768 (blue unused)."""
     import numpy as np
     from PIL import Image
@@ -106,8 +110,8 @@ def build_elevation():
             px = np.asarray(Image.open(path).convert('RGB'), dtype=np.float32)
             elev = px[..., 0] * 256 + px[..., 1] + px[..., 2] / 256 - 32768
             mosaic[(ty - ty0) * 256:(ty - ty0 + 1) * 256, (tx - tx0) * 256:(tx - tx0 + 1) * 256] = elev
-    # 4x4 samples per block, averaged
-    k = 4
+    # 2x2 samples per block, averaged
+    k = 2
     lats = LAT1 - (np.arange(H * k) + .5) * S / k
     lons = LON0 + (np.arange(W * k) + .5) * S / k
     n = 2 ** TILE_Z
@@ -121,16 +125,18 @@ def build_elevation():
     v = heights.astype(np.int32) + 32768
     rgb = np.stack([(v >> 8).astype(np.uint8), (v & 255).astype(np.uint8), np.zeros_like(v, dtype=np.uint8)], axis=-1)
     Image.fromarray(rgb, 'RGB').save(os.path.join(DATA, 'elevation.png'), optimize=True)
-    dump(os.path.join(DATA, 'elevation.json'), {
-        'W': W, 'H': H, 'unit': 'm', 'encoding': 'png: metres = R * 256 + G - 32768', 'file': 'elevation.png', 'source': 'terrarium',
-        'min': int(heights.min()), 'max': int(heights.max()),
-    })
-    print(f'elevation.json: {heights.min()} .. {heights.max()} m')
+    path = os.path.join(DATA, 'map.json')
+    with open(path, encoding='utf-8') as f:
+        m = json.load(f)
+    m['elevation'] = {'file': 'elevation.png', 'unit': 'm', 'encoding': 'metres = R * 256 + G - 32768',
+                      'source': 'terrarium', 'min': int(heights.min()), 'max': int(heights.max())}
+    dump(path, m)
+    print(f'elevation.png: {heights.min()} .. {heights.max()} m')
     return heights.astype(int).tolist()
 
 
 # ---------------------------------------------------------------- roads
-PX_PER_DEG = 200  # world pixels per degree: B / S in js/config.js and map.json (2 px per 0.01° block)
+PX_PER_DEG = 200  # world pixels per degree: B / S in js/config.js and map.json (1 px per 0.005° block)
 
 
 def simplify(pts, tol):
@@ -148,29 +154,6 @@ def simplify(pts, tol):
     if best <= tol:
         return [pts[0], pts[-1]]
     return simplify(pts[:bi + 1], tol)[:-1] + simplify(pts[bi:], tol)
-
-
-def build_roads():
-    """Natural Earth roads inside the map, in world pixels. scalerank ≤ 5 or expressway → highway."""
-    px = PX_PER_DEG
-    out = {'highway': [], 'road': []}
-    for f in source('ne_10m_roads.geojson')['features']:
-        g = f['geometry']
-        if not g:
-            continue
-        lines = g['coordinates'] if g['type'] == 'MultiLineString' else [g['coordinates']]
-        p = f['properties']
-        cls = 'highway' if (p.get('scalerank') or 99) <= 5 or p.get('expressway') == 1 else 'road'
-        for line in lines:
-            if not any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in line):
-                continue
-            pts = simplify([(x, y) for x, y in line], 0.004)
-            flat = []
-            for x, y in pts:
-                flat += [round((x - LON0) * px), round((LAT1 - y) * px)]
-            out[cls].append(flat)
-    dump(os.path.join(DATA, 'roads.json'), {'units': f'world px ({PX_PER_DEG} per degree)', **out})
-    print(f"roads.json: {len(out['highway'])} highway lines, {len(out['road'])} road lines")
 
 
 def build_rivers():
@@ -211,6 +194,136 @@ def build_rivers():
             lakes.append({'name': p.get('name') or '', 'rings': [to_px(simplify([(x, y) for x, y in r], 0.002)) for r in poly]})
     dump(os.path.join(DATA, 'rivers.json'), {'units': f'world px ({PX_PER_DEG} per degree)', 'rivers': rivers, 'lakes': lakes})
     print(f'rivers.json: {len(rivers)} river lines, {len(lakes)} lakes')
+
+
+# ---------------------------------------------------------------- OpenStreetMap roads, rail, rivers
+# Transport codes per block, higher wins where they meet
+ROAD_CODE = {'tertiary': 1, 'tertiary_link': 1, 'secondary': 2, 'secondary_link': 2,
+             'primary': 3, 'primary_link': 3, 'trunk': 4, 'trunk_link': 4, 'motorway': 4, 'motorway_link': 4}
+RAIL_CODE = 5
+# Main rivers are drawn two blocks wide (matched on English or Thai name)
+MAJOR_RIVERS = re.compile(
+    r'Chao Phraya|Mekong|Nan\b|Ping|Wang|Yom|Mun\b|Chi\b|Tha Chin|Pa Sak|Pasak|Bang Pakong|Mae ?Klong|Tapi|'
+    r'Songkhram|Salween|Moei|Kwai|Khwae|Lop Buri|Noi|Prachin|Phetchaburi|Pattani|Kok\b|Ing\b|Loei|Lam Pao|'
+    r'เจ้าพระยา|โขง|น่าน|ปิง|วัง|ยม|มูล|ชี|ท่าจีน|ป่าสัก|บางปะกง|แม่กลอง|ตาปี|สงคราม|สาละวิน|เมย|แควน้อย|แควใหญ่|'
+    r'ลพบุรี|ปราจีนบุรี|เพชรบุรี|ปัตตานี|กก|อิง|เลย|ลำปาว')
+TRANSPORT_NAMES = {1: 'tertiary road (dirt path)', 2: 'secondary road (gravel)', 3: 'primary road (cobblestone)',
+                   4: 'highway / motorway (stone bricks)', 5: 'railway (rails)'}
+
+
+def build_transport(W, H):
+    """Rasterise OSM highways (tertiary and up), railways and rivers onto the block grid."""
+    sys.path.insert(0, os.path.join(CACHE, 'pylib'))
+    import osmium
+    road = [bytearray(W) for _ in range(H)]
+    water = [bytearray(W) for _ in range(H)]
+
+    def line(coords, layer, code, wide=False):
+        cells = [(int((LAT1 - lat) / S), int((lon - LON0) / S)) for lon, lat in coords]
+        if wide:   # a second, offset pass makes the line two blocks wide
+            line([(lon + S, lat) for lon, lat in coords], layer, code)
+            line([(lon, lat - S) for lon, lat in coords], layer, code)
+        for (r0, c0), (r1, c1) in zip(cells, cells[1:]):
+            dr, dc = abs(r1 - r0), -abs(c1 - c0)
+            sr, sc = (1 if r0 < r1 else -1), (1 if c0 < c1 else -1)
+            err = dr + dc
+            while True:
+                if 0 <= r0 < H and 0 <= c0 < W and layer[r0][c0] < code:
+                    layer[r0][c0] = code
+                if r0 == r1 and c0 == c1:
+                    break
+                e2 = 2 * err
+                if e2 >= dc:
+                    err += dc; r0 += sr
+                if e2 <= dr:
+                    err += dr; c0 += sc
+
+    n = {'road': 0, 'rail': 0, 'river': 0}
+    fp = osmium.FileProcessor(cached('thailand-latest.osm.pbf'), osmium.osm.NODE | osmium.osm.WAY) \
+        .with_locations().with_filter(osmium.filter.KeyFilter('highway', 'railway', 'waterway'))
+    for w in fp:
+        if not w.is_way():
+            continue
+        t = w.tags
+        hw, rw, ww = t.get('highway'), t.get('railway'), t.get('waterway')
+        name = ''
+        if hw in ROAD_CODE:
+            layer, code, kind = road, ROAD_CODE[hw], 'road'
+        elif rw == 'rail' and t.get('service') is None:
+            layer, code, kind = road, RAIL_CODE, 'rail'
+        elif ww == 'river':
+            layer, code, kind = water, 1, 'river'
+            name = (t.get('name:en') or '') + ' ' + (t.get('name') or '')
+        else:
+            continue
+        try:
+            coords = [(nd.lon, nd.lat) for nd in w.nodes if nd.location.valid()]
+        except osmium.InvalidLocationError:
+            continue
+        if len(coords) >= 2 and any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in coords):
+            line(coords, layer, code, kind == 'river' and bool(MAJOR_RIVERS.search(name)))
+            n[kind] += 1
+    dump(os.path.join(DATA, 'blocks.json'), {
+        'W': W, 'H': H, 'source': 'roads/water: OpenStreetMap contributors (ODbL), via Geofabrik',
+        'road_codes': {str(k): v for k, v in TRANSPORT_NAMES.items()},
+        'roads': [rle(''.join('.12345'[v] for v in row)) for row in road],
+        'water': [rle(''.join('.1'[v] for v in row)) for row in water],
+    })
+    print(f"blocks.json: {n['road']} road ways, {n['rail']} rail ways, {n['river']} river ways")
+
+
+# ---------------------------------------------------------------- towns and villages
+def build_places(grid, district_slug):
+    """GeoNames populated places: PPLC/PPLA = city (provincial capital), PPLA2 = town (district
+    seat), PPL = village. Writes towns.json, villages into each subdistricts.json and a settlement
+    layer into blocks.json."""
+    import io, zipfile
+    H, W = len(grid), len(grid[0])
+    thai = lambda alts: next((a for a in alts.split(',') if any('\u0e00' <= ch <= '\u0e7f' for ch in a)), '')
+    towns, villages = [], {}
+    layer = [bytearray(W) for _ in range(H)]          # 0 none, 1 village, 2 town, 3 city
+    with zipfile.ZipFile(cached('geonames_TH.zip')) as z, io.TextIOWrapper(z.open('TH.txt'), encoding='utf-8') as f:
+        for line in f:
+            r = line.rstrip('\n').split('\t')
+            if r[6] != 'P' or r[7] not in ('PPLC', 'PPLA', 'PPLA2', 'PPL'):
+                continue
+            lat, lon = float(r[4]), float(r[5])
+            row, col = int((LAT1 - lat) / S), int((lon - LON0) / S)
+            if not (0 <= row < H and 0 <= col < W) or grid[row][col] < 0:
+                continue
+            x, y = round((lon - LON0) * PX_PER_DEG, 1), round((LAT1 - lat) * PX_PER_DEG, 1)
+            name, th, code = r[1], thai(r[3]), r[11]
+            if r[7] == 'PPL':
+                slug = district_slug.get(code)
+                if slug:
+                    villages.setdefault(slug, {}).setdefault(code, []).append([name, th, x, y])
+                    layer[row][col] = max(layer[row][col], 1)
+            else:
+                kind = 3 if r[7] in ('PPLC', 'PPLA') else 2
+                towns.append([name, th, x, y, 'city' if kind == 3 else 'town', int(r[14] or 0), code])
+                rad = 3 if kind == 3 else 1                 # footprint: 7x7 blocks for cities, 3x3 for towns
+                for rr in range(max(0, row - rad), min(H, row + rad + 1)):
+                    for cc in range(max(0, col - rad), min(W, col + rad + 1)):
+                        if grid[rr][cc] >= 0 and (kind == 3 or abs(rr - row) + abs(cc - col) <= rad + 1):
+                            layer[rr][cc] = max(layer[rr][cc], kind)
+    towns.sort(key=lambda t: (t[4] != 'city', -t[5]))
+    dump(os.path.join(DATA, 'towns.json'), {'fields': ['name', 'th', 'x', 'y', 'kind', 'population', 'district_id'],
+                                            'units': f'world px ({PX_PER_DEG} per degree)', 'towns': towns})
+    for slug in os.listdir(PROV_DIR):              # villages sit beside the tambon lists
+        path = os.path.join(PROV_DIR, slug, 'subdistricts.json')
+        with open(path, encoding='utf-8') as f:
+            sub = json.load(f)
+        sub['villages'] = {'fields': ['name', 'th', 'x', 'y'], 'units': f'world px ({PX_PER_DEG} per degree)',
+                           'districts': villages.get(slug, {})}
+        dump(path, sub)
+    path = os.path.join(DATA, 'blocks.json')
+    with open(path, encoding='utf-8') as f:
+        blocks = json.load(f)
+    blocks['settlement_codes'] = {'1': 'village', '2': 'town', '3': 'city'}
+    blocks['settlements'] = [rle(''.join('.123'[v] for v in row)) for row in layer]
+    dump(path, blocks)
+    nv = sum(len(v) for d in villages.values() for v in d.values())
+    print(f'places: {sum(t[4] == "city" for t in towns)} cities, {sum(t[4] == "town" for t in towns)} towns, {nv} villages')
 
 
 def polygons(geom):
@@ -646,7 +759,7 @@ def landmark(name, curated):
 def build_districts(slug, prov_feature, adm2, ref_prov, meta, heights, sea, sprite_lib, otop):
     ppolys = polygons(prov_feature['geometry'])
     x0, y0, x1, y1 = bbox(ppolys)
-    res = min(0.01, max(0.0025, math.sqrt((x1 - x0) * (y1 - y0) / 60000)))
+    res = min(S, max(0.0025, math.sqrt((x1 - x0) * (y1 - y0) / 60000)))
     res = round(res, 4)
     lon0, lat1 = x0 - res, y1 + res
     w = math.ceil((x1 - lon0) / res) + 2
@@ -758,7 +871,7 @@ def main():
     slugs = [by_dataset[f['properties']['name']] for f in th]
     grid, foreign = build_map(th, slugs)
     heights = build_elevation()
-    build_roads()
+    build_transport(len(grid[0]), len(grid))
     build_rivers()
     otop = build_otop()
     sea = [[grid[r][c] == -1 and not foreign[r][c] for c in range(len(grid[0]))] for r in range(len(grid))]
@@ -787,6 +900,12 @@ def main():
         if n_match < max(n_geo, n_ref):
             print(f'  {slug}: {n_geo} shapes, {n_ref} named, {n_match} matched')
     print(f'districts: {tot[0]} shapes, {tot[2]} named, {tot[1]} matched; subdistricts: {tot[3]}')
+    district_slug = {}
+    for slug in slugs:
+        ref = ref_by_th.get(meta[slug]['name']['th'])
+        for d in (ref['districts'] if ref else []):
+            district_slug[str(d['id'])] = slug
+    build_places(grid, district_slug)
 
 
 if __name__ == '__main__':

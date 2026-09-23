@@ -5,8 +5,11 @@ Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
 A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
-Rivers and reservoirs are drawn as water, highways as stone paths and smaller roads
-as dirt paths (with oak-plank bridges over water). Switch to the **3D** view to fly over real terrain built from
+Roads, railways and rivers come from OpenStreetMap: motorways and trunk roads are stone
+bricks, primary roads cobblestone, secondary gravel, tertiary dirt path, railways are rails,
+and roads over water become oak-plank bridges. Cities, towns and 84,000+ villages
+(GeoNames) sit on the map, and a **Layers** box switches roads, railways, rivers, towns and
+villages on and off. Switch to the **3D** view to fly over real terrain built from
 elevation data.
 
 ## Run it
@@ -42,15 +45,16 @@ js/
   f3.js                     F3 debug overlay (lat/lon, biome, province, district)
 data/
   sources.json              data references and credits
-  roads.json                highways / roads as world-pixel polylines                  [generated]
+  blocks.json               per-block roads, rails, small rivers (OSM) and settlements   [generated]
+  towns.json                cities and district-seat towns (GeoNames)                  [generated]
   rivers.json               rivers (with width and label) and reservoirs, world px     [generated]
-  elevation.json + .png     real mean elevation / sea depth per block (R*256+G-32768)   [generated]
+  elevation.png             real mean elevation / sea depth per block (R*256+G-32768)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
-  map.json                  country block grid (0.01° ≈ 1.1 km), anchors, neighbours  [generated]
+  map.json                  country block grid (0.005° ≈ 550 m), anchors, neighbours  [generated]
   provinces/<slug>/
     province.json           name, region, item + sprite, description, district_items  [hand-written]
     districts.json          district raster, names and each district's item           [generated]
-    subdistricts.json       tambon names + postcodes, keyed by district id            [generated]
+    subdistricts.json       tambon names + postcodes, and villages, by district id    [generated]
 tools/build_data.py         regenerates the [generated] files
 ```
 
@@ -87,7 +91,14 @@ their real average elevation, coastline and region.
 python3 tools/build_data.py
 ```
 
-The first run downloads the source datasets into `tools/.cache/` (git-ignored).
+The first run downloads the source datasets into `tools/.cache/` (git-ignored; about
+0.5 GB including the OpenStreetMap extract and elevation tiles). Reading OpenStreetMap
+needs pyosmium, installed next to the cache:
+
+```sh
+pip install --target tools/.cache/pylib osmium
+```
+
 It never touches `province.json`.
 
 ## Credits
@@ -106,9 +117,10 @@ which the page's Credits panel is built from.
 | District and sub-district names, postcodes | [kongvut/thai-province-data](https://github.com/kongvut/thai-province-data) by Kongvut Sangkla | MIT | Names and postcodes (`districts.json`, `subdistricts.json`) |
 | Rivers and reservoirs | [Natural Earth](https://www.naturalearthdata.com/) 1:10m rivers and lakes | public domain | `rivers.json`: rivers, reservoirs, river labels |
 | Neighbouring countries | [Natural Earth](https://www.naturalearthdata.com/) 1:50m countries | public domain | Land vs sea outside Thailand |
-| Roads | [Natural Earth](https://www.naturalearthdata.com/) 1:10m roads | public domain | `roads.json`: highways as stone paths, roads as dirt paths |
+| Roads, railways, small rivers | © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, via [Geofabrik](https://download.geofabrik.de/asia/thailand.html) | ODbL 1.0 | `blocks.json` (derived database, same licence) |
+| Cities, towns, villages | [GeoNames](https://www.geonames.org/) | CC BY 4.0 | `towns.json`, villages in `subdistricts.json`, settlements in `blocks.json` |
 | OTOP products | [Community Development Department](https://data.go.th/dataset/cdd_opc) OTOP Product Champion list and producer register | Open Data Common | District OTOP items (`districts.json`) |
-| Elevation and sea depth | [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) (Mapzen terrarium; SRTM, GMTED, ETOPO1 and others) | public, attribution required | `elevation.json`, 2D relief, 3D view |
+| Elevation and sea depth | [Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/) (Mapzen terrarium; SRTM, GMTED, ETOPO1 and others) | public, attribution required | `elevation.png`, 2D relief, 3D view |
 
 geoBoundaries citation: Runfola, D. et al. (2020) *geoBoundaries: A global database of
 political administrative boundaries.* PLoS ONE 15(4): e0231866.
@@ -121,7 +133,7 @@ tambon boundary dataset, so tambon are listed rather than drawn. Three named
 districts have no outline in the boundary data (Ko Sichang, and two entries in
 Ratchaburi and Songkhla), so they are listed but not drawn.
 
-Elevation is real but averaged over 1.1 km blocks; trees and paddies are generated
+Elevation is real but averaged over 550 m blocks; trees and paddies are generated
 for looks. Province items, sprites and descriptions are original to this project.
 The 3D view loads [three.js](https://threejs.org/) r128 (MIT) from cdnjs.
 

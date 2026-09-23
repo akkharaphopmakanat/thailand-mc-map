@@ -1,7 +1,8 @@
 // Shared constants: sprite palette, regions/biomes, map labels.
 
-/** World pixels per map block when the terrain canvas is rendered (200 px per degree with 0.01° blocks). */
-export const B = 2;
+/** World pixels per map block when the terrain canvas is rendered (200 px per degree with 0.005° blocks,
+ *  one pixel per block like a Minecraft map item). */
+export const B = 1;
 
 /** Sprite palette. Each letter in a province's `item.sprite` rows maps to one colour; '.' is transparent. */
 export const PAL = {

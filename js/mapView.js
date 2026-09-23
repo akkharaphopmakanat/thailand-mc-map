@@ -3,7 +3,7 @@
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite } from './sprites.js';
 
-const MAX_SCALE = 12;   // screen px per world px (a 0.01° block is 2 world px)
+const MAX_SCALE = 24;   // screen px per world px (a 0.005° block is 1 world px)
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export class MapView {
@@ -23,6 +23,8 @@ export class MapView {
     this.cw = 0; this.ch = 0; this.dpr = 1; this.fitS = .3;
     this.hover = -1; this.selected = -1;
     this.layer = null; this.dHover = -1; this.dFocus = -1;
+    this.villages = [];   // [[name, th, x, y], …] of the selected province
+    this.layers = { roads: true, rails: true, rivers: true, towns: true, villages: true };
     this.dirty = true; this.tween = null;
     this.order = atlas.provinces.map(p => p.i).sort((a, b) => atlas.provinces[a].anchor[0] - atlas.provinces[b].anchor[0]);
     this._bindInput();
@@ -37,6 +39,7 @@ export class MapView {
   setDistrictLayer(layer) { this.layer = layer; this.dirty = true; }
   setDistrictHover(k) { if (k !== this.dHover) { this.dHover = k; this.dirty = true; } }
   setDistrictFocus(k) { this.dFocus = k; this.dirty = true; }
+  setVillages(list) { this.villages = list || []; this.dirty = true; }
 
   /* ---------------- camera ---------------- */
   resize() {
@@ -234,7 +237,7 @@ export class MapView {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
     // River names along the river once zoomed in
-    if (atlas.rivers && s >= .9) {
+    if (atlas.rivers && this.layers.rivers && s >= .9) {
       ctx.font = 'italic 600 12px "Pixelify Sans", monospace';
       const seen = new Set();
       for (const r of atlas.rivers.rivers) {
@@ -248,6 +251,29 @@ export class MapView {
         this._text(r.name, 0, 0, '#bfe0ff', 'rgba(10,30,80,.8)');
         ctx.restore();
       }
+    }
+
+    // Settlements: cities from a moderate zoom, towns closer in, villages of the selected province close up
+    const inView = (sx, sy) => sx > -60 && sy > -20 && sx < cw + 60 && sy < ch + 20;
+    if (this.layers.villages && s >= .9 && this.villages.length) {
+      ctx.font = '11px "Pixelify Sans", monospace';
+      for (const v of this.villages) {
+        const [sx, sy] = this._w2s(v[2], v[3]);
+        if (!inView(sx, sy)) continue;
+        ctx.fillStyle = '#3a2412'; ctx.fillRect(sx - 2.5, sy - 2.5, 5, 5);
+        ctx.fillStyle = '#c0703c'; ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3);
+        if (s >= 5) this._text(v[0], sx, sy - 9, '#fff2d8');
+      }
+    }
+    for (const t of this.layers.towns ? atlas.towns : []) {
+      const city = t.kind === 'city';
+      if (!(city ? s >= .45 : s >= 1.6)) continue;
+      const [sx, sy] = this._w2s(t.x, t.y);
+      if (!inView(sx, sy)) continue;
+      ctx.fillStyle = '#000'; ctx.fillRect(sx - (city ? 4 : 3), sy - (city ? 4 : 3), city ? 8 : 6, city ? 8 : 6);
+      ctx.fillStyle = city ? '#ffffff' : '#ffd6a0'; ctx.fillRect(sx - (city ? 3 : 2), sy - (city ? 3 : 2), city ? 6 : 4, city ? 6 : 4);
+      ctx.font = city ? '600 13px "Pixelify Sans", monospace' : '600 11px "Pixelify Sans", monospace';
+      this._text(t.name, sx, sy - (city ? 12 : 10), city ? '#ffffff' : '#ffe9c4');
     }
 
     // Seas and neighbouring countries

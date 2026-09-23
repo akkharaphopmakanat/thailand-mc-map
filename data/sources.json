@@ -40,14 +40,6 @@
       "used_for": "Mean land elevation and sea depth per map block in data/elevation.png (2D relief and the 3D view)"
     },
     {
-      "id": "roads",
-      "title": "Natural Earth 1:10m Cultural Vectors — Roads",
-      "author": "Natural Earth (naturalearthdata.com)",
-      "url": "https://www.naturalearthdata.com/downloads/10m-cultural-vectors/roads/",
-      "license": "Public domain",
-      "used_for": "Highways (stone path) and roads (dirt path) in data/roads.json, drawn in 2D and on 3D block tops"
-    },
-    {
       "id": "otop",
       "title": "OTOP Product Champion selection (การคัดเลือกสุดยอดหนึ่งตำบลหนึ่งผลิตภัณฑ์ไทย) and OTOP producer register (ทะเบียนผู้ประกอบการ OTOP)",
       "author": "Community Development Department (กรมการพัฒนาชุมชน), via data.go.th",
@@ -76,6 +68,24 @@
       "url": "https://www.naturalearthdata.com/downloads/50m-cultural-vectors/",
       "license": "Public domain",
       "used_for": "Which blocks outside Thailand are land (neighbouring countries) and which are sea"
+    },
+    {
+      "id": "osm",
+      "title": "OpenStreetMap: roads (tertiary and above), railways and rivers",
+      "author": "© OpenStreetMap contributors, extract by Geofabrik",
+      "url": "https://www.openstreetmap.org/copyright",
+      "download": "https://download.geofabrik.de/asia/thailand.html",
+      "license": "ODbL 1.0: data/blocks.json road and water layers are a derived database under the same licence",
+      "used_for": "Roads (dirt path → stone bricks), railways and smaller rivers, rasterised per 0.005° block in data/blocks.json"
+    },
+    {
+      "id": "geonames",
+      "title": "GeoNames Thailand gazetteer (populated places)",
+      "author": "GeoNames (geonames.org)",
+      "url": "https://www.geonames.org/",
+      "download": "https://download.geonames.org/export/dump/TH.zip",
+      "license": "CC BY 4.0",
+      "used_for": "Cities (provincial capitals), towns (district seats) in data/towns.json, villages in each province's subdistricts.json, and the settlement layer in data/blocks.json"
     }
   ],
   "fonts": [
@@ -99,7 +109,7 @@
     }
   ],
   "notes": [
-    "Trees and rice paddies are generated for looks; elevation is real but averaged over 1.1 km blocks.",
+    "Trees and rice paddies are generated for looks; elevation is real but averaged over 550 m blocks.",
     "District items come from OTOP product data; hand-picked landmarks are shown alongside, and terrain is used only where a district has no rated OTOP products.",
     "Province items, pixel sprites and descriptions are original to this project.",
     "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft."

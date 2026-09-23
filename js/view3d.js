@@ -1,9 +1,9 @@
 // 3D voxel view: every map block becomes a column at its real elevation.
 // The map is split into chunks; chunks near the camera are drawn at full detail and
-// farther ones with 2× or 4× bigger blocks (like a render distance), built on demand.
+// farther ones with 2×, 4× or 8× bigger blocks (like a render distance), built on demand.
 // three.js is loaded from cdnjs the first time the 3D mode is opened.
 import { B } from './config.js';
-import { KIND } from './world.js';
+import { KIND, settlementShown } from './world.js';
 import { h2 } from './noise.js';
 import { itemSprite } from './sprites.js';
 
@@ -13,7 +13,7 @@ const MIN_Y = -16;                                 // bottom of the world slab
 const SHADE = { top: 1, ns: .8, ew: .62 };         // Minecraft-style face brightness
 const DIRT = [134, 96, 67], LOG = [102, 76, 44];
 const CHUNK = 64;                                  // full-detail blocks per chunk side
-const LODS = [1, 2, 4];                            // block size multiplier per level of detail
+const LODS = [1, 2, 4, 8];                         // block size multiplier per level of detail
 const BUILD_BUDGET_MS = 10;                        // chunk building time per frame
 const MAX_DPR = 1.5;                               // cap render resolution for a steady frame rate
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -49,10 +49,13 @@ class View3D {
     this.metresPerBlock = 40;
     this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1;
     this.active = false; this.tween = null;
+    this.layers = { towns: true, villages: true };
     this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
     this.orbit = { ...this.home };
     this.maxDist = 900 * this.SC;
-    this.lodDist = [38 * this.SC, 105 * this.SC];    // camera distance where LOD 1→2 and 2→4
+    // camera distance (blocks) where the level of detail steps 1→2→4→8; in chunk units so the
+    // on-screen face count stays about the same whatever the block size
+    this.lodDist = [2 * CHUNK, 5 * CHUNK, 11 * CHUNK];
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR));
@@ -61,7 +64,7 @@ class View3D {
     this.scene.fog = new THREE.Fog(SKY, 260 * this.SC, 900 * this.SC);
     this.camera = new THREE.PerspectiveCamera(50, 1, .5, 3000 * this.SC);
 
-    const tex = new THREE.CanvasTexture(world.canvas);
+    const tex = this.topTex = new THREE.CanvasTexture(world.canvas);
     tex.magFilter = THREE.NearestFilter;
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
@@ -105,6 +108,12 @@ class View3D {
       }
       this.lod[L] = { L, w, h, height, rep };
     }
+    this._resetChunks();
+  }
+
+  /** Throw away all chunk meshes and rebuild the coarsest level; finer ones rebuild on demand. */
+  _resetChunks() {
+    const { W, H } = this;
     for (const c of this.chunks?.values() || []) for (const m of Object.values(c.meshes)) if (m) this._dispose(m);
     this.chunks = new Map();
     this.nx = Math.ceil(W / CHUNK); this.nz = Math.ceil(H / CHUNK);
@@ -175,6 +184,27 @@ class View3D {
     const same = (r, a, b) => ht(r, a) === ht(r, b) && kind[rep(r, a)] === kind[rep(r, b)] && grid[rep(r, a)] === grid[rep(r, b)];
     const sameCol = (c, a, b) => ht(a, c) === ht(b, c) && kind[rep(a, c)] === kind[rep(b, c)] && grid[rep(a, c)] === grid[rep(b, c)];
     const topQuad = new Int32Array(cw * (r1 - r0)).fill(-1);
+    // Small buildings on settlement blocks, only at full detail: villages a hut, towns a
+    // red-roofed house, cities stone blocks of 1–3 storeys
+    const settle = L === 1 ? atlas.settlements : null;
+    const box = (x0, z0, x1, z1, y0, y1, roof, wallRGB) => {
+      quad(1, [x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0], roof, 1);
+      quad(1, [x1, y0, z0, x1, y1, z0, x0, y1, z0, x0, y0, z0], wallRGB, SHADE.ns);
+      quad(1, [x0, y0, z1, x0, y1, z1, x1, y1, z1, x1, y0, z1], wallRGB, SHADE.ns);
+      quad(1, [x0, y0, z0, x0, y1, z0, x0, y1, z1, x0, y0, z1], wallRGB, SHADE.ew);
+      quad(1, [x1, y0, z1, x1, y1, z1, x1, y1, z0, x1, y0, z0], wallRGB, SHADE.ew);
+    };
+    const buildings = () => {
+      if (!settle) return;
+      for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) {
+        const k = r * W + c, s = settlementShown(settle[k], this.layers);
+        if (!s || kind[k] === KIND.WATER) continue;
+        const h = hb[k], x = X(c), z = Z(r), j = h2(c, r, 71);
+        if (s === 1) box(x + .3, z + .3, x + .7, z + .7, h, h + .45, [120, 70, 40], [214, 190, 150]);
+        else if (s === 2) box(x + .15, z + .15, x + .85, z + .85, h, h + .7 + j * .4, [178, 64, 48], [226, 214, 190]);
+        else box(x + .1, z + .1, x + .9, z + .9, h, h + 1 + Math.floor(j * 3), [110, 110, 114], [168, 168, 172]);
+      }
+    };
 
     const pass = () => {
       count[0] = count[1] = 0;
@@ -227,10 +257,10 @@ class View3D {
         }
       }
     };
-    pass();
+    pass(); buildings();
     const mk = (n, uv) => ({ n, pos: new Float32Array(n * 12), clr: new Float32Array(n * 12), uv: uv ? new Float32Array(n * 8) : null });
     buf = [mk(count[0], true), mk(count[1], false)];
-    pass();
+    pass(); buildings();
 
     const group = new T.Group();
     const geos = buf.map(b => {
@@ -271,7 +301,7 @@ class View3D {
     const want = [];
     for (const chunk of this.chunks.values()) {
       const d = Math.hypot(chunk.cx - p.x, chunk.cz - p.z, p.y * .6);
-      const L = d < this.lodDist[0] ? 1 : d < this.lodDist[1] ? 2 : 4;
+      const L = d < this.lodDist[0] ? 1 : d < this.lodDist[1] ? 2 : d < this.lodDist[2] ? 4 : 8;
       chunk.dist = d;
       if (chunk.shown !== L) {
         if (chunk.meshes[L]) this._show(chunk, L);
@@ -286,9 +316,9 @@ class View3D {
     }
     // Free detailed meshes of chunks that are now far away
     for (const chunk of this.chunks.values()) {
-      for (const L of [1, 2]) {
+      for (const [i, L] of [1, 2, 4].entries()) {
         const m = chunk.meshes[L];
-        if (m && chunk.shown !== L && chunk.dist > this.lodDist[L === 1 ? 0 : 1] * 1.6) { this._dispose(m); chunk.meshes[L] = null; }
+        if (m && chunk.shown !== L && chunk.dist > this.lodDist[i] * 1.6) { this._dispose(m); chunk.meshes[L] = null; }
       }
     }
   }
@@ -419,6 +449,14 @@ class View3D {
   }
 
   setDistrictFocus(k) { this.dFocus = k; this._placeIcons(); this._applyHighlight(); }
+
+  /** Layers changed: the 2D terrain canvas (our top texture) was redrawn; rebuild buildings. */
+  setLayers(layers) {
+    this.topTex.needsUpdate = true;
+    const buildingsChanged = layers.towns !== this.layers.towns || layers.villages !== this.layers.villages;
+    this.layers = { ...layers };
+    if (buildingsChanged) this._resetChunks();
+  }
   setDistrictHover() {}
 
   setVerticalScale(metresPerBlock) {

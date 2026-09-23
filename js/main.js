@@ -1,7 +1,7 @@
 // Entry point: load data, build the world, and wire map ⇄ panels.
 import { h2 } from './noise.js';
-import { loadAtlas, loadDistricts, loadSubdistricts } from './data.js';
-import { classifyCells, renderWorld } from './world.js';
+import { loadAtlas, loadDistricts, loadSubdistricts, loadVillages } from './data.js';
+import { classifyCells, renderWorld, LAYERS } from './world.js';
 import { createView3D } from './view3d.js';
 import { buildDistrictLayer } from './districts.js';
 import { MapView } from './mapView.js';
@@ -32,7 +32,8 @@ try {
 $('loadMsg').textContent = 'Generating terrain…';
 await new Promise(r => requestAnimationFrame(() => setTimeout(r)));
 const cells = classifyCells(atlas);
-const world = renderWorld(atlas, cells);
+const layers = loadLayers();
+let world = renderWorld(atlas, cells, layers);
 loading.hidden = true;
 
 const { provinces } = atlas;
@@ -58,6 +59,7 @@ const handlers = {
   },
 };
 const map = new MapView({ canvas: $('map'), wrap: $('mapWrap'), atlas, world, ...handlers });
+map.layers = { ...layers };
 let view3d = null;   // created on first switch to 3D
 let mode = '2d';
 const active = () => (mode === '3d' ? view3d : map);
@@ -82,18 +84,22 @@ async function select(i, fly = true) {
   layer = null;
   const p = provinces[i];
   map.setSelected(i);
+  map.setVillages([]);
   view3d?.setSelected(i);
   inventory.setSelected(i);
   panel.show(p);
   renderF3($('f3'), atlas, null, null);
   if (fly) active().focusProvince(i);
   try {
-    const [d, subs] = await Promise.all([loadDistricts(p.slug), loadSubdistricts(p.slug)]);
+    const [d, subs, villages] = await Promise.all([
+      loadDistricts(p.slug), loadSubdistricts(p.slug), loadVillages(p.slug).catch(() => ({})),
+    ]);
     if (selected !== i) return;
     layer = buildDistrictLayer(d, atlas.map);
     map.setDistrictLayer(layer);
+    map.setVillages(Object.values(villages).flat());
     view3d?.setDistrictLayer(layer);
-    panel.setDistricts(p, d, subs);
+    panel.setDistricts(p, d, subs, villages, atlas.towns);
   } catch (err) {
     panel.setError(p, `Could not load districts: ${err.message}`);
   }
@@ -126,6 +132,7 @@ $('mode').onclick = async () => {
       }
       btn.disabled = false;
       view3d.setSelected(selected);
+      view3d.setLayers(layers);
       if (layer) view3d.setDistrictLayer(layer);
     }
     mode = '3d';
@@ -153,6 +160,27 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') tooltip.hide
 if (document.fonts) document.fonts.ready.then(() => { map.dirty = true; });
 
 select(provinces.findIndex(p => p.slug === 'bangkok'), false);
+
+/* ---------- map layers ---------- */
+function loadLayers() {
+  try { return { ...LAYERS, ...JSON.parse(localStorage.getItem('layers') || '{}') }; } catch { return { ...LAYERS }; }
+}
+document.querySelectorAll('#layers input').forEach(box => {
+  box.checked = layers[box.name];
+  box.addEventListener('change', () => {
+    layers[box.name] = box.checked;
+    try { localStorage.setItem('layers', JSON.stringify(layers)); } catch { /* per-viewer convenience only */ }
+    $('layers').classList.add('busy');
+    // let the "busy" state paint before the ~0.5 s redraw
+    requestAnimationFrame(() => setTimeout(() => {
+      world = renderWorld(atlas, cells, layers, world);
+      map.layers = { ...layers };
+      map.dirty = true;
+      view3d?.setLayers(layers);
+      $('layers').classList.remove('busy');
+    }));
+  });
+});
 
 /** Minecraft options-screen dirt texture behind the page. */
 function paintDirtBackground() {
