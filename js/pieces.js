@@ -101,13 +101,12 @@ export function railTile(mask) {
 }
 
 /* ---------------- roads ---------------- */
-/** Road class for a block's road code: 3 large (trunk/motorway), 2 medium (primary/secondary), 1 local. */
-export const roadClass = code => code === 4 ? 3 : code === 2 || code === 3 ? 2 : code === 1 ? 1 : 0;
+/** Road class for a block's road code: 3 main (trunk/motorway), 2 medium (primary/secondary). */
+export const roadClass = code => code === 4 ? 3 : code === 2 || code === 3 ? 2 : 0;
 
 const ROAD_STYLE = {
-  3: { rgb: [132, 132, 136], edge: [88, 88, 92], w: 12, line: true, noise: .12 },   // large: stone, centre line
+  3: { rgb: [132, 132, 136], edge: [88, 88, 92], w: 12, line: true, noise: .12 },   // main: stone, centre line
   2: { rgb: [122, 122, 122], edge: [84, 84, 84], w: 10, line: false, noise: .35 },  // medium: cobblestone
-  1: { rgb: [150, 122, 70], edge: [112, 86, 50], w: 8, line: false, noise: .22 },   // local: dirt path
 };
 
 const roadCache = new Map();
@@ -144,21 +143,21 @@ export function roadTile(cls, mask) {
 
 /* ---------------- atlas for the 3D view ---------------- */
 /**
- * All pieces in one texture: rail masks 0–15 in tiles 0–15, road class c and mask m in tile
- * 16 + (c - 1) * 16 + m. Returns {canvas, uv(tile) -> [u0, v0, u1, v1]}.
+ * All pieces in one texture: rail masks 0–15 in tiles 0–15, road class c (2 medium, 3 main) and
+ * mask m in tile 16 + (c - 2) * 16 + m. Returns {canvas, uv(tile) -> [u0, v0, u1, v1]}.
  */
 export function makeAtlas() {
-  const COLS = 8, n = 64, rows = n / COLS;
+  const COLS = 8, n = 48, rows = n / COLS;
   const cv = document.createElement('canvas');
   cv.width = COLS * PX; cv.height = rows * PX;
   const x = cv.getContext('2d');
   const put = (t, img) => x.drawImage(img, (t % COLS) * PX, Math.floor(t / COLS) * PX);
   for (let m = 0; m < 16; m++) put(m, railTile(m));
-  for (let c = 1; c <= 3; c++) for (let m = 0; m < 16; m++) put(16 + (c - 1) * 16 + m, roadTile(c, m));
+  for (let c = 2; c <= 3; c++) for (let m = 0; m < 16; m++) put(16 + (c - 2) * 16 + m, roadTile(c, m));
   const eps = .5 / cv.width;
   const uv = t => {
     const c = t % COLS, r = Math.floor(t / COLS);
     return [c * PX / cv.width + eps, 1 - (r + 1) * PX / cv.height + eps, (c + 1) * PX / cv.width - eps, 1 - r * PX / cv.height - eps];
   };
-  return { canvas: cv, uv, railTile: m => m, roadTile: (c, m) => 16 + (c - 1) * 16 + m };
+  return { canvas: cv, uv, railTile: m => m, roadTile: (c, m) => 16 + (c - 2) * 16 + m };
 }

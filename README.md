@@ -5,13 +5,13 @@ Made by [akkharaphopmakanat](https://github.com/akkharaphopmakanat/).
 A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
-Roads, railways and rivers come from OpenStreetMap. **Main roads** are the large and medium
-roads (motorway and trunk as stone with a yellow centre line, primary and secondary as
-cobblestone); everything else is a **local road** (dirt path, hidden by default). Zoom in and
-roads and railways become connected Minecraft pieces: rail straights, curves and buffer
-stops, plus a special **rail junction block** (a gravel pad with the branching track and a
-switch lever) where lines meet. Roads over water become oak-plank bridges. A **Layers** box
-switches main roads, local roads, railways, main rivers and small rivers on and off. Switch to the **3D** view to fly over real terrain built from
+Roads, railways and rivers come from OpenStreetMap. **Main roads** (motorway, trunk) are
+stone with a yellow centre line and **medium roads** (primary, secondary) are cobblestone.
+Zoom in and roads and railways become connected Minecraft pieces: rail straights, curves and
+buffer stops, plus a special **rail junction block** (a gravel pad with the branching track and
+a switch lever) where lines meet. Roads over water become oak-plank bridges. River names sit on
+the main rivers themselves. A **Layers** box switches main roads, medium roads, railways, main
+rivers and small rivers on and off. Switch to the **3D** view to fly over real terrain built from
 elevation data.
 
 ## Run it
@@ -49,7 +49,7 @@ js/
 data/
   sources.json              data references and credits
   blocks.json               per-block roads, rails and rivers (OSM)                    [generated]
-  rivers.json               rivers (with width and label) and reservoirs, world px     [generated]
+  rivers.json               reservoirs and main-river labels, world px                 [generated]
   elevation.png             real mean elevation / sea depth per block (R*256+G-32768)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
   map.json                  country block grid (0.005° ≈ 550 m), anchors, neighbours  [generated]
@@ -117,7 +117,7 @@ which the page's Credits panel is built from.
 | Province boundaries | [apisit/thailand.json](https://github.com/apisit/thailand.json) | none stated | Province outlines (`data/map.json`) |
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) THA ADM2, gbOpen — Royal Thai Survey Department / OCHA ROAP | CC BY 3.0 IGO | District outlines (`districts.json`) |
 | District and sub-district names, postcodes | [kongvut/thai-province-data](https://github.com/kongvut/thai-province-data) by Kongvut Sangkla | MIT | Names and postcodes (`districts.json`, `subdistricts.json`) |
-| Rivers and reservoirs | [Natural Earth](https://www.naturalearthdata.com/) 1:10m rivers and lakes | public domain | `rivers.json`: rivers, reservoirs, river labels |
+| Reservoirs | [Natural Earth](https://www.naturalearthdata.com/) 1:10m lakes | public domain | `rivers.json`: reservoirs |
 | Neighbouring countries | [Natural Earth](https://www.naturalearthdata.com/) 1:50m countries | public domain | Land vs sea outside Thailand |
 | Roads, railways, small rivers | © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, via [Geofabrik](https://download.geofabrik.de/asia/thailand.html) | ODbL 1.0 | `blocks.json` (derived database, same licence) |
 | OTOP products | [Community Development Department](https://data.go.th/dataset/cdd_opc) OTOP Product Champion list and producer register | Open Data Common | District OTOP items (`districts.json`) |

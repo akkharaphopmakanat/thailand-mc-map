@@ -63,7 +63,12 @@ export function classifyCells({ map, grid, provinces, elev: realElev }) {
 }
 
 /** Map layers that can be switched on and off. */
-export const LAYERS = { roads: true, localRoads: false, rails: true, rivers: true, streams: false };
+export const LAYERS = { mainRoads: true, mediumRoads: true, rails: true, rivers: true, streams: false };
+
+/** Is road/rail code (2–3 medium road, 4 main road, 5 railway) switched on? */
+export function roadShown(code, layers) {
+  return code === 5 ? layers.rails : code === 4 ? layers.mainRoads : (code === 2 || code === 3) && layers.mediumRoads;
+}
 
 /**
  * 2D terrain canvas (B px per block) plus outline/fill paths per province.
@@ -132,12 +137,12 @@ export function renderWorld(atlas, cells = classifyCells(atlas), layers = LAYERS
 }
 
 // Block colours for the per-block layers, Minecraft style
-const ROAD_RGB = { 1: [150, 122, 70], 2: [122, 122, 122], 3: [122, 122, 122], 4: [138, 138, 142] };
+const ROAD_RGB = { 2: [122, 122, 122], 3: [122, 122, 122], 4: [138, 138, 142] };
 const PLANK = [162, 130, 78], RAIL = [176, 176, 184], TIE = [104, 80, 52];
 
 /**
- * Paint the per-block OSM layers: rivers as water, then roads (local dirt path, medium
- * cobblestone, large stone) and rails on top, with oak-plank bridges over water.
+ * Paint the per-block OSM layers: rivers as water, then roads (medium cobblestone, main stone)
+ * and rails on top, with oak-plank bridges over water.
  * One block = B world pixels.
  */
 function paintBlocks(atlas, cells, px, PW, wet, layers) {
@@ -157,8 +162,7 @@ function paintBlocks(atlas, cells, px, PW, wet, layers) {
     const stream = streams?.[k] === 2 ? layers.rivers : streams?.[k] === 1 && layers.streams;
     if (stream) put(c, r, (x, y, i) => { wet[i] = 1; return tint([58, 104, 214], .94 + h2(x, y, 51) * .1); });
     let rd = roads?.[k];
-    // 1 local (tertiary, unclassified), 2–4 main (secondary, primary, trunk/motorway), 5 railway
-    if (rd === 5 ? !layers.rails : rd >= 2 ? !layers.roads : !layers.localRoads) rd = 0;
+    if (!roadShown(rd, layers)) rd = 0;
     if (!rd) continue;
     const water = cells.kind[k] === K.WATER || stream;
     put(c, r, (x, y, i) => {

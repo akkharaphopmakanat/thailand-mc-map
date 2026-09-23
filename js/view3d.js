@@ -3,7 +3,7 @@
 // farther ones with 2×, 4× or 8× bigger blocks (like a render distance), built on demand.
 // three.js is loaded from cdnjs the first time the 3D mode is opened.
 import { B } from './config.js';
-import { KIND } from './world.js';
+import { KIND, roadShown } from './world.js';
 import { makeAtlas, maskAt, roadClass } from './pieces.js';
 import { h2 } from './noise.js';
 import { itemSprite } from './sprites.js';
@@ -52,7 +52,7 @@ class View3D {
     this.metresPerBlock = 40;
     this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1;
     this.active = false; this.tween = null;
-    this.layers = { roads: true, localRoads: false, rails: true };
+    this.layers = { mainRoads: true, mediumRoads: true, rails: true };
     this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
     this.orbit = { ...this.home };
     this.maxDist = 900 * this.SC;
@@ -293,9 +293,9 @@ class View3D {
     const { T, W, H, atlas, pieces } = this;
     const hb = this.hb, roads = atlas.roads, L = this.layers;
     const at = (r, c) => (r < 0 || c < 0 || r >= H || c >= W) ? 0 : roads[r * W + c];
-    const shown = code => code === 5 ? L.rails : code >= 2 ? L.roads : code === 1 && L.localRoads;
+    const shown = code => roadShown(code, L);
     const isRail = (r, c) => at(r, c) === 5;
-    const isRoad = (r, c) => { const v = at(r, c); return v >= 1 && v <= 4 && shown(v); };
+    const isRoad = (r, c) => { const v = at(r, c); return v >= 2 && v <= 4 && shown(v); };
     const pos = [], uv = [];
     if (roads) {
       for (let r = Math.max(0, rc - DETAIL_RADIUS); r <= Math.min(H - 1, rc + DETAIL_RADIUS); r++) {
@@ -498,7 +498,7 @@ class View3D {
   /** Layers changed: the 2D terrain canvas (our top texture) was redrawn; rebuild buildings. */
   setLayers(layers) {
     this.topTex.needsUpdate = true;
-    const changed = ['roads', 'localRoads', 'rails'].some(k => layers[k] !== this.layers[k]);
+    const changed = ['mainRoads', 'mediumRoads', 'rails'].some(k => layers[k] !== this.layers[k]);
     this.layers = { ...layers };
     if (changed) this._clearDetail();
   }

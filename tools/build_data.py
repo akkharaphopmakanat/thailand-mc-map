@@ -10,14 +10,14 @@ data/sprites.json; this script never touches them. It (re)writes:
   data/provinces/<slug>/subdistricts.json     tambon / khwaeng names + postcodes
   data/elevation.png                          mean height (m) per map block, land and sea (R*256+G-32768)
   data/blocks.json                            per-block layers: roads, railways, rivers (OpenStreetMap)
-  data/rivers.json                            rivers (polylines + width) and reservoirs (polygons), world px
+  data/rivers.json                            reservoirs (polygons) and main-river labels, world px
 
 Sources (downloaded into tools/.cache on first run):
   th.json       province polygons      github.com/apisit/thailand.json
   adm2.geojson  district polygons      geoBoundaries THA ADM2 (CC BY 3.0 IGO)
   pds.json      Thai admin names       github.com/kongvut/thai-province-data (MIT)
   terrarium/    elevation tiles, z8    AWS Terrain Tiles (Mapzen terrarium encoding)
-  ne_10m_rivers_lake_centerlines.geojson, ne_10m_lakes.geojson   Natural Earth rivers and lakes
+  ne_10m_lakes.geojson  reservoirs    Natural Earth lakes (public domain)
   ne_50m_admin_0_countries.geojson  neighbouring countries (land vs sea outside Thailand)
   thailand-latest.osm.pbf  roads, rail, rivers   OpenStreetMap via Geofabrik (ODbL); read with
                          pyosmium: pip install --target tools/.cache/pylib osmium
@@ -38,7 +38,6 @@ SOURCES = {
     'th.json': 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json',
     'adm2.geojson': 'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/THA/ADM2/geoBoundaries-THA-ADM2_simplified.geojson',
     'pds.json': 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json',
-    'ne_10m_rivers_lake_centerlines.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_rivers_lake_centerlines.geojson',
     'ne_10m_lakes.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_lakes.geojson',
     'ne_50m_admin_0_countries.geojson': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson',
     'thailand-latest.osm.pbf': 'https://download.geofabrik.de/asia/thailand-latest.osm.pbf',
@@ -153,33 +152,13 @@ def simplify(pts, tol):
     return simplify(pts[:bi + 1], tol)[:-1] + simplify(pts[bi:], tol)
 
 
-def build_rivers():
-    """Natural Earth rivers (width from scalerank) and lakes/reservoirs, in world pixels."""
+def build_rivers(labels):
+    """Reservoirs (Natural Earth lakes) and river labels from the OSM main rivers, in world pixels.
+    River lines themselves come from OSM (blocks.json); Natural Earth's are too coarse to overlay."""
     px = PX_PER_DEG
     to_px = lambda pts: [v for x, y in pts for v in (round((x - LON0) * px), round((LAT1 - y) * px))]
     inside = lambda pts: any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in pts)
     rivers = []
-    for f in source('ne_10m_rivers_lake_centerlines.geojson')['features']:
-        g, p = f['geometry'], f['properties']
-        if not g or p.get('featurecla') != 'River':      # lake centerlines are covered by the lake polygons
-            continue
-        rank = p.get('scalerank') or 9
-        width = 4 if rank <= 2 else 3 if rank <= 7 else 2   # world px (~550 m each), wider than life so they read
-        for line in (g['coordinates'] if g['type'] == 'MultiLineString' else [g['coordinates']]):
-            if not inside(line):
-                continue
-            pts = simplify([(x, y) for x, y in line], 0.002)
-            # label at the vertex halfway along the line, with the local direction
-            seg = [math.dist(a, b) for a, b in zip(pts, pts[1:])]
-            half, acc, li = sum(seg) / 2, 0, 0
-            for li, d in enumerate(seg):
-                acc += d
-                if acc >= half:
-                    break
-            (ax, ay), (bx, by) = pts[li], pts[min(li + 1, len(pts) - 1)]
-            rivers.append({'name': p.get('name_en') or p.get('name') or '', 'w': width, 'pts': to_px(pts),
-                           'label': [round(((ax + bx) / 2 - LON0) * px), round((LAT1 - (ay + by) / 2) * px),
-                                     round(math.degrees(math.atan2(-(by - ay), bx - ax)), 1)]})
     lakes = []
     for f in source('ne_10m_lakes.geojson')['features']:
         g, p = f['geometry'], f['properties']
@@ -189,15 +168,16 @@ def build_rivers():
             if not inside(poly[0]):
                 continue
             lakes.append({'name': p.get('name') or '', 'rings': [to_px(simplify([(x, y) for x, y in r], 0.002)) for r in poly]})
-    dump(os.path.join(DATA, 'rivers.json'), {'units': f'world px ({PX_PER_DEG} per degree)', 'rivers': rivers, 'lakes': lakes})
-    print(f'rivers.json: {len(rivers)} river lines, {len(lakes)} lakes')
+    dump(os.path.join(DATA, 'rivers.json'), {'units': f'world px ({PX_PER_DEG} per degree)',
+                                             'labels_fields': ['name', 'x', 'y', 'angle'], 'labels': labels,
+                                             'rivers': rivers, 'lakes': lakes})
+    print(f'rivers.json: {len(lakes)} lakes, {len(labels)} labels')
 
 
 # ---------------------------------------------------------------- OpenStreetMap roads, rail, rivers
 # Transport codes per block, higher wins where they meet
-# 1 local (tertiary, unclassified), 2–3 medium (secondary, primary), 4 large (trunk, motorway)
-ROAD_CODE = {'tertiary': 1, 'tertiary_link': 1, 'unclassified': 1,
-             'secondary': 2, 'secondary_link': 2, 'primary': 3, 'primary_link': 3,
+# 2–3 medium road (secondary, primary), 4 main road (trunk, motorway); smaller roads are left out
+ROAD_CODE = {'secondary': 2, 'secondary_link': 2, 'primary': 3, 'primary_link': 3,
              'trunk': 4, 'trunk_link': 4, 'motorway': 4, 'motorway_link': 4}
 RAIL_CODE = 5
 # Main rivers (water code 2, drawn two blocks wide); every other river is code 1 ("small rivers").
@@ -212,12 +192,16 @@ MAIN_TH = re.compile(rf'^(แม่น้ำ|น้ำ|ลำน้ำ)({_MAIN_T
 
 
 def is_main_river(tags):
-    return bool(MAIN_EN.match((tags.get('name:en') or '').strip()) or MAIN_TH.match((tags.get('name') or '').strip()))
+    """Thai name decides when there is one (English tags are sometimes wrong, e.g. the Mae Wang
+    canal in Chiang Mai is tagged 'Wang River'); otherwise the English name."""
+    th = (tags.get('name') or '').strip()
+    if any('\u0e00' <= ch <= '\u0e7f' for ch in th):
+        return bool(MAIN_TH.match(th))
+    return bool(MAIN_EN.match((tags.get('name:en') or '').strip()))
 
 
-TRANSPORT_NAMES = {1: 'local road: tertiary, unclassified (dirt path)', 2: 'medium road: secondary (cobblestone)',
-                   3: 'medium road: primary (cobblestone)', 4: 'large road: trunk, motorway (stone, centre line)',
-                   5: 'railway (rails)'}
+TRANSPORT_NAMES = {2: 'medium road: secondary (cobblestone)', 3: 'medium road: primary (cobblestone)',
+                   4: 'main road: trunk, motorway (stone, centre line)', 5: 'railway (rails)'}
 
 
 def build_transport(W, H):
@@ -249,6 +233,7 @@ def build_transport(W, H):
                     err += dr; c0 += sc
 
     n = {'road': 0, 'rail': 0, 'river': 0, 'main': 0}
+    main_pts = {}                              # river name -> [(lon, lat, angle°)] for labels
     fp = osmium.FileProcessor(cached('thailand-latest.osm.pbf'), osmium.osm.NODE | osmium.osm.WAY) \
         .with_locations().with_filter(osmium.filter.KeyFilter('highway', 'railway', 'waterway'))
     for w in fp:
@@ -272,6 +257,12 @@ def build_transport(W, H):
         if len(coords) >= 2 and any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in coords):
             line(coords, layer, code, kind == 'river' and code == 2)
             n[kind] += 1
+            if kind == 'river' and code == 2 and len(coords) >= 3:
+                name = river_label(t)
+                if name:
+                    for (x0, y0), (x1, y1) in zip(coords[::4], coords[2::4]):
+                        main_pts.setdefault(name, []).append(((x0 + x1) / 2, (y0 + y1) / 2,
+                                                              math.degrees(math.atan2(y1 - y0, x1 - x0))))
             n['main'] += kind == 'river' and code == 2
     dump(os.path.join(DATA, 'blocks.json'), {
         'W': W, 'H': H, 'source': 'roads/water: OpenStreetMap contributors (ODbL), via Geofabrik',
@@ -281,6 +272,43 @@ def build_transport(W, H):
         'water': [rle(''.join('.12'[v] for v in row)) for row in water],
     })
     print(f"blocks.json: {n['road']} road ways, {n['rail']} rail ways, {n['river']} river ways ({n['main']} main)")
+    # River labels on the drawn (OSM) main rivers: repeat along a river, at least ~0.9° apart
+    labels = []
+    for name, pts in sorted(main_pts.items()):
+        pts.sort(key=lambda p: h2key(p[0], p[1]))            # deterministic spread, not map order
+        kept = []
+        for lon, lat, ang in pts:
+            if LON0 <= lon <= LON1 and LAT0 <= lat <= LAT1 and all(math.hypot(lon - a, lat - b) > 0.9 for a, b, _ in kept):
+                kept.append((lon, lat, ang))
+        for lon, lat, ang in kept:
+            labels.append([name, round((lon - LON0) * PX_PER_DEG, 1), round((LAT1 - lat) * PX_PER_DEG, 1), round(ang, 1)])
+    print(f'river labels: {len(labels)} for {len(main_pts)} main rivers')
+    return labels
+
+
+def h2key(x, y):
+    """Stable pseudo-random order for label candidates."""
+    return math.sin(x * 12.9898 + y * 78.233) * 43758.5453 % 1
+
+
+def river_label(tags):
+    """English display name for a main river, e.g. 'Nan River' (from the Thai name when present)."""
+    th = (tags.get('name') or '').strip()
+    m = MAIN_TH.match(th)
+    if m:
+        return TH_TO_EN.get(m.group(2), m.group(2)) + ' River'
+    m = MAIN_EN.match((tags.get('name:en') or '').strip())
+    return m.group(2).title().strip() + ' River' if m else ''
+
+
+TH_TO_EN = {'เจ้าพระยา': 'Chao Phraya', 'โขง': 'Mekong', 'น่าน': 'Nan', 'ปิง': 'Ping', 'วัง': 'Wang', 'ยม': 'Yom',
+            'มูล': 'Mun', 'ชี': 'Chi', 'ท่าจีน': 'Tha Chin', 'ป่าสัก': 'Pa Sak', 'บางปะกง': 'Bang Pakong',
+            'แม่กลอง': 'Mae Klong', 'ตาปี': 'Tapi', 'สงคราม': 'Songkhram', 'สาละวิน': 'Salween', 'เมย': 'Moei',
+            'แควน้อย': 'Khwae Noi', 'แควใหญ่': 'Khwae Yai', 'ลพบุรี': 'Lop Buri', 'น้อย': 'Noi',
+            'ปราจีนบุรี': 'Prachin Buri', 'เพชรบุรี': 'Phetchaburi', 'ปัตตานี': 'Pattani', 'กก': 'Kok', 'อิง': 'Ing',
+            'เลย': 'Loei', 'ลำปาว': 'Lam Pao', 'ลำตะคอง': 'Lam Takhong', 'สุพรรณบุรี': 'Suphan',
+            'สะแกกรัง': 'Sakae Krang', 'จันทบุรี': 'Chanthaburi', 'ตรัง': 'Trang', 'ปาย': 'Pai', 'ยวม': 'Yuam',
+            'กวง': 'Kuang', 'ลี้': 'Li'}
 
 
 def polygons(geom):
@@ -828,8 +856,8 @@ def main():
     slugs = [by_dataset[f['properties']['name']] for f in th]
     grid, foreign = build_map(th, slugs)
     heights = build_elevation()
-    build_transport(len(grid[0]), len(grid))
-    build_rivers()
+    labels = build_transport(len(grid[0]), len(grid))
+    build_rivers(labels)
     otop = build_otop()
     sea = [[grid[r][c] == -1 and not foreign[r][c] for c in range(len(grid[0]))] for r in range(len(grid))]
     # district sprites: shared library plus every province's own item sprite

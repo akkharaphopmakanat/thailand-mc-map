@@ -3,6 +3,7 @@
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite } from './sprites.js';
 import { railTile, roadTile, roadClass, maskAt } from './pieces.js';
+import { roadShown } from './world.js';
 
 const MAX_SCALE = 24;   // screen px per world px (a 0.005° block is 1 world px)
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -24,7 +25,7 @@ export class MapView {
     this.cw = 0; this.ch = 0; this.dpr = 1; this.fitS = .3;
     this.hover = -1; this.selected = -1;
     this.layer = null; this.dHover = -1; this.dFocus = -1;
-    this.layers = { roads: true, localRoads: false, rails: true, rivers: true, streams: false };
+    this.layers = { mainRoads: true, mediumRoads: true, rails: true, rivers: true, streams: false };
     this.dirty = true; this.tween = null;
     this.order = atlas.provinces.map(p => p.i).sort((a, b) => atlas.provinces[a].anchor[0] - atlas.provinces[b].anchor[0]);
     this._bindInput();
@@ -201,9 +202,9 @@ export class MapView {
     const c0 = Math.max(0, Math.floor(-view.x / blockPx)), c1 = Math.min(W - 1, Math.ceil((cw - view.x) / blockPx));
     const r0 = Math.max(0, Math.floor(-view.y / blockPx)), r1 = Math.min(H - 1, Math.ceil((ch - view.y) / blockPx));
     const at = (r, c) => (r < 0 || c < 0 || r >= H || c >= W) ? 0 : roads[r * W + c];
-    const shown = code => code === 5 ? L.rails : code >= 2 ? L.roads : code === 1 && L.localRoads;
+    const shown = code => roadShown(code, L);
     const isRail = (r, c) => at(r, c) === 5;
-    const isRoad = (r, c) => { const v = at(r, c); return v >= 1 && v <= 4 && shown(v); };
+    const isRoad = (r, c) => { const v = at(r, c); return v >= 2 && v <= 4 && shown(v); };
     ctx.imageSmoothingEnabled = false;
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
       const code = roads[r * W + c];
@@ -262,15 +263,13 @@ export class MapView {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
     // River names along the river once zoomed in
-    if (atlas.rivers && this.layers.rivers && s >= .9) {
+    if (atlas.rivers?.labels && this.layers.rivers && s >= .9) {
       ctx.font = 'italic 600 12px "Pixelify Sans", monospace';
-      const seen = new Set();
-      for (const r of atlas.rivers.rivers) {
-        if (!r.name || seen.has(r.name) || !r.label) continue;
-        const [sx, sy] = this._w2s(r.label[0], r.label[1]);
+      for (const [name, lx, ly, angle] of atlas.rivers.labels) {
+        const [sx, sy] = this._w2s(lx, ly);
         if (sx < -80 || sy < -20 || sx > cw + 80 || sy > ch + 20) continue;
-        seen.add(r.name);
-        let a = -r.label[2] * Math.PI / 180;
+        const r = { name };
+        let a = -angle * Math.PI / 180;
         if (a > Math.PI / 2) a -= Math.PI; else if (a < -Math.PI / 2) a += Math.PI;
         ctx.save(); ctx.translate(sx, sy - 8); ctx.rotate(a);
         this._text(r.name, 0, 0, '#bfe0ff', 'rgba(10,30,80,.8)');

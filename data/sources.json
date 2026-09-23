@@ -55,11 +55,11 @@
     },
     {
       "id": "rivers",
-      "title": "Natural Earth 1:10m Physical Vectors: Rivers + lake centerlines, and Lakes + reservoirs",
+      "title": "Natural Earth 1:10m Lakes + reservoirs",
       "author": "Natural Earth (naturalearthdata.com)",
       "url": "https://www.naturalearthdata.com/downloads/10m-physical-vectors/",
       "license": "Public domain",
-      "used_for": "Rivers and reservoirs in data/rivers.json, painted as water in 2D and on 3D block tops"
+      "used_for": "Reservoirs in data/rivers.json (river lines and labels come from OpenStreetMap)"
     },
     {
       "id": "countries",
@@ -76,7 +76,7 @@
       "url": "https://www.openstreetmap.org/copyright",
       "download": "https://download.geofabrik.de/asia/thailand.html",
       "license": "ODbL 1.0: data/blocks.json road and water layers are a derived database under the same licence",
-      "used_for": "Main roads (motorway, trunk, primary, secondary), local roads (tertiary, unclassified), railways and rivers, rasterised per 0.005° block in data/blocks.json"
+      "used_for": "Main roads (motorway, trunk), medium roads (primary, secondary), railways, rivers and river labels, rasterised per 0.005° block in data/blocks.json and data/rivers.json"
     }
   ],
   "fonts": [
