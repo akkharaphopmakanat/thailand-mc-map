@@ -1,0 +1,32 @@
+{
+  "slug": "sing-buri",
+  "dataset_name": "Sing Buri",
+  "name": {
+    "en": "Sing Buri",
+    "th": "สิงห์บุรี"
+  },
+  "region": "C",
+  "item": {
+    "id": "fish",
+    "name": "Grilled Snakehead",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      "................",
+      "..........TT....",
+      ".bbbbbbbbbbTT...",
+      "bBbbBbbbBbbbTbb.",
+      "bwkbbbBbbbbBbbbb",
+      "bbbbbbbbBbbbbbTb",
+      ".bbBbbbbbbbbbTT.",
+      "..bbbbbbbbbbTT..",
+      "...........TT...",
+      "...........T....",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Salt-grilled pla chon is Sing Buri's signature. Land of the Bang Rachan heroes."
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "satun",
+  "dataset_name": "Satun",
+  "name": {
+    "en": "Satun",
+    "th": "สตูล"
+  },
+  "region": "S",
+  "item": {
+    "id": "tropicalFish",
+    "name": "Tropical Fish",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      "....o...........",
+      "...ooo......o...",
+      "..ooowo....oo...",
+      ".oooowwoo.ooo...",
+      "okooowwoooooo...",
+      ".oooowwoo.ooo...",
+      "..ooowo....oo...",
+      "...ooo......o...",
+      "....o...........",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Koh Lipe's coral reefs and the Satun UNESCO Global Geopark."
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "uthai-thani",
+  "dataset_name": "Uthai Thani",
+  "name": {
+    "en": "Uthai Thani",
+    "th": "อุทัยธานี"
+  },
+  "region": "C",
+  "item": {
+    "id": "tiger",
+    "name": "Tiger",
+    "sprite": [
+      "................",
+      "..kk........kk..",
+      "..kok......kok..",
+      "..oooooooooooo..",
+      ".ooookoookoooooo",
+      ".okoooooooooooko",
+      ".oowkooooooowkoo",
+      ".ooooooooooooooo",
+      ".okooowwwwoookoo",
+      "..ooowkkkkwooo..",
+      "..okowwkkwwokoo.",
+      "...oowwwwwwoo...",
+      "....oowwwwoo....",
+      ".....oooooo.....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Huai Kha Khaeng, a UNESCO sanctuary with one of Southeast Asia's strongest wild tiger populations."
+}

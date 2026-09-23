@@ -1,0 +1,32 @@
+{
+  "slug": "khon-kaen",
+  "dataset_name": "Khon Kaen",
+  "name": {
+    "en": "Khon Kaen",
+    "th": "ขอนแก่น"
+  },
+  "region": "NE",
+  "item": {
+    "id": "bone",
+    "name": "Dinosaur Bone",
+    "sprite": [
+      "................",
+      "..........xx....",
+      ".........xxxx...",
+      "..........xxxx..",
+      ".........xxxx...",
+      "........xxx.....",
+      ".......xxx......",
+      "......xxx.......",
+      ".....xxx........",
+      "....xxx.........",
+      "..xxxx..........",
+      ".xxxx...........",
+      "..xxxx..........",
+      "...xx...........",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Phu Wiang gave up Thailand's first dinosaur fossil, Phuwiangosaurus sirindhornae."
+}

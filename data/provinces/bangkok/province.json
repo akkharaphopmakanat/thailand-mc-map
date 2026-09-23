@@ -1,0 +1,32 @@
+{
+  "slug": "bangkok",
+  "dataset_name": "Bangkok Metropolis",
+  "name": {
+    "en": "Bangkok",
+    "th": "กรุงเทพมหานคร"
+  },
+  "region": "C",
+  "item": {
+    "id": "tuktuk",
+    "name": "Tuk-Tuk",
+    "sprite": [
+      "................",
+      "................",
+      "..uuuuuuuuuuu...",
+      "..uuuuuuuuuuuu..",
+      "..u.....u....u..",
+      "..u....kuk...u..",
+      "..u...kksk...u..",
+      ".uuuu..kukk..u..",
+      ".ucuuuuuuuuuuuu.",
+      ".uccuuuuuuuuuuu.",
+      ".uuuuuuyyuuuuuu.",
+      ".kkkkkkkkkkkkkk.",
+      "..kgk.....kgk...",
+      "..kkk.....kkk...",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Capital spawn point. Tuk-tuks, the Grand Palace, Wat Arun and about 11 million players."
+}

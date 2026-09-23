@@ -1,0 +1,32 @@
+{
+  "slug": "ranong",
+  "dataset_name": "Ranong",
+  "name": {
+    "en": "Ranong",
+    "th": "ระนอง"
+  },
+  "region": "S",
+  "item": {
+    "id": "hotspring",
+    "name": "Hot Spring",
+    "sprite": [
+      "....w....w......",
+      "...w....w..w....",
+      "....w....w..w...",
+      "...w....w..w....",
+      "................",
+      ".dd..........dd.",
+      ".dcccccccccccd..",
+      ".dGcwccwccwcGd..",
+      ".dGGGGGGGGGGGd..",
+      ".dGGGGGGGGGGGd..",
+      ".dGdGGGGGGGdGd..",
+      "..dGGGGGGGGGd...",
+      "..dd.ddddd.dd...",
+      "..d.........d...",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Raksawarin hot springs reach about 65 °C. One of the rainiest provinces in Thailand."
+}

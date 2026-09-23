@@ -1,0 +1,32 @@
+{
+  "slug": "prachuap-khiri-khan",
+  "dataset_name": "Prachuap Khiri Khan",
+  "name": {
+    "en": "Prachuap Khiri Khan",
+    "th": "ประจวบคีรีขันธ์"
+  },
+  "region": "W",
+  "item": {
+    "id": "pineapple",
+    "name": "Pineapple",
+    "sprite": [
+      "......e.e.......",
+      ".....e.e.e......",
+      "......eee.......",
+      ".....eeeee......",
+      "......eee.......",
+      ".....hhhhh......",
+      "....hYhhhYh.....",
+      "....hhYhYhh.....",
+      "....hYhhhYh.....",
+      "....hhYhYhh.....",
+      "....hYhhhYh.....",
+      "....hhYhYhh.....",
+      "....hYhhhYh.....",
+      ".....hhhhh......",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "One of Thailand's top pineapple producers. Also Hua Hin, the royal seaside town."
+}

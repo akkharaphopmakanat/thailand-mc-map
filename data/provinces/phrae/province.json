@@ -1,0 +1,32 @@
+{
+  "slug": "phrae",
+  "dataset_name": "Phrae",
+  "name": {
+    "en": "Phrae",
+    "th": "แพร่"
+  },
+  "region": "N",
+  "item": {
+    "id": "indigoShirt",
+    "name": "Mo Hom Shirt",
+    "sprite": [
+      "................",
+      "....nnn..nnn....",
+      "..nnuunnnnuunn..",
+      ".nuuunnkknnuuun.",
+      "nuuuuuukkuuuuuun",
+      "nuuunuuuuuunuuun",
+      "nnnnnuuuuuunnnnn",
+      "....nuuwwuun....",
+      "....nuuuuuun....",
+      "....nuuwwuun....",
+      "....nuuuuuun....",
+      "....nuuwwuun....",
+      "....nuuuuuun....",
+      "....nnnnnnnn....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Indigo-dyed mo hom shirts are worn across the north. Phrae's teak mansions are built from the same forests."
+}

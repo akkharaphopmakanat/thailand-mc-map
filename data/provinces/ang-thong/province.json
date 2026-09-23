@@ -1,0 +1,32 @@
+{
+  "slug": "ang-thong",
+  "dataset_name": "Ang Thong",
+  "name": {
+    "en": "Ang Thong",
+    "th": "อ่างทอง"
+  },
+  "region": "C",
+  "item": {
+    "id": "drum",
+    "name": "Temple Drum",
+    "sprite": [
+      "................",
+      "................",
+      "....kkkkkkkk....",
+      "..kkttttttttkk..",
+      ".kttttttttttttk.",
+      ".kkttttttttttkk.",
+      ".krkkkkkkkkkkrk.",
+      ".kRrrrrrrrrrrRk.",
+      ".kRryrrrrryrrRk.",
+      ".kRrrrrrrrrrrRk.",
+      ".kRryrrrrryrrRk.",
+      ".kRrrrrrrrrrrRk.",
+      "..kkRrrrrrrRkk..",
+      "....kkkkkkkk....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Drum makers in Ban Ek Rat build temple drums by hand. Wat Muang's giant Buddha stands 93 m tall."
+}

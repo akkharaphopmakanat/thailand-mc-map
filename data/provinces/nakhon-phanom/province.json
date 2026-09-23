@@ -1,0 +1,32 @@
+{
+  "slug": "nakhon-phanom",
+  "dataset_name": "Nakhon Phanom",
+  "name": {
+    "en": "Nakhon Phanom",
+    "th": "นครพนม"
+  },
+  "region": "NE",
+  "item": {
+    "id": "stupa",
+    "name": "Phra That Phanom",
+    "sprite": [
+      ".......y........",
+      ".......y........",
+      ".......Y........",
+      "......yYy.......",
+      "......wyw.......",
+      "......www.......",
+      ".....wwyww......",
+      ".....wwwww......",
+      ".....wyYyw......",
+      "....wwwwwww.....",
+      "....wwyYyww.....",
+      "....wwwwwww.....",
+      "...wwwyyywww....",
+      "...wwwwwwwww....",
+      "..wwwwwwwwwww...",
+      "..ggggggggggg..."
+    ]
+  },
+  "lore": "Phra That Phanom, the most revered stupa of Isan. Illuminated boats float down the Mekong each October."
+}

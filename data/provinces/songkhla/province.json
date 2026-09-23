@@ -1,0 +1,32 @@
+{
+  "slug": "songkhla",
+  "dataset_name": "Songkhla",
+  "name": {
+    "en": "Songkhla",
+    "th": "สงขลา"
+  },
+  "region": "S",
+  "item": {
+    "id": "cat",
+    "name": "Cat",
+    "sprite": [
+      "................",
+      "................",
+      "..k........k....",
+      "..kk......kk....",
+      "..kokooookok....",
+      "..koooooooook...",
+      "..kowwooowwok...",
+      "..kowkoookwok...",
+      "..kooooooooook..",
+      "..koooopooooko..",
+      "..kowwwwwwwok...",
+      "...kowwwwwok....",
+      "....kkkkkkk.....",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "The Cat and Mouse Islands off Samila Beach, guarded by a golden mermaid."
+}

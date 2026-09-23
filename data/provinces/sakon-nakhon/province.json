@@ -1,0 +1,32 @@
+{
+  "slug": "sakon-nakhon",
+  "dataset_name": "Sakon Nakhon",
+  "name": {
+    "en": "Sakon Nakhon",
+    "th": "สกลนคร"
+  },
+  "region": "NE",
+  "item": {
+    "id": "honeycomb",
+    "name": "Honeycomb",
+    "sprite": [
+      "................",
+      "................",
+      ".....hhhhhh.....",
+      "....hyyhhyyh....",
+      "...hyhhYhhyhh...",
+      "...hhYyhyYhhh...",
+      "..hyhhYhhYhhyh..",
+      "..hhyhhhyhhYhh..",
+      "..hYhhYhhhhhYh..",
+      "..hhhyhhYhhyhh..",
+      "...hYhhhhYhhh...",
+      "...hhyhYhhyhh...",
+      "....hhhhhhhh....",
+      ".....hhhhhh.....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "The Wax Castle Festival builds temple-shaped castles from beeswax at the end of Buddhist Lent."
+}

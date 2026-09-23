@@ -1,0 +1,32 @@
+{
+  "slug": "chachoengsao",
+  "dataset_name": "Chachoengsao",
+  "name": {
+    "en": "Chachoengsao",
+    "th": "ฉะเชิงเทรา"
+  },
+  "region": "E",
+  "item": {
+    "id": "mango",
+    "name": "Mango",
+    "sprite": [
+      "................",
+      ".........e......",
+      "........ee......",
+      ".......Bee......",
+      "......yyyy......",
+      "....yyyyyyy.....",
+      "...yyfyyyyyy....",
+      "..yyfyyyyyyyy...",
+      "..yyyyyyyyyyyy..",
+      "..yyyyyyyyyyyh..",
+      "...yyyyyyyyyhh..",
+      "....yyyyyyyhh...",
+      ".....hyyyyhh....",
+      ".......hhh......",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Nam dok mai mangoes from Bang Pakong orchards. Also home to a giant reclining pink Ganesha."
+}

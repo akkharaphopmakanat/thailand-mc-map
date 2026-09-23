@@ -1,0 +1,32 @@
+{
+  "slug": "saraburi",
+  "dataset_name": "Saraburi",
+  "name": {
+    "en": "Saraburi",
+    "th": "สระบุรี"
+  },
+  "region": "C",
+  "item": {
+    "id": "milk",
+    "name": "Milk Bucket",
+    "sprite": [
+      "................",
+      "................",
+      "...gggggggggg...",
+      "..gwwwwwwwwwwg..",
+      "..gGwwwwwwwwGg..",
+      "..gGgwwwwwwgGg..",
+      "..gGGggggggGGg..",
+      "...gGGGGGGGGg...",
+      "...gGgGGGGgGg...",
+      "...gGGGGGGGGg...",
+      "....gGGGGGGg....",
+      "....gGGGGGGg....",
+      ".....gggggg.....",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Muak Lek's dairy farms make this Thailand's cow country. Also Phra Phutthabat, the Buddha Footprint shrine."
+}

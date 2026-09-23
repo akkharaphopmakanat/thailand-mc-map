@@ -1,0 +1,32 @@
+{
+  "slug": "nakhon-ratchasima",
+  "dataset_name": "Nakhon Ratchasima",
+  "name": {
+    "en": "Nakhon Ratchasima",
+    "th": "นครราชสีมา"
+  },
+  "region": "NE",
+  "item": {
+    "id": "hornbill",
+    "name": "Hornbill",
+    "sprite": [
+      "................",
+      "................",
+      "...yyyr.........",
+      "..yyyyyk........",
+      ".yyyyykkk.......",
+      "yyyyyykwkk......",
+      "yy...kkkkkk.....",
+      "y....kkkkkkk....",
+      ".....wkkkkkkk...",
+      "......kkkkkkkk..",
+      ".......kkkkkwww.",
+      "........kkk.www.",
+      "........y.y.....",
+      "........y.y.....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Khao Yai, Thailand's first national park, spawns great hornbills, gibbons and wild elephants. Korat is the largest province by area."
+}

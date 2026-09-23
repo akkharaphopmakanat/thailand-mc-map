@@ -1,0 +1,32 @@
+{
+  "slug": "phetchabun",
+  "dataset_name": "Phetchabun",
+  "name": {
+    "en": "Phetchabun",
+    "th": "เพชรบูรณ์"
+  },
+  "region": "C",
+  "item": {
+    "id": "tamarind",
+    "name": "Sweet Tamarind",
+    "sprite": [
+      "................",
+      "................",
+      "..B.............",
+      "..bb............",
+      "...bbT..........",
+      "....bbbT........",
+      ".....bbbbTT.....",
+      "......bbbbbTT...",
+      "........bbbbbb..",
+      "..........bbbbb.",
+      "............bbb.",
+      ".............bB.",
+      "..............B.",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Sweet tamarind orchards, plus the misty peaks of Khao Kho and Phu Thap Boek."
+}

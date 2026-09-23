@@ -1,0 +1,32 @@
+{
+  "slug": "surin",
+  "dataset_name": "Surin",
+  "name": {
+    "en": "Surin",
+    "th": "สุรินทร์"
+  },
+  "region": "NE",
+  "item": {
+    "id": "elephant",
+    "name": "Elephant",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      "....GGGGGG......",
+      "...GggggggGGGG..",
+      "..GgggggggggggG.",
+      ".GgkgggggggggggG",
+      ".GgggggggggggggG",
+      "Gwg.gGggggggggG.",
+      "Gg..gggggggggg..",
+      "Gg..gg.gg..gg...",
+      "Gg..gg.gg..gg...",
+      "G...gg.gg..gg...",
+      "....GG.GG..GG...",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "The Elephant Round-up every November. Surin's Kui people have lived alongside elephants for centuries."
+}

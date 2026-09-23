@@ -1,0 +1,32 @@
+{
+  "slug": "chiang-mai",
+  "dataset_name": "Chiang Mai",
+  "name": {
+    "en": "Chiang Mai",
+    "th": "เชียงใหม่"
+  },
+  "region": "N",
+  "item": {
+    "id": "lantern",
+    "name": "Sky Lantern",
+    "sprite": [
+      "................",
+      ".....oooooo.....",
+      "....ohhhhhho....",
+      "...ohhffffhho...",
+      "...ohffffffho...",
+      "..ohhffffffhho..",
+      "..ohffffffffho..",
+      "..ohffffffffho..",
+      "..ohhffffffhho..",
+      "..oohhffffhhoo..",
+      "...oohhhhhhoo...",
+      "....oooooooo....",
+      "......kyyk......",
+      ".......ff.......",
+      ".......ry.......",
+      "................"
+    ]
+  },
+  "lore": "Thousands of khom loi drift over the Ping River during Yi Peng. Doi Suthep watches from the mountain above the old city."
+}

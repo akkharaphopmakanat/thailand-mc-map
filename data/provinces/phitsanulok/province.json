@@ -1,0 +1,32 @@
+{
+  "slug": "phitsanulok",
+  "dataset_name": "Phitsanulok",
+  "name": {
+    "en": "Phitsanulok",
+    "th": "พิษณุโลก"
+  },
+  "region": "C",
+  "item": {
+    "id": "shrine",
+    "name": "Golden Shrine",
+    "sprite": [
+      ".......y........",
+      ".......y........",
+      "......yYy.......",
+      "......rrr.......",
+      ".....yrrry......",
+      "....yrrrrry.....",
+      "...yrrrrrrry....",
+      "..yYYYYYYYYYy...",
+      "..y.rrrrrrr.y...",
+      "....wYwYwYw.....",
+      "....wyyyyyw.....",
+      "....wyyyyyw.....",
+      "....wyyYyyw.....",
+      "...wwwwwwwww....",
+      "..ggggggggggg...",
+      "................"
+    ]
+  },
+  "lore": "Wat Phra Si Rattana Mahathat houses Phra Buddha Chinnarat, often called Thailand's most beautiful Buddha image."
+}

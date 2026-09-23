@@ -1,0 +1,32 @@
+{
+  "slug": "rayong",
+  "dataset_name": "Rayong",
+  "name": {
+    "en": "Rayong",
+    "th": "ระยอง"
+  },
+  "region": "E",
+  "item": {
+    "id": "squid",
+    "name": "Squid",
+    "sprite": [
+      "................",
+      ".....UUUUUU.....",
+      "....UuuuuuuU....",
+      "....UuuuuuuU....",
+      "....UuuuuuuU....",
+      "....UuwkwkuU....",
+      "....UuuuuuuU....",
+      "....UuuuuuuU....",
+      "....UUUUUUUU....",
+      "....U.U..U.U....",
+      "....U.U..U.U....",
+      "...U..U..U..U...",
+      "...U.U....U.U...",
+      "..U..U....U..U..",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Squid and fish sauce from the coast, with Koh Samet's white sand just offshore."
+}

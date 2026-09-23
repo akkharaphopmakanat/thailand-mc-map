@@ -1,0 +1,32 @@
+{
+  "slug": "loei",
+  "dataset_name": "Loei",
+  "name": {
+    "en": "Loei",
+    "th": "เลย"
+  },
+  "region": "NE",
+  "item": {
+    "id": "mask",
+    "name": "Phi Ta Khon Mask",
+    "sprite": [
+      "......r.u.......",
+      ".....ryuyr......",
+      "....rryyyrr.....",
+      "....ruuuuur.....",
+      "...rrrrrrrrr....",
+      "...kwwwwwwwk....",
+      "..kwpwkwkwpwk...",
+      "..kwwwwwwwwwk...",
+      "..kwrwwwwwrwk...",
+      "..kwwwwrwwwwk...",
+      "...kwwwrwwwk....",
+      "...kwwwrrwwk....",
+      "....kwwrrwk.....",
+      "....kwwrrwk.....",
+      ".....kkrrk......",
+      ".......rr......."
+    ]
+  },
+  "lore": "Dan Sai's ghost festival: towering masks made from rice-steaming baskets and coconut husks. Phu Kradueng's plateau is nearby."
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "lampang",
+  "dataset_name": "Lampang",
+  "name": {
+    "en": "Lampang",
+    "th": "ลำปาง"
+  },
+  "region": "N",
+  "item": {
+    "id": "chicken",
+    "name": "Rooster Bowl",
+    "sprite": [
+      "................",
+      ".....r..........",
+      "....rrk.........",
+      "....kwwy........",
+      "...wwwwk....e...",
+      "...wwwwwwwweEe..",
+      "....wwwwwwwwe...",
+      ".....wwrwwww....",
+      "......y..y......",
+      ".kkkkkkkkkkkkkk.",
+      ".kwwwwwwwwwwwwk.",
+      "..kwerwwwwrewk..",
+      "..kwwwwwwwwwwk..",
+      "...kwwwwwwwwk...",
+      "....kkkkkkkk....",
+      "................"
+    ]
+  },
+  "lore": "The red rooster bowl (ชามตราไก่) is fired in Lampang's kilns. Horse-drawn carriages still roam the town."
+}

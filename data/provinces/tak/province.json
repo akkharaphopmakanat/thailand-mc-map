@@ -1,0 +1,32 @@
+{
+  "slug": "tak",
+  "dataset_name": "Tak",
+  "name": {
+    "en": "Tak",
+    "th": "ตาก"
+  },
+  "region": "W",
+  "item": {
+    "id": "waterfall",
+    "name": "Waterfall",
+    "sprite": [
+      "................",
+      "GGGGGGGGGGGGGGGG",
+      "GgGGe...eeGGgGGG",
+      "GGGeecccceeGGGgG",
+      "GgGecwccwceeGGGG",
+      "GGGGcuccwcGGGgGG",
+      "GgGGcwcucwGGGGGG",
+      "GGGGwccwccGGgGGG",
+      "GGgGccwcucGGGGGg",
+      "GGGGcucccwGGgGGG",
+      "GGGGwcwccwGGGGGG",
+      "GGGGcccuccGGGGgG",
+      "uuuwwcwwcwwuuuuu",
+      "uucuuwuuwuucuuuu",
+      "uuuuuuuuuuuuuuuu",
+      "................"
+    ]
+  },
+  "lore": "Thi Lo Su in Umphang, the largest waterfall in Thailand."
+}

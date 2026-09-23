@@ -1,0 +1,32 @@
+{
+  "slug": "narathiwat",
+  "dataset_name": "Narathiwat",
+  "name": {
+    "en": "Narathiwat",
+    "th": "นราธิวาส"
+  },
+  "region": "S",
+  "item": {
+    "id": "birdcage",
+    "name": "Birdcage",
+    "sprite": [
+      ".......Y........",
+      "......YkY.......",
+      ".....Y.Y.Y......",
+      "....Y..Y..Y.....",
+      "...Y...Y...Y....",
+      "...Y.GGGG..Y....",
+      "...Y.GgkGG.Y....",
+      "...YGGggGG.Y....",
+      "...Y.GGGGGGY....",
+      "...Y..GGG..Y....",
+      "...YYYYYYYYY....",
+      "...rrrrrrrrr....",
+      "...ryryryryr....",
+      "....rrrrrrr.....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Zebra-dove singing contests with painted cages. The Hala-Bala rainforest is on the Malaysian border."
+}

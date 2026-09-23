@@ -1,0 +1,32 @@
+{
+  "slug": "yasothon",
+  "dataset_name": "Yasothon",
+  "name": {
+    "en": "Yasothon",
+    "th": "ยโสธร"
+  },
+  "region": "NE",
+  "item": {
+    "id": "rocket",
+    "name": "Firework Rocket",
+    "sprite": [
+      "................",
+      ".......G........",
+      "......GgG.......",
+      "......kgk.......",
+      ".....krrrk......",
+      ".....krwrk......",
+      ".....krrrk......",
+      ".....krwrk......",
+      ".....krrrk......",
+      ".....krwrk......",
+      ".....kkbkk......",
+      ".......b........",
+      ".......b........",
+      "......obo.......",
+      ".....o.b.o......",
+      ".......y........"
+    ]
+  },
+  "lore": "Bun Bang Fai: homemade rockets launched each May to ask the sky for rain."
+}

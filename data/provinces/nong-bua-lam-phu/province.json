@@ -1,0 +1,32 @@
+{
+  "slug": "nong-bua-lam-phu",
+  "dataset_name": "Nong Bua Lam Phu",
+  "name": {
+    "en": "Nong Bua Lam Phu",
+    "th": "หนองบัวลำภู"
+  },
+  "region": "NE",
+  "item": {
+    "id": "cave",
+    "name": "Cave Temple",
+    "sprite": [
+      "GGGGGGGGGGGGGGGG",
+      "GgGGGgGGGgGGGgGG",
+      "GGggGGGggGGGGGgG",
+      "GGGGkkkkkkkGGGGG",
+      "GgGkkkkkkkkkGgGG",
+      "GGkkkkyykkkkkGGG",
+      "GGkkkkyykkkkkGgG",
+      "GgkkkyyyykkkkkGG",
+      "GGkkkyyyykkkkkGG",
+      "GGkkkkkkkkkkkkGG",
+      "GgkkkkkkkkkkkkGg",
+      "GGkkkkkkkkkkkkGG",
+      "GGGkkkkkkkkkkGGG",
+      "GgGGggGGGGggGGGG",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Tham Erawan, a cave temple set high in a limestone cliff, reached by about 600 steps."
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "nakhon-si-thammarat",
+  "dataset_name": "Nakhon Si Thammarat",
+  "name": {
+    "en": "Nakhon Si Thammarat",
+    "th": "นครศรีธรรมราช"
+  },
+  "region": "S",
+  "item": {
+    "id": "puppet",
+    "name": "Shadow Puppet",
+    "sprite": [
+      ".......k........",
+      "......kyk.......",
+      "......kkk.......",
+      ".....kBBBk......",
+      ".....kwBBk......",
+      ".....kBBBk......",
+      "......kBk.......",
+      "....kBBBBBk.....",
+      "...k.kBRBk.k....",
+      "..k..kRRRk..k...",
+      ".b...kBBBk...b..",
+      ".....kB.Bk......",
+      ".....kB.Bk......",
+      ".....k...k......",
+      ".......b........",
+      ".......b........"
+    ]
+  },
+  "lore": "Home of nang talung shadow puppets and Wat Phra Mahathat."
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "amnat-charoen",
+  "dataset_name": "Amnat Charoen",
+  "name": {
+    "en": "Amnat Charoen",
+    "th": "อำนาจเจริญ"
+  },
+  "region": "NE",
+  "item": {
+    "id": "kratip",
+    "name": "Sticky Rice Basket",
+    "sprite": [
+      "................",
+      "......b..b......",
+      ".....b....b.....",
+      "....tttttttt....",
+      "....TtTtTtTt....",
+      ".....tttttt.....",
+      "....tTttttTt....",
+      "....TtTtTtTt....",
+      "....tTtTtTtT....",
+      "....TtTtTtTt....",
+      "....tTtTtTtT....",
+      "....TtTtTtTt....",
+      ".....tTtTtT.....",
+      "......bbbb......",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Woven kratip baskets carry the sticky rice of every Isan meal. Phutthautthayan hill hosts a giant white Buddha."
+}

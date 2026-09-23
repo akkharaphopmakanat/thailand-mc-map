@@ -1,0 +1,32 @@
+{
+  "slug": "nakhon-sawan",
+  "dataset_name": "Nakhon Sawan",
+  "name": {
+    "en": "Nakhon Sawan",
+    "th": "นครสวรรค์"
+  },
+  "region": "C",
+  "item": {
+    "id": "dragon",
+    "name": "Dragon Head",
+    "sprite": [
+      "................",
+      "..y.......y.....",
+      "..yy.....yy.....",
+      "...yrrrrrry.....",
+      "..rrrrrrrrrrr...",
+      ".rrwkrrrrwkrrr..",
+      ".rrrrrrrrrrrrrr.",
+      "yrrrrrrrrrrrrrry",
+      "yyrrryyyyyyrrryy",
+      ".rwrwrwrwrwrwr..",
+      ".rrrrrrrrrrrrr..",
+      "..rwrwrwrwrwr...",
+      "...rrrrrrrrr....",
+      "..y..y...y..y...",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "The Chao Phraya River begins here. Its Chinese New Year dragon parade is more than a century old."
+}

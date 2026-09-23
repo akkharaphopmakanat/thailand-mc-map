@@ -1,0 +1,32 @@
+{
+  "slug": "nong-khai",
+  "dataset_name": "Nong Khai",
+  "name": {
+    "en": "Nong Khai",
+    "th": "หนองคาย"
+  },
+  "region": "NE",
+  "item": {
+    "id": "fireball",
+    "name": "Fire Charge",
+    "sprite": [
+      "................",
+      "................",
+      ".....kkkkk......",
+      "....kRorRRk.....",
+      "...kRoyoRrRk....",
+      "...kryfyorRk....",
+      "..kRofffyoRRk...",
+      "..kRoyfyorRRk...",
+      "..kRRoyorRoRk...",
+      "..kRrRorRRRRk...",
+      "...kRRRRoRRk....",
+      "...kkRRRRRkk....",
+      ".....kkkkk......",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Naga fireballs rise from the Mekong at the end of Buddhist Lent. The first Friendship Bridge to Laos starts here."
+}

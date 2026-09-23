@@ -1,0 +1,32 @@
+{
+  "slug": "chai-nat",
+  "dataset_name": "Chai Nat",
+  "name": {
+    "en": "Chai Nat",
+    "th": "ชัยนาท"
+  },
+  "region": "C",
+  "item": {
+    "id": "pomelo",
+    "name": "Pomelo",
+    "sprite": [
+      "................",
+      ".......B........",
+      ".......Be.......",
+      "......eeEe......",
+      "....llllllll....",
+      "...lllllllelll..",
+      "..llwllllllllll.",
+      "..llllllllllell.",
+      "..lllllllllllll.",
+      "..llllllllllll..",
+      "..elllllllllle..",
+      "...ellllllllle..",
+      "....eeeeeeeee...",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Khao Tang Kwa pomelo, and the giant bird statues of Chai Nat Bird Park."
+}

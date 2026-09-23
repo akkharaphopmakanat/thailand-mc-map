@@ -1,0 +1,32 @@
+{
+  "slug": "chiang-rai",
+  "dataset_name": "Chiang Rai",
+  "name": {
+    "en": "Chiang Rai",
+    "th": "เชียงราย"
+  },
+  "region": "N",
+  "item": {
+    "id": "whiteTemple",
+    "name": "White Temple",
+    "sprite": [
+      ".......c........",
+      ".......w........",
+      "......wcw.......",
+      "......www.......",
+      ".....wcwcw......",
+      "....wwwwwww.....",
+      "...wcwwcwwcw....",
+      "..wwwwwwwwwww...",
+      ".cwwcwwwwwcwwc..",
+      "...wgwgwwgwgw...",
+      "...w.w.ww.w.w...",
+      "...wgwgwwgwgw...",
+      "..wwwwwwwwwwww..",
+      "..gggggggggggg..",
+      ".cccccccccccccc.",
+      "................"
+    ]
+  },
+  "lore": "Wat Rong Khun, a quartz-white temple crafted by artist Chalermchai Kositpipat. The Golden Triangle is at the northern edge."
+}

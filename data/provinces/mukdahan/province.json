@@ -1,0 +1,32 @@
+{
+  "slug": "mukdahan",
+  "dataset_name": "Mukdahan",
+  "name": {
+    "en": "Mukdahan",
+    "th": "มุกดาหาร"
+  },
+  "region": "NE",
+  "item": {
+    "id": "pearl",
+    "name": "Pearl",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      "......wwww......",
+      "....wwwwwwgg....",
+      "...wwcwwwwwgg...",
+      "...wcwwwwwwgg...",
+      "..wwwwwwwwwggg..",
+      "..wwwwwwwwgggg..",
+      "..wwwwwwwggggg..",
+      "...wwwwwggggg...",
+      "...gwwgggggg....",
+      "....ggggggG.....",
+      "......GGGG......",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Mukdahan means 'pearl of the river'. The second Friendship Bridge crosses to Savannakhet here."
+}

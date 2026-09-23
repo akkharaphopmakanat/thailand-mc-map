@@ -1,0 +1,32 @@
+{
+  "slug": "ratchaburi",
+  "dataset_name": "Ratchaburi",
+  "name": {
+    "en": "Ratchaburi",
+    "th": "ราชบุรี"
+  },
+  "region": "W",
+  "item": {
+    "id": "jar",
+    "name": "Dragon Jar",
+    "sprite": [
+      "................",
+      "................",
+      ".....BBBBBB.....",
+      "......BbbB......",
+      "....BBbbbbBB....",
+      "...BbbbbbbbbB...",
+      "..BbbyybbbbbbB..",
+      "..BbyyybybbbbB..",
+      "..BbbbyyyyybbB..",
+      "..BbbbbbbyybbB..",
+      "..BbbbbbbbybbB..",
+      "...BbbbbbbbbB...",
+      "....BbbbbbbB....",
+      ".....BBBBBB.....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Glazed dragon jars (โอ่งมังกร) and the Damnoen Saduak floating market."
+}

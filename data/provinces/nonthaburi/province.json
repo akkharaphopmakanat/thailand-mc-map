@@ -1,0 +1,32 @@
+{
+  "slug": "nonthaburi",
+  "dataset_name": "Nonthaburi",
+  "name": {
+    "en": "Nonthaburi",
+    "th": "นนทบุรี"
+  },
+  "region": "C",
+  "item": {
+    "id": "durian",
+    "name": "Durian",
+    "sprite": [
+      "................",
+      ".......b........",
+      ".......b........",
+      ".....l.b.l......",
+      "....lelellel....",
+      "...eleleleleel..",
+      "..lelelelelele..",
+      "..eleleleleleel.",
+      "..lelelelelele..",
+      "..elelelelelel..",
+      "...lelelelele...",
+      "....elelelel....",
+      ".....lelele.....",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Nonthaburi's orchard durians are among the most expensive fruit in the world."
+}

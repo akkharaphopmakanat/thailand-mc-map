@@ -1,0 +1,32 @@
+{
+  "slug": "chumphon",
+  "dataset_name": "Chumphon",
+  "name": {
+    "en": "Chumphon",
+    "th": "ชุมพร"
+  },
+  "region": "S",
+  "item": {
+    "id": "banana",
+    "name": "Banana",
+    "sprite": [
+      "................",
+      ".......B........",
+      "......EB........",
+      ".....yyBy.......",
+      "....yyyByy......",
+      "...yyyyyyyy.....",
+      "...yy.yyyyy.....",
+      "..yy..yy.yyy....",
+      "..yy..yy..yy....",
+      "..y...yy..yy....",
+      "..Y...yy...y....",
+      "......yY...Y....",
+      "......Y.........",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Gateway to the south, known for kluai lep mue nang, the tiny 'fingernail' banana."
+}

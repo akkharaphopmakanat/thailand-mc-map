@@ -1,0 +1,32 @@
+{
+  "slug": "nakhon-pathom",
+  "dataset_name": "Nakhon Pathom",
+  "name": {
+    "en": "Nakhon Pathom",
+    "th": "นครปฐม"
+  },
+  "region": "C",
+  "item": {
+    "id": "bigChedi",
+    "name": "Great Stupa",
+    "sprite": [
+      ".......y........",
+      ".......y........",
+      ".......Y........",
+      "......yYy.......",
+      "......oyo.......",
+      "......ooo.......",
+      ".....ooooo......",
+      ".....YYYYY......",
+      "....ooooooo.....",
+      "...ooooooooo....",
+      "..oooooyoooooo..",
+      "..ooooooooooooo.",
+      "..YYYYYYYYYYYY..",
+      "..wwwwwwwwwwww..",
+      ".gggggggggggggg.",
+      "................"
+    ]
+  },
+  "lore": "Phra Pathommachedi, about 120 m high, is the tallest stupa in the world."
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "krabi",
+  "dataset_name": "Krabi",
+  "name": {
+    "en": "Krabi",
+    "th": "กระบี่"
+  },
+  "region": "S",
+  "item": {
+    "id": "longtail",
+    "name": "Longtail Boat",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      ".r..............",
+      ".rb.........p...",
+      ".rbb.......pwp..",
+      ".bbbb..........b",
+      "..bbbbbbbbbbbbb.",
+      "..bbBbbbbbbbbb..",
+      "...bbbbbbbbbbb..",
+      "....BBBBBBBBB...",
+      "cuccuccucucucccu",
+      "uuuuuuuuuuuuuuuu",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Longtail boats run to Railay, the Phi Phi islands and the Four Islands."
+}

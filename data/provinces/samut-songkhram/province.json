@@ -1,0 +1,32 @@
+{
+  "slug": "samut-songkhram",
+  "dataset_name": "Samut Songkhram",
+  "name": {
+    "en": "Samut Songkhram",
+    "th": "สมุทรสงคราม"
+  },
+  "region": "C",
+  "item": {
+    "id": "fireflies",
+    "name": "Firefly Bush",
+    "sprite": [
+      "......f.........",
+      "..f.........f...",
+      "......EE....f...",
+      "....EEEEEE......",
+      "...EEeEEeEE.f...",
+      "..EeEEfEEEeE....",
+      "f.EEEEEEEEEEE...",
+      "..EeEEEEEfEEE...",
+      "...EEEeEEEEE..f.",
+      "...fEEEEEEeE....",
+      "....EEEEEEE.....",
+      "......BB........",
+      "......BB....f...",
+      "......BB........",
+      "....BBBBBB......",
+      "................"
+    ]
+  },
+  "lore": "Amphawa's riverside trees glow with fireflies at night. Trains roll straight through the Maeklong railway market."
+}

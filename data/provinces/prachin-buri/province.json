@@ -1,0 +1,32 @@
+{
+  "slug": "prachin-buri",
+  "dataset_name": "Prachin Buri",
+  "name": {
+    "en": "Prachin Buri",
+    "th": "ปราจีนบุรี"
+  },
+  "region": "E",
+  "item": {
+    "id": "potion",
+    "name": "Herbal Potion",
+    "sprite": [
+      "................",
+      "......bbbb......",
+      "......kbbk......",
+      ".......kk.......",
+      "......kwwk......",
+      "......kwwk......",
+      ".....kwwwwk.....",
+      "....kwllllwk....",
+      "...kwllfllllk...",
+      "...kwlfllllek...",
+      "...kwllllleek...",
+      "...kwlllleeek...",
+      "....keeeeeek....",
+      ".....kkkkkk.....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Abhaibhubejhr Hospital is Thailand's center for traditional herbal medicine."
+}

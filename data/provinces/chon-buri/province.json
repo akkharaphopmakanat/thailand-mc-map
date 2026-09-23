@@ -1,0 +1,32 @@
+{
+  "slug": "chon-buri",
+  "dataset_name": "Chon Buri",
+  "name": {
+    "en": "Chon Buri",
+    "th": "ชลบุรี"
+  },
+  "region": "E",
+  "item": {
+    "id": "buffalo",
+    "name": "Water Buffalo",
+    "sprite": [
+      "................",
+      ".gg..........gg.",
+      ".gGg........gGg.",
+      "..gGG......GGg..",
+      "...GGddddddGG...",
+      "....dddddddd....",
+      "...dkddddddkd...",
+      "...dddddddddd...",
+      "....dddddddd....",
+      "....dddddddd....",
+      ".....dGGGGd.....",
+      ".....GGkkGG.....",
+      "......GGGG......",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "The Buffalo Racing Festival runs every October. Pattaya's beaches line the coast."
+}

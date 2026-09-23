@@ -1,0 +1,32 @@
+{
+  "slug": "sukhothai",
+  "dataset_name": "Sukhothai",
+  "name": {
+    "en": "Sukhothai",
+    "th": "สุโขทัย"
+  },
+  "region": "C",
+  "item": {
+    "id": "krathong",
+    "name": "Krathong",
+    "sprite": [
+      "................",
+      ".......y........",
+      ".......f........",
+      ".......w........",
+      "......ewe.......",
+      "....ppewepp.....",
+      "...peppppepp....",
+      "..epeppppepe....",
+      "..eeeeeeeeee....",
+      "..EEEEEEEEEE....",
+      "..eEeEeEeEeE....",
+      "...EEEEEEEE.....",
+      "cuccucuccuccucuc",
+      "ucuucuucuucuucuu",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "The 'Dawn of Happiness', first Thai capital. Loy Krathong here is the most famous in the country."
+}

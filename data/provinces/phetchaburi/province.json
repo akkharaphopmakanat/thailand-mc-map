@@ -1,0 +1,32 @@
+{
+  "slug": "phetchaburi",
+  "dataset_name": "Phetchaburi",
+  "name": {
+    "en": "Phetchaburi",
+    "th": "เพชรบุรี"
+  },
+  "region": "W",
+  "item": {
+    "id": "palmSugar",
+    "name": "Palm Sugar",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      "................",
+      "....hhh...hhh...",
+      "...hThhh.hThhh..",
+      "...hhhhh.hhhhh..",
+      "....hhh...hhh...",
+      ".......hhh......",
+      "......hThhh.....",
+      "......hhhhh.....",
+      ".....e.hhh.e....",
+      "..eeeeeeeeeeeee.",
+      "...EEEEEEEEEEE..",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Sugar-palm country, famous for sweets like khanom mo kaeng. King Mongkut's palace sits on Khao Wang."
+}

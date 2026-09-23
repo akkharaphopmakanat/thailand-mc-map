@@ -1,0 +1,32 @@
+{
+  "slug": "trat",
+  "dataset_name": "Trat",
+  "name": {
+    "en": "Trat",
+    "th": "ตราด"
+  },
+  "region": "E",
+  "item": {
+    "id": "turtle",
+    "name": "Sea Turtle",
+    "sprite": [
+      "................",
+      ".......ll.......",
+      "......lkkl......",
+      "......llll......",
+      "..ll..eeee..ll..",
+      "..llleEeeEelll..",
+      "....eEeeeeEe....",
+      "....eeeEEeee....",
+      "....eEeeeeEe....",
+      "....eeEeeEee....",
+      "..llleEeeEelll..",
+      "..ll..eeee..ll..",
+      ".......ll.......",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Koh Chang, Koh Kood and Koh Mak: quiet island chains at the eastern end of the gulf."
+}

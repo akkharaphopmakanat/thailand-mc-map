@@ -1,0 +1,32 @@
+{
+  "slug": "phatthalung",
+  "dataset_name": "Phatthalung",
+  "name": {
+    "en": "Phatthalung",
+    "th": "พัทลุง"
+  },
+  "region": "S",
+  "item": {
+    "id": "lilypad",
+    "name": "Lily Pad",
+    "sprite": [
+      "................",
+      "................",
+      "....eeeeeee.....",
+      "...eeleeeeeee...",
+      "..eelleeeeleee..",
+      "..elleeeeelleee.",
+      ".eeeleeepeeeeee.",
+      ".eeeeeepppeeeee.",
+      ".eeleeeepeeeeel.",
+      "..eeleeeeeeeee..",
+      "..eeeeleee..ee..",
+      "...eeeeee...e...",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Thale Noi's wetland is carpeted with water lilies and full of waterbirds."
+}

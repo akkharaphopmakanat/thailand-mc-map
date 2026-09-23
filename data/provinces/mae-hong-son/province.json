@@ -1,0 +1,32 @@
+{
+  "slug": "mae-hong-son",
+  "dataset_name": "Mae Hong Son",
+  "name": {
+    "en": "Mae Hong Son",
+    "th": "แม่ฮ่องสอน"
+  },
+  "region": "N",
+  "item": {
+    "id": "mountainCloud",
+    "name": "Sea of Mist",
+    "sprite": [
+      "................",
+      "................",
+      ".......G........",
+      "......GgG.......",
+      ".....GgwgG......",
+      "....GGgggGG.....",
+      "...eGGGGGGGe....",
+      "..eeeGGGGGeee...",
+      ".eEeeeeGeeeEee..",
+      "wwwwwweEeeewwwww",
+      "wgwwwwwwwwwwgwww",
+      ".wwwwgwwwwwww...",
+      "EEeeeeeeeeeeeEEE",
+      "eEEeeEEeeEEeeEEe",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "City of Three Mists. Mountain biome with thick morning fog over Pai and Pang Ung."
+}

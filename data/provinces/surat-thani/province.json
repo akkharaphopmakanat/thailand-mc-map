@@ -1,0 +1,32 @@
+{
+  "slug": "surat-thani",
+  "dataset_name": "Surat Thani",
+  "name": {
+    "en": "Surat Thani",
+    "th": "สุราษฎร์ธานี"
+  },
+  "region": "S",
+  "item": {
+    "id": "coconut",
+    "name": "Coconut",
+    "sprite": [
+      "................",
+      "................",
+      "........b.......",
+      ".......Bb.......",
+      ".....eeeeee.....",
+      "....eEeeeeee....",
+      "...eeeleeeEee...",
+      "...eleeeeeeee...",
+      "...eleeeEeeee...",
+      "...eeEeeeeeEe...",
+      "...eeeeeeeeee...",
+      "....eeeEeeee....",
+      ".....eeeeee.....",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Koh Samui's coconut groves offshore, and the Khao Sok rainforest inland."
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "kamphaeng-phet",
+  "dataset_name": "Kamphaeng Phet",
+  "name": {
+    "en": "Kamphaeng Phet",
+    "th": "กำแพงเพชร"
+  },
+  "region": "C",
+  "item": {
+    "id": "wall",
+    "name": "Laterite Wall",
+    "sprite": [
+      "................",
+      ".oo..oo..oo..oo.",
+      ".oo..oo..oo..oo.",
+      ".oooooooooooooo.",
+      ".bbbbkbbbbbkbbb.",
+      ".kkkkkkkkkkkkkk.",
+      ".bbkbbbbbkbbbbb.",
+      ".kkkkkkkkkkkkkk.",
+      ".bbbbkbbbbbkbbb.",
+      ".kkkkkkkkkkkkkk.",
+      ".bbkbbbbbkbbbbb.",
+      ".kkkkkkkkkkkkkk.",
+      ".bbbbkbbbbbkbbb.",
+      ".kkkkkkkkkkkkkk.",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "The 'Diamond Wall' city: UNESCO-listed laterite fortifications from the Sukhothai era."
+}

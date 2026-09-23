@@ -1,0 +1,32 @@
+{
+  "slug": "pathum-thani",
+  "dataset_name": "Pathum Thani",
+  "name": {
+    "en": "Pathum Thani",
+    "th": "ปทุมธานี"
+  },
+  "region": "C",
+  "item": {
+    "id": "lotus",
+    "name": "Lotus",
+    "sprite": [
+      "................",
+      "................",
+      ".......p........",
+      "......ppp.......",
+      "...p..pmp..p....",
+      "...pp.pmp.pp....",
+      "...pmppyppmp....",
+      "....pmyyymp.....",
+      "..pppppypppp....",
+      "...pppppppp.....",
+      "....mmmmmm......",
+      ".......e........",
+      ".......e........",
+      "......eee.......",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Pathum means lotus. The province is packed with universities and science parks."
+}

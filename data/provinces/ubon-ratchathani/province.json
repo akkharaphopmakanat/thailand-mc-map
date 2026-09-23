@@ -1,0 +1,32 @@
+{
+  "slug": "ubon-ratchathani",
+  "dataset_name": "Ubon Ratchathani",
+  "name": {
+    "en": "Ubon Ratchathani",
+    "th": "อุบลราชธานี"
+  },
+  "region": "NE",
+  "item": {
+    "id": "candle",
+    "name": "Candle",
+    "sprite": [
+      "................",
+      ".......y........",
+      "......yfy.......",
+      "......ofo.......",
+      ".......k........",
+      ".....hhhhh......",
+      "....hyyyyyh.....",
+      "....hyhyhyh.....",
+      "....hyyyyyh.....",
+      "....hhyyyhh.....",
+      "....hyyhyyh.....",
+      "....hyyyyyh.....",
+      "....hyhyhyh.....",
+      "...hhhhhhhhh....",
+      "..YYYYYYYYYYY...",
+      "................"
+    ]
+  },
+  "lore": "The Candle Festival parades giant carved-wax sculptures at the start of Buddhist Lent. Thailand's easternmost point, Pha Taem, is here."
+}

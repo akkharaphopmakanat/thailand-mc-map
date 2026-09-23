@@ -1,0 +1,32 @@
+{
+  "slug": "ayutthaya",
+  "dataset_name": "Phra Nakhon Si Ayutthaya",
+  "name": {
+    "en": "Ayutthaya",
+    "th": "พระนครศรีอยุธยา"
+  },
+  "region": "C",
+  "item": {
+    "id": "ruins",
+    "name": "Ancient Ruins",
+    "sprite": [
+      "................",
+      ".......B........",
+      "......bBb.......",
+      "......bbb.......",
+      ".....bbRbb......",
+      ".....bRbbB......",
+      "....bbbbbRb.....",
+      "....bRbbbbb.....",
+      "...bbbbRbbbb....",
+      "...bRb.kbbRb....",
+      "..bbbb.kbbbbb...",
+      "..bbRb.kbRbbb..G",
+      ".bbbbbbbbbbbbbGG",
+      "GGbbRbbbbRbbGGgG",
+      "eeeeeeeeeeeeeeee",
+      "................"
+    ]
+  },
+  "lore": "Capital of Siam for 417 years. A UNESCO structure full of ruined prangs, and a Buddha head held in tree roots."
+}

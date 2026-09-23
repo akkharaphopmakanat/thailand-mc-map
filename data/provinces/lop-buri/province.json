@@ -1,0 +1,32 @@
+{
+  "slug": "lop-buri",
+  "dataset_name": "Lop Buri",
+  "name": {
+    "en": "Lop Buri",
+    "th": "ลพบุรี"
+  },
+  "region": "C",
+  "item": {
+    "id": "monkey",
+    "name": "Monkey",
+    "sprite": [
+      "................",
+      "....bbbbbb......",
+      "...bbbbbbbb.....",
+      "..sbssbssbs.....",
+      "..sskssksss.....",
+      "...ssssssss.....",
+      "...ss.kk.ss.....",
+      "....ssssss......",
+      "...bbbbbbbb.....",
+      "..bbbbbbbbbb....",
+      "..bs.bbbb.sb...b",
+      "..bs.bbbb.sb..b.",
+      ".....bbbbb...b..",
+      ".....bb.bbbbb...",
+      ".....ss..ss.....",
+      "................"
+    ]
+  },
+  "lore": "Monkeys own Phra Prang Sam Yot, and get their own fruit banquet at the yearly Monkey Festival."
+}

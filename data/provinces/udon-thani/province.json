@@ -1,0 +1,32 @@
+{
+  "slug": "udon-thani",
+  "dataset_name": "Udon Thani",
+  "name": {
+    "en": "Udon Thani",
+    "th": "อุดรธานี"
+  },
+  "region": "NE",
+  "item": {
+    "id": "redLotus",
+    "name": "Red Lotus",
+    "sprite": [
+      "................",
+      "................",
+      ".......r........",
+      "......rrr.......",
+      "...r..rpr..r....",
+      "...rr.rpr.rr....",
+      "...rprrprrpr....",
+      "....rprrrpr.....",
+      "..rrrrprprrrr...",
+      "...rrrrrrrrr....",
+      "....RRRRRRR.....",
+      "..eeeeeeeeeee...",
+      ".eEeeeEeeEeeee..",
+      "..eeeeeeeeeee...",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Talay Bua Daeng, the Red Lotus Sea, blooms every winter. Ban Chiang's ancient pottery is a UNESCO site."
+}

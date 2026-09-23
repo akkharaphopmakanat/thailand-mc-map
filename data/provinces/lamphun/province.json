@@ -1,0 +1,32 @@
+{
+  "slug": "lamphun",
+  "dataset_name": "Lamphun",
+  "name": {
+    "en": "Lamphun",
+    "th": "ลำพูน"
+  },
+  "region": "N",
+  "item": {
+    "id": "longan",
+    "name": "Longan",
+    "sprite": [
+      "................",
+      ".......B........",
+      "......BbB.......",
+      ".....B.B.B......",
+      "....B..B..B.....",
+      "...TTt.B.TTt....",
+      "..TtTTTbTtTTT...",
+      "..TTTTTbTTTTT...",
+      "..bTTTbTTtTTb...",
+      "...bbbTtTTTb....",
+      ".....TTTTT......",
+      ".....TtTTT......",
+      ".....bTTTb......",
+      "......bbb.......",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Sweet longan is Lamphun's signature drop, fresh or dried. Home of Wat Phra That Hariphunchai."
+}

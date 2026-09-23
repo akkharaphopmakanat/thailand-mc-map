@@ -1,0 +1,32 @@
+{
+  "slug": "trang",
+  "dataset_name": "Trang",
+  "name": {
+    "en": "Trang",
+    "th": "ตรัง"
+  },
+  "region": "S",
+  "item": {
+    "id": "dugong",
+    "name": "Dugong",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      "................",
+      "....GGGGGGGG....",
+      "..GGgggggggggG..",
+      ".Gkgggggggggggg.",
+      ".Ggggggggggggggg",
+      ".gggggggggggggGG",
+      "..GgggGGGGGGGG.G",
+      "...GG......GG...",
+      "................",
+      "eeleelleellelele",
+      "ElEElEElEEllElEE",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Thailand's largest dugong herd grazes on seagrass around Koh Libong."
+}

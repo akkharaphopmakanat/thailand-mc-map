@@ -1,0 +1,32 @@
+{
+  "slug": "pattani",
+  "dataset_name": "Pattani",
+  "name": {
+    "en": "Pattani",
+    "th": "ปัตตานี"
+  },
+  "region": "S",
+  "item": {
+    "id": "kolae",
+    "name": "Kolae Boat",
+    "sprite": [
+      "................",
+      "................",
+      ".y..............",
+      ".yr...........r.",
+      ".yru..........ry",
+      "..yrruuuuuuuurry",
+      "..uyrruyyuyrrry.",
+      "...uuyrrrrrryu..",
+      "....uuuuuuuuu...",
+      "cuccucuccuccucuc",
+      "uuuuuuuuuuuuuuuu",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Hand-painted kolae fishing boats, and the old Krue Se Mosque."
+}

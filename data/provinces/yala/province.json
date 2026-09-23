@@ -1,0 +1,32 @@
+{
+  "slug": "yala",
+  "dataset_name": "Yala",
+  "name": {
+    "en": "Yala",
+    "th": "ยะลา"
+  },
+  "region": "S",
+  "item": {
+    "id": "mailbox",
+    "name": "Giant Mailbox",
+    "sprite": [
+      "................",
+      ".....rrrrrr.....",
+      "....rrrrrrrr....",
+      "...rrrrrrrrrr...",
+      "...rkkkkkkkkr...",
+      "...rrrrrrrrrr...",
+      "...rrryyyrrrr...",
+      "...rrrrrrrrrr...",
+      "...rrrrrrrrrr...",
+      "...rrrrrrrrrr...",
+      "...rrrrrrrrrr...",
+      "...RRRRRRRRRR...",
+      ".....RR..RR.....",
+      ".....RR..RR.....",
+      "...GGGGGGGGGG...",
+      "................"
+    ]
+  },
+  "lore": "Betong's giant mailbox is one of the largest in the world."
+}

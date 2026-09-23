@@ -1,0 +1,32 @@
+{
+  "slug": "maha-sarakham",
+  "dataset_name": "Maha Sarakham",
+  "name": {
+    "en": "Maha Sarakham",
+    "th": "มหาสารคาม"
+  },
+  "region": "NE",
+  "item": {
+    "id": "book",
+    "name": "Book",
+    "sprite": [
+      "................",
+      "................",
+      "....kkkkkkkkk...",
+      "...kbbbbbbbbbk..",
+      "...kbrbbbbbbbk..",
+      "...kbrbbbbbbbk..",
+      "...kbrbbyybbbk..",
+      "...kbrbbyybbbk..",
+      "...kbrbbbbbbbk..",
+      "...kbrbbbbbbbk..",
+      "...kbrbbbbbbbk..",
+      "...kwwwwwwwwwk..",
+      "...kgwgwgwgwgk..",
+      "....kkkkkkkkk...",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Called the 'Taxila of Isan' for its universities and schools."
+}

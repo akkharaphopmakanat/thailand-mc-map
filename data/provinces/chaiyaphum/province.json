@@ -1,0 +1,32 @@
+{
+  "slug": "chaiyaphum",
+  "dataset_name": "Chaiyaphum",
+  "name": {
+    "en": "Chaiyaphum",
+    "th": "ชัยภูมิ"
+  },
+  "region": "NE",
+  "item": {
+    "id": "tulip",
+    "name": "Pink Tulip",
+    "sprite": [
+      "................",
+      "................",
+      ".....p.p.p......",
+      ".....ppppp......",
+      "....pmppppm.....",
+      "....ppmppmp.....",
+      "....pppppp......",
+      ".....pppp.......",
+      ".......e........",
+      "...ee..e........",
+      "....eeee..ee....",
+      ".......eeee.....",
+      ".......e........",
+      ".......e........",
+      ".......e........",
+      "................"
+    ]
+  },
+  "lore": "Siam tulip (krachiao) fields turn Pa Hin Ngam pink every rainy season."
+}

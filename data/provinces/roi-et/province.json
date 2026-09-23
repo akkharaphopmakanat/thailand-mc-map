@@ -1,0 +1,32 @@
+{
+  "slug": "roi-et",
+  "dataset_name": "Roi Et",
+  "name": {
+    "en": "Roi Et",
+    "th": "ร้อยเอ็ด"
+  },
+  "region": "NE",
+  "item": {
+    "id": "khaen",
+    "name": "Khaen",
+    "sprite": [
+      "................",
+      "..e.e.e.e.e.e...",
+      "..e.e.e.e.e.e...",
+      "..e.e.e.e.e.e...",
+      "..l.l.l.l.l.l...",
+      "..e.e.e.e.e.e...",
+      "..e.e.e.e.e.e...",
+      "..eeeeeeeeeee...",
+      "..bbbbbbbbbbb...",
+      "..bBBBBBBBBBb...",
+      "..bbbbbbbbbbb...",
+      "..eeeeeeeeeee...",
+      "..e.e.e.e.e.e...",
+      "..e.e.e.e.e.e...",
+      "....e.e.e.e.....",
+      "................"
+    ]
+  },
+  "lore": "Land of the khaen, the bamboo mouth organ at the heart of mor lam music."
+}

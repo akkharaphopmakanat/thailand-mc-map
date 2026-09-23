@@ -1,0 +1,32 @@
+{
+  "slug": "phang-nga",
+  "dataset_name": "Phangnga",
+  "name": {
+    "en": "Phang Nga",
+    "th": "พังงา"
+  },
+  "region": "S",
+  "item": {
+    "id": "karst",
+    "name": "Karst Island",
+    "sprite": [
+      "................",
+      ".....eEe........",
+      "....eGGGe.......",
+      "....GgGGG.......",
+      "....GGgGG.......",
+      "....GGGgG.......",
+      ".....GGGG.......",
+      ".....GgGG.......",
+      ".....GGG........",
+      ".....GGG........",
+      "......GG........",
+      "......GGG.......",
+      "cccccGGGGccccccc",
+      "ucucuucucucucucu",
+      "uuuuuuuuuuuuuuuu",
+      "................"
+    ]
+  },
+  "lore": "Khao Phing Kan, better known as James Bond Island, rising from Phang Nga Bay."
+}

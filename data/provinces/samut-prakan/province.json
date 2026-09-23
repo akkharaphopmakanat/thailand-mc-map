@@ -1,0 +1,32 @@
+{
+  "slug": "samut-prakan",
+  "dataset_name": "Samut Prakan",
+  "name": {
+    "en": "Samut Prakan",
+    "th": "สมุทรปราการ"
+  },
+  "region": "C",
+  "item": {
+    "id": "elytra",
+    "name": "Elytra",
+    "sprite": [
+      "................",
+      "..GGGG....GGGG..",
+      ".GggggG..GggggG.",
+      ".GgPggG..GggPgG.",
+      ".GggPgGGGGgPggG.",
+      ".GgggPggggPgggG.",
+      ".GggggPggPggggG.",
+      "..GggggGGggggG..",
+      "..GggggG.GgggG..",
+      "..GgggG..GgggG..",
+      "...GggG...GggG..",
+      "...GgG....GgG...",
+      "...GgG....GgG...",
+      "....G......G....",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Suvarnabhumi Airport, where most visitors first spawn. Also the Erawan Museum and the Ancient City."
+}

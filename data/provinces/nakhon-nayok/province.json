@@ -1,0 +1,32 @@
+{
+  "slug": "nakhon-nayok",
+  "dataset_name": "Nakhon Nayok",
+  "name": {
+    "en": "Nakhon Nayok",
+    "th": "นครนายก"
+  },
+  "region": "C",
+  "item": {
+    "id": "plum",
+    "name": "Marian Plum",
+    "sprite": [
+      "................",
+      ".......b........",
+      ".......be.......",
+      "......oooo......",
+      ".....oyoooo.....",
+      "....oyoooooo....",
+      "....oyoooooo....",
+      "....oooooooo....",
+      "....ooooooor....",
+      "....ooooooor....",
+      "....ooooooor....",
+      ".....oooooor....",
+      "......oorrr.....",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Sweet maprang plums and waterfalls like Sarika and Nang Rong at the foot of Khao Yai."
+}

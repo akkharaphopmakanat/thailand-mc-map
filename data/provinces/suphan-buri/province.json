@@ -1,0 +1,32 @@
+{
+  "slug": "suphan-buri",
+  "dataset_name": "Suphan Buri",
+  "name": {
+    "en": "Suphan Buri",
+    "th": "สุพรรณบุรี"
+  },
+  "region": "C",
+  "item": {
+    "id": "rice",
+    "name": "Rice",
+    "sprite": [
+      "................",
+      ".........y.y....",
+      "........yYyY....",
+      ".......yYy.y....",
+      "......yYyYy.....",
+      ".....yYyY.......",
+      "....yYy.........",
+      "...yYy.y........",
+      "..yY.yYy........",
+      "..y.yYy.........",
+      "...yYy..........",
+      "..yY............",
+      ".yY.............",
+      ".y..............",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Rice bowl of the central plains. Home of the Dragon Descendants Museum."
+}

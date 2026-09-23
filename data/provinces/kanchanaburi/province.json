@@ -1,0 +1,32 @@
+{
+  "slug": "kanchanaburi",
+  "dataset_name": "Kanchanaburi",
+  "name": {
+    "en": "Kanchanaburi",
+    "th": "กาญจนบุรี"
+  },
+  "region": "W",
+  "item": {
+    "id": "minecart",
+    "name": "Minecart",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      "..kkkkkkkkkkkk..",
+      "..kgggggggggGk..",
+      "..kgGGGGGGGGGk..",
+      "..kgGdddddddGk..",
+      "..kgGdddddddGk..",
+      "..kggggggggggk..",
+      "..kkkkkkkkkkkk..",
+      "...kGk....kGk...",
+      "...kkk....kkk...",
+      "bbbbbbbbbbbbbbbb",
+      "Gk.Gk.Gk.Gk.Gk.G",
+      "bbbbbbbbbbbbbbbb",
+      "................"
+    ]
+  },
+  "lore": "The Death Railway and the Bridge on the River Kwai. Erawan Falls drops through seven tiers."
+}

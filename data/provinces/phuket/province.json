@@ -1,0 +1,32 @@
+{
+  "slug": "phuket",
+  "dataset_name": "Phuket",
+  "name": {
+    "en": "Phuket",
+    "th": "ภูเก็ต"
+  },
+  "region": "S",
+  "item": {
+    "id": "palm",
+    "name": "Beach Palm",
+    "sprite": [
+      "....ee..ee......",
+      "..eeeeeeeeeee...",
+      ".ee...eEeee.ee..",
+      ".e...eebbEe..e..",
+      ".....e.b..e.....",
+      ".......b........",
+      ".......bb.......",
+      "........b.......",
+      "........b.......",
+      "........b.......",
+      ".......bb.......",
+      ".......b........",
+      "..tttttttttttt..",
+      ".ttttttttttttttt",
+      "cccccccccccccccc",
+      "uuuuuuuuuuuuuuuu"
+    ]
+  },
+  "lore": "Thailand's largest island. Sino-Portuguese shophouses and Andaman beaches."
+}

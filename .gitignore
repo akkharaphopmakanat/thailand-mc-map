@@ -1,0 +1,17 @@
+# Downloaded source datasets (re-fetched by tools/build_data.py)
+tools/.cache/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Node (if tooling is added later)
+node_modules/

@@ -1,0 +1,32 @@
+{
+  "slug": "chanthaburi",
+  "dataset_name": "Chanthaburi",
+  "name": {
+    "en": "Chanthaburi",
+    "th": "จันทบุรี"
+  },
+  "region": "E",
+  "item": {
+    "id": "gem",
+    "name": "Ruby",
+    "sprite": [
+      "................",
+      "................",
+      "......kkkk......",
+      ".....krrrrk.....",
+      "....krwrrrRk....",
+      "...krwrrrrrRk...",
+      "...krrrrrrrRk...",
+      "...kRrrrrrrRk...",
+      "...kRrrrrrRRk...",
+      "....kRrrrRRk....",
+      ".....kRRRRk.....",
+      "......kkkk......",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Thailand's gem trading hub. Rubies and sapphires change hands at the weekend market in the old town."
+}

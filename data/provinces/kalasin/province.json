@@ -1,0 +1,32 @@
+{
+  "slug": "kalasin",
+  "dataset_name": "Kalasin",
+  "name": {
+    "en": "Kalasin",
+    "th": "กาฬสินธุ์"
+  },
+  "region": "NE",
+  "item": {
+    "id": "silk",
+    "name": "Phrae Wa Silk",
+    "sprite": [
+      "................",
+      "................",
+      "...rrrrrrrrrr...",
+      "..rRyRRyRRyRRr..",
+      "..ryrrryrrryrr..",
+      "..rRyRRyRRyRRr..",
+      "..rrrrrrrrrrrr..",
+      "..RRRRRRRRRRRR..",
+      "..ryyryyryyryr..",
+      "..RRRRRRRRRRRR..",
+      "..rrrrrrrrrrrr..",
+      "..rRyRRyRRyRRr..",
+      "..ryrrryrrryrr..",
+      "..rrrrrrrrrrrr..",
+      "...RRRRRRRRRR...",
+      "................"
+    ]
+  },
+  "lore": "Phrae Wa, the 'queen of silks', is hand-woven by Phu Tai weavers. Kalasin also has a dinosaur museum at Phu Kum Khao."
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "phichit",
+  "dataset_name": "Phichit",
+  "name": {
+    "en": "Phichit",
+    "th": "พิจิตร"
+  },
+  "region": "C",
+  "item": {
+    "id": "croc",
+    "name": "Crocodile",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      "................",
+      "....k...........",
+      "...kwk..e.e.e...",
+      ".eeeeeeeeEeEeEe.",
+      "eeEeeEeeEeeeeeee",
+      "wkwkwkeeeeeeeeee",
+      "eeeeeeeeeeeEeeeE",
+      ".....eEe...eEe.e",
+      ".....ee....ee..e",
+      "..............e.",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Setting of the legend of Krai Thong and Chalawan, the crocodile king."
+}

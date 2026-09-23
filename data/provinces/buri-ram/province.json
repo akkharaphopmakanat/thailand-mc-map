@@ -1,0 +1,32 @@
+{
+  "slug": "buri-ram",
+  "dataset_name": "Buri Ram",
+  "name": {
+    "en": "Buri Ram",
+    "th": "บุรีรัมย์"
+  },
+  "region": "NE",
+  "item": {
+    "id": "castle",
+    "name": "Sandstone Castle",
+    "sprite": [
+      "................",
+      ".......t........",
+      "......tTt.......",
+      "......TtT.......",
+      ".....tTtTt......",
+      ".....TtTtT......",
+      "....tTkkkTt.....",
+      "....TtkkkTT.....",
+      "..tTTtTTTtTTt...",
+      "..TtTTTtTTTtT...",
+      ".tTkTTtkTtTkTt..",
+      ".TTkTTTkTTTkTT..",
+      "tTTTTTTTTTTTTTTt",
+      "TTTTTTTTTTTTTTTT",
+      "bbbbbbbbbbbbbbbb",
+      "................"
+    ]
+  },
+  "lore": "Prasat Phanom Rung sits on an extinct volcano. Four times a year the sunrise shines through all 15 of its doorways."
+}

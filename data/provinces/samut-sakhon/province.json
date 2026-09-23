@@ -1,0 +1,32 @@
+{
+  "slug": "samut-sakhon",
+  "dataset_name": "Samut Sakhon",
+  "name": {
+    "en": "Samut Sakhon",
+    "th": "สมุทรสาคร"
+  },
+  "region": "C",
+  "item": {
+    "id": "shrimp",
+    "name": "Shrimp",
+    "sprite": [
+      "................",
+      "................",
+      ".....oooooo.....",
+      "...ooroooooo....",
+      "..oroooroooo....",
+      "..okoooooroo....",
+      ".rr.....ooro....",
+      "rr.......oroo...",
+      "r.........ooo...",
+      "..........oro...",
+      ".........oooo...",
+      "........oroo....",
+      ".....rroooo.....",
+      "....rrr.........",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Mahachai is one of Thailand's biggest seafood ports. Salt pans line the coast."
+}

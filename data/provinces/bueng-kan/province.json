@@ -1,0 +1,32 @@
+{
+  "slug": "bueng-kan",
+  "dataset_name": "Bueng Kan",
+  "name": {
+    "en": "Bueng Kan",
+    "th": "บึงกาฬ"
+  },
+  "region": "NE",
+  "item": {
+    "id": "whale",
+    "name": "Whale Rock",
+    "sprite": [
+      "................",
+      "................",
+      "................",
+      ".........u......",
+      "..........u.....",
+      ".....GGGGGu.....",
+      "...GGgggggGG....",
+      "..GgggggggggG...",
+      ".GgkggggggggggG.",
+      ".Gggggggggggggg.",
+      ".GwwwwwgggggggGG",
+      "..GwwwwwwgggGG.G",
+      "...GGGGGGGGG....",
+      "eeeeeeeeeeeeeeee",
+      "EeeEEeeEeeEEeeEe",
+      "................"
+    ]
+  },
+  "lore": "Hin Sam Wan, the Three Whale Rock, looks like a whale family from the cliff above. Thailand's newest province, created in 2011."
+}

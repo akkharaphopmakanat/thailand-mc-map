@@ -1,0 +1,32 @@
+{
+  "slug": "phayao",
+  "dataset_name": "Phayao",
+  "name": {
+    "en": "Phayao",
+    "th": "พะเยา"
+  },
+  "region": "N",
+  "item": {
+    "id": "fishingRod",
+    "name": "Fishing Rod",
+    "sprite": [
+      "...............k",
+      "..............kb",
+      ".............kbw",
+      "............kb.w",
+      "...........kb..w",
+      "..........kb...w",
+      ".........kb....w",
+      "........kb.....w",
+      ".......kb......w",
+      "......kb.......w",
+      ".....kb........w",
+      "....kb.........w",
+      "...kbk........gw",
+      "..kbbk........r.",
+      "..kkk.........w.",
+      "................"
+    ]
+  },
+  "lore": "Kwan Phayao is the largest freshwater lake in the upper north. Best cast at sunset."
+}

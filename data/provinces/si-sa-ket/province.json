@@ -1,0 +1,32 @@
+{
+  "slug": "si-sa-ket",
+  "dataset_name": "Si Sa Ket",
+  "name": {
+    "en": "Si Sa Ket",
+    "th": "ศรีสะเกษ"
+  },
+  "region": "NE",
+  "item": {
+    "id": "bottle",
+    "name": "Glass Bottle",
+    "sprite": [
+      "................",
+      ".......bb.......",
+      "......kbbk......",
+      "......keek......",
+      "......keek......",
+      ".....keeeek.....",
+      "....keeleeek....",
+      "...keelleeeek...",
+      "...kelleeeeek...",
+      "...keleeeeeek...",
+      "...keleeeeeek...",
+      "...keeeeeeeek...",
+      "...keeeeeeeek...",
+      "...kEeeeeeeEk...",
+      "....kkkkkkkk....",
+      "................"
+    ]
+  },
+  "lore": "Wat Pa Maha Chedi Kaew, the 'Temple of a Million Bottles', is built from recycled green and brown glass."
+}

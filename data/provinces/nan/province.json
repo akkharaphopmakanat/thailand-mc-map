@@ -1,0 +1,32 @@
+{
+  "slug": "nan",
+  "dataset_name": "Nan",
+  "name": {
+    "en": "Nan",
+    "th": "น่าน"
+  },
+  "region": "N",
+  "item": {
+    "id": "painting",
+    "name": "Whispering Mural",
+    "sprite": [
+      "................",
+      ".BBBBBBBBBBBBBB.",
+      ".BccccccccccccB.",
+      ".BccccyyccccccB.",
+      ".BcccyyyycceecB.",
+      ".BccccyyccceEcB.",
+      ".BcccccccceeEeB.",
+      ".BccsscccccbccB.",
+      ".BcrrsscccsbccB.",
+      ".BcrrUccccsrrcB.",
+      ".BeUeUeeeUeUeeB.",
+      ".BeeeeeeeeeeeeB.",
+      ".BBBBBBBBBBBBBB.",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Wat Phumin's mural of a man whispering to a woman, 'Pu Man Ya Man', is Nan's most famous painting."
+}

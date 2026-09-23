@@ -1,0 +1,32 @@
+{
+  "slug": "uttaradit",
+  "dataset_name": "Uttaradit",
+  "name": {
+    "en": "Uttaradit",
+    "th": "อุตรดิตถ์"
+  },
+  "region": "N",
+  "item": {
+    "id": "brokenSword",
+    "name": "Broken Sword",
+    "sprite": [
+      "................",
+      "..............kk",
+      ".............kgk",
+      "............kgwk",
+      "...........kgwk.",
+      "..........kgwk..",
+      ".........kgwk...",
+      "........kgwk....",
+      ".......k.kk.....",
+      "......k.........",
+      "..kk.kgk........",
+      "..kbkgwk........",
+      "...kbbk.........",
+      "..kbkkbk........",
+      ".kbk..kk........",
+      ".kk............."
+    ]
+  },
+  "lore": "Phraya Phichai Dap Hak fought on until his sword broke. Also known for Laplae durian and langsat."
+}

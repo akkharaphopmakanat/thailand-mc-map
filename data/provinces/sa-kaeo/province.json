@@ -1,0 +1,32 @@
+{
+  "slug": "sa-kaeo",
+  "dataset_name": "Sa Kaeo",
+  "name": {
+    "en": "Sa Kaeo",
+    "th": "สระแก้ว"
+  },
+  "region": "E",
+  "item": {
+    "id": "chest",
+    "name": "Chest",
+    "sprite": [
+      "................",
+      "................",
+      "..kkkkkkkkkkkk..",
+      "..kbbbbbbbbbbk..",
+      "..kbBBBBBBBBbk..",
+      "..kbbbbbbbbbbk..",
+      "..kkkkkgkkkkkk..",
+      "..kbbbbgybbbbk..",
+      "..kbbbbggbbbbk..",
+      "..kbBBBBBBBBbk..",
+      "..kbbbbbbbbbbk..",
+      "..kbbbbbbbbbbk..",
+      "..kkkkkkkkkkkk..",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "lore": "Rong Kluea Market on the Cambodian border is one of Thailand's biggest trading chests."
+}
