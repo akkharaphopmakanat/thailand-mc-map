@@ -6,10 +6,13 @@ A Minecraft-style block map of Thailand. Each of the 77 provinces has its own
 pixel-art "iconic item", and you can drill down from a province to its
 districts (อำเภอ / เขต), each with its own item, and sub-districts (ตำบล / แขวง).
 Roads, railways and rivers come from OpenStreetMap: motorways and trunk roads are stone
-bricks, primary roads cobblestone, secondary gravel, tertiary dirt path, railways are rails,
-and roads over water become oak-plank bridges. Cities, towns and 84,000+ villages
-(GeoNames) sit on the map, and a **Layers** box switches roads, railways, rivers, towns and
-villages on and off. Switch to the **3D** view to fly over real terrain built from
+bricks, primary roads cobblestone, secondary gravel, tertiary dirt path, and roads over water
+become oak-plank bridges. Zoom in and railways are Minecraft rail pieces (straights and
+curves), and every city, town and village (GeoNames, 84,000+) is a little Minecraft build:
+houses with log frames, plank or plaster walls, windows, doors and gable roofs, wheat farms,
+wells, Thai temples with orange roofs and gold spires, and stone-brick city towers, in 2D
+from above and in 3D around wherever you look. A **Layers** box switches main roads, local
+roads, railways, main rivers, small rivers, towns and villages on and off. Switch to the **3D** view to fly over real terrain built from
 elevation data.
 
 ## Run it
@@ -38,6 +41,7 @@ js/
   mapView.js                2D canvas camera, pan/zoom/pinch, picking, drawing
   view3d.js                 3D voxel view in chunks with 3 levels of detail (three.js from cdnjs, loaded on demand)
   sprites.js                16×16 item sprite → canvas / data URL
+  structures.js             Minecraft buildings: block textures, voxel prefabs, greedy mesher, rail pieces
   inventory.js              creative-inventory grid with region tabs and search
   panel.js                  selected province card + district/tambon browser
   tooltip.js                Minecraft item tooltip

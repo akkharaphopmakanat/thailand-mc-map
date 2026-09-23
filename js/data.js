@@ -44,7 +44,7 @@ export async function loadAtlas(onProgress = () => {}) {
     map, grid, provinces, rivers, elev: elevation,
     // per-block OSM layers: roads 1 tertiary … 4 motorway/trunk, 5 railway; water 1 river
     roads: blocks ? decodeRows(blocks.roads, blocks.W, blocks.H, '012345', { '.': 0 }) : null,
-    streams: blocks ? decodeRows(blocks.water, blocks.W, blocks.H, '01', { '.': 0 }) : null,
+    streams: blocks ? decodeRows(blocks.water, blocks.W, blocks.H, '012', { '.': 0 }) : null,   // 1 small, 2 main river
     settlements: blocks?.settlements ? decodeRows(blocks.settlements, blocks.W, blocks.H, '0123', { '.': 0 }) : null,
     towns: towns ? towns.towns.map(([name, th, x, y, kind, population, district]) => ({ name, th, x, y, kind, population, district })) : [],
   };

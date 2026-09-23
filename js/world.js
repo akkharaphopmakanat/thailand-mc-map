@@ -63,7 +63,7 @@ export function classifyCells({ map, grid, provinces, elev: realElev }) {
 }
 
 /** Map layers that can be switched on and off. */
-export const LAYERS = { roads: true, rails: true, rivers: true, towns: true, villages: true };
+export const LAYERS = { roads: true, localRoads: false, rails: true, rivers: true, streams: false, towns: true, villages: true };
 
 /**
  * 2D terrain canvas (B px per block) plus outline/fill paths per province.
@@ -161,12 +161,13 @@ function paintBlocks(atlas, cells, px, PW, wet, layers) {
   for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
     const k = r * W + c;
     if (atlas.grid[k] === -1) continue;
-    const stream = layers.rivers && streams?.[k];
+    const stream = streams?.[k] === 2 ? layers.rivers : streams?.[k] === 1 && layers.streams;
     if (stream) put(c, r, (x, y, i) => { wet[i] = 1; return tint([58, 104, 214], .94 + h2(x, y, 51) * .1); });
     const s = settlementShown(settlements?.[k], layers);
     if (s) put(c, r, (x, y) => tint(SETTLE_RGB[s], s === 3 ? .78 + h2(x, y, 61) * .4 : .85 + h2(x, y, 62) * .3));
     let rd = roads?.[k];
-    if (rd === 5 ? !layers.rails : !layers.roads) rd = 0;
+    // 1–2 local (tertiary, secondary), 3–4 main (primary, trunk/motorway), 5 railway
+    if (rd === 5 ? !layers.rails : rd >= 3 ? !layers.roads : !layers.localRoads) rd = 0;
     if (!rd) continue;
     const water = cells.kind[k] === K.WATER || stream;
     put(c, r, (x, y, i) => {

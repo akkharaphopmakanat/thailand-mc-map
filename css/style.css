@@ -80,8 +80,10 @@ body{
 .layers.busy{opacity:.6;cursor:progress}
 .sw{display:inline-block;width:12px;height:12px;border:1px solid #000}
 .sw-road{background:#7a7a7a}
-.sw-rail{background:repeating-linear-gradient(90deg,#b0b0b8 0 2px,#68503a 2px 4px)}
+.sw-rail{background:#68503a center/100% no-repeat;image-rendering:pixelated;border-color:transparent}
+.sw-local{background:#96794a}
 .sw-river{background:#3a68d6}
+.sw-stream{background:#7fa4e8}
 .sw-town{background:#b25a46}
 .sw-village{background:#96623c}
 .ctrls{position:absolute;right:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px)}

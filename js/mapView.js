@@ -2,6 +2,7 @@
 // district borders, item icons and labels.
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite } from './sprites.js';
+import { topTile, railTile, railKind } from './structures.js';
 
 const MAX_SCALE = 24;   // screen px per world px (a 0.005° block is 1 world px)
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -24,7 +25,7 @@ export class MapView {
     this.hover = -1; this.selected = -1;
     this.layer = null; this.dHover = -1; this.dFocus = -1;
     this.villages = [];   // [[name, th, x, y], …] of the selected province
-    this.layers = { roads: true, rails: true, rivers: true, towns: true, villages: true };
+    this.layers = { roads: true, localRoads: false, rails: true, rivers: true, streams: false, towns: true, villages: true };
     this.dirty = true; this.tween = null;
     this.order = atlas.provinces.map(p => p.i).sort((a, b) => atlas.provinces[a].anchor[0] - atlas.provinces[b].anchor[0]);
     this._bindInput();
@@ -193,6 +194,25 @@ export class MapView {
     requestAnimationFrame(tt => this._loop(tt));
   }
 
+  /** Draw per-block building tiles and rail pieces for the blocks on screen. */
+  _drawBlockDetail(blockPx) {
+    const { ctx, view, atlas, cw, ch } = this;
+    const { W, H } = atlas.map;
+    const L = this.layers, roads = atlas.roads, settle = atlas.settlements;
+    const c0 = Math.max(0, Math.floor(-view.x / blockPx)), c1 = Math.min(W - 1, Math.ceil((cw - view.x) / blockPx));
+    const r0 = Math.max(0, Math.floor(-view.y / blockPx)), r1 = Math.min(H - 1, Math.ceil((ch - view.y) / blockPx));
+    const isRail = (r, c) => r >= 0 && c >= 0 && r < H && c < W && roads[r * W + c] === 5;
+    ctx.imageSmoothingEnabled = false;
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+      const k = r * W + c, x = Math.floor(view.x + c * blockPx), y = Math.floor(view.y + r * blockPx), z = Math.ceil(blockPx) + 1;
+      const s = settle?.[k];
+      if (s && (s === 1 ? L.villages : L.towns)) ctx.drawImage(topTile(s, c, r), x, y, z, z);
+      if (L.rails && roads?.[k] === 5) {
+        ctx.drawImage(railTile(railKind(isRail(r - 1, c), isRail(r + 1, c), isRail(r, c + 1), isRail(r, c - 1))), x, y, z, z);
+      }
+    }
+  }
+
   _w2s(wx, wy) { return [wx * this.view.s + this.view.x, wy * this.view.s + this.view.y]; }
 
   _text(txt, x, y, color, shadow = '#3f3f3f') {
@@ -211,6 +231,10 @@ export class MapView {
     ctx.imageSmoothingEnabled = s < 1;
     ctx.imageSmoothingQuality = 'medium';
     ctx.drawImage(world.canvas, view.x, view.y, map.W * B * s, map.H * B * s);
+
+    // Close up: Minecraft buildings on settlement blocks and rail pieces on railway blocks
+    const blockPx = s * B;
+    if (blockPx >= 8) this._drawBlockDetail(blockPx);
 
     // Province + district highlights, in world coordinates
     ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * view.x, dpr * view.y);

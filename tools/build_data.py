@@ -201,12 +201,21 @@ def build_rivers():
 ROAD_CODE = {'tertiary': 1, 'tertiary_link': 1, 'secondary': 2, 'secondary_link': 2,
              'primary': 3, 'primary_link': 3, 'trunk': 4, 'trunk_link': 4, 'motorway': 4, 'motorway_link': 4}
 RAIL_CODE = 5
-# Main rivers are drawn two blocks wide (matched on English or Thai name)
-MAJOR_RIVERS = re.compile(
-    r'Chao Phraya|Mekong|Nan\b|Ping|Wang|Yom|Mun\b|Chi\b|Tha Chin|Pa Sak|Pasak|Bang Pakong|Mae ?Klong|Tapi|'
-    r'Songkhram|Salween|Moei|Kwai|Khwae|Lop Buri|Noi|Prachin|Phetchaburi|Pattani|Kok\b|Ing\b|Loei|Lam Pao|'
-    r'เจ้าพระยา|โขง|น่าน|ปิง|วัง|ยม|มูล|ชี|ท่าจีน|ป่าสัก|บางปะกง|แม่กลอง|ตาปี|สงคราม|สาละวิน|เมย|แควน้อย|แควใหญ่|'
-    r'ลพบุรี|ปราจีนบุรี|เพชรบุรี|ปัตตานี|กก|อิง|เลย|ลำปาว')
+# Main rivers (water code 2, drawn two blocks wide); every other river is code 1 ("small rivers").
+# Matched on the whole name so Thai syllables inside stream names don't count.
+_MAIN_EN = (r'Chao Phraya|Mekong|Nan|Ping|Wang|Yom|Mun|Chi|Tha Chin|Pa Sak|Pasak|Bang Pakong|Mae ?Klong|'
+            r'Tapi|Songkhram|Salween|Moei|Khwae Noi|Khwae Yai|Kwai Noi|Kwai Yai|Lop Buri|Noi|Prachin Buri|'
+            r'Phetchaburi|Pattani|Kok|Ing|Loei|Lam Pao|Lam Takhong|Suphan|Sakae Krang|Chanthaburi|Trang|Pai|Yuam|Kuang|Li')
+_MAIN_TH = (r'เจ้าพระยา|โขง|น่าน|ปิง|วัง|ยม|มูล|ชี|ท่าจีน|ป่าสัก|บางปะกง|แม่กลอง|ตาปี|สงคราม|สาละวิน|เมย|แควน้อย|แควใหญ่|'
+            r'ลพบุรี|น้อย|ปราจีนบุรี|เพชรบุรี|ปัตตานี|กก|อิง|เลย|ลำปาว|ลำตะคอง|สุพรรณบุรี|สะแกกรัง|จันทบุรี|ตรัง|ปาย|ยวม|กวง|ลี้')
+MAIN_EN = re.compile(rf'^(Mae Nam |Maenam )?({_MAIN_EN})( River)?$', re.I)
+MAIN_TH = re.compile(rf'^(แม่น้ำ|น้ำ|ลำน้ำ)({_MAIN_TH})$')
+
+
+def is_main_river(tags):
+    return bool(MAIN_EN.match((tags.get('name:en') or '').strip()) or MAIN_TH.match((tags.get('name') or '').strip()))
+
+
 TRANSPORT_NAMES = {1: 'tertiary road (dirt path)', 2: 'secondary road (gravel)', 3: 'primary road (cobblestone)',
                    4: 'highway / motorway (stone bricks)', 5: 'railway (rails)'}
 
@@ -238,7 +247,7 @@ def build_transport(W, H):
                 if e2 <= dr:
                     err += dr; c0 += sc
 
-    n = {'road': 0, 'rail': 0, 'river': 0}
+    n = {'road': 0, 'rail': 0, 'river': 0, 'main': 0}
     fp = osmium.FileProcessor(cached('thailand-latest.osm.pbf'), osmium.osm.NODE | osmium.osm.WAY) \
         .with_locations().with_filter(osmium.filter.KeyFilter('highway', 'railway', 'waterway'))
     for w in fp:
@@ -246,14 +255,13 @@ def build_transport(W, H):
             continue
         t = w.tags
         hw, rw, ww = t.get('highway'), t.get('railway'), t.get('waterway')
-        name = ''
         if hw in ROAD_CODE:
             layer, code, kind = road, ROAD_CODE[hw], 'road'
         elif rw == 'rail' and t.get('service') is None:
             layer, code, kind = road, RAIL_CODE, 'rail'
         elif ww == 'river':
-            layer, code, kind = water, 1, 'river'
-            name = (t.get('name:en') or '') + ' ' + (t.get('name') or '')
+            main = is_main_river(t)
+            layer, code, kind = water, 2 if main else 1, 'river'
         else:
             continue
         try:
@@ -261,15 +269,17 @@ def build_transport(W, H):
         except osmium.InvalidLocationError:
             continue
         if len(coords) >= 2 and any(LON0 <= x <= LON1 and LAT0 <= y <= LAT1 for x, y in coords):
-            line(coords, layer, code, kind == 'river' and bool(MAJOR_RIVERS.search(name)))
+            line(coords, layer, code, kind == 'river' and code == 2)
             n[kind] += 1
+            n['main'] += kind == 'river' and code == 2
     dump(os.path.join(DATA, 'blocks.json'), {
         'W': W, 'H': H, 'source': 'roads/water: OpenStreetMap contributors (ODbL), via Geofabrik',
         'road_codes': {str(k): v for k, v in TRANSPORT_NAMES.items()},
         'roads': [rle(''.join('.12345'[v] for v in row)) for row in road],
-        'water': [rle(''.join('.1'[v] for v in row)) for row in water],
+        'water_codes': {'1': 'small river', '2': 'main river'},
+        'water': [rle(''.join('.12'[v] for v in row)) for row in water],
     })
-    print(f"blocks.json: {n['road']} road ways, {n['rail']} rail ways, {n['river']} river ways")
+    print(f"blocks.json: {n['road']} road ways, {n['rail']} rail ways, {n['river']} river ways ({n['main']} main)")
 
 
 # ---------------------------------------------------------------- towns and villages

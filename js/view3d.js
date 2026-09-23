@@ -4,6 +4,7 @@
 // three.js is loaded from cdnjs the first time the 3D mode is opened.
 import { B } from './config.js';
 import { KIND, settlementShown } from './world.js';
+import { makeAtlas, plotTemplate, blockMaterial, railKind, RAIL_KINDS, RAIL_TILE0 } from './structures.js';
 import { h2 } from './noise.js';
 import { itemSprite } from './sprites.js';
 
@@ -16,6 +17,9 @@ const CHUNK = 64;                                  // full-detail blocks per chu
 const LODS = [1, 2, 4, 8];                         // block size multiplier per level of detail
 const BUILD_BUDGET_MS = 10;                        // chunk building time per frame
 const MAX_DPR = 1.5;                               // cap render resolution for a steady frame rate
+const DETAIL_RADIUS = 18;                          // blocks around the look-at point that get Minecraft buildings
+const DETAIL_CAMERA = 110;                         // …only when the camera is at most this far away
+const VOXEL = 1 / 16;                              // building voxel size in world units (16 per block)
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let threePromise = null;
@@ -49,7 +53,7 @@ class View3D {
     this.metresPerBlock = 40;
     this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1;
     this.active = false; this.tween = null;
-    this.layers = { towns: true, villages: true };
+    this.layers = { towns: true, villages: true, rails: true };
     this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
     this.orbit = { ...this.home };
     this.maxDist = 900 * this.SC;
@@ -62,7 +66,7 @@ class View3D {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(SKY);
     this.scene.fog = new THREE.Fog(SKY, 260 * this.SC, 900 * this.SC);
-    this.camera = new THREE.PerspectiveCamera(50, 1, .5, 3000 * this.SC);
+    this.camera = new THREE.PerspectiveCamera(50, 1, .05, 3000 * this.SC);
 
     const tex = this.topTex = new THREE.CanvasTexture(world.canvas);
     tex.magFilter = THREE.NearestFilter;
@@ -70,6 +74,12 @@ class View3D {
     tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
     this.topMat = new THREE.MeshBasicMaterial({ map: tex, vertexColors: true, side: THREE.DoubleSide });
     this.sideMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    // Minecraft block textures for buildings and rail pieces
+    this.blockAtlas = makeAtlas();
+    const btex = new THREE.CanvasTexture(this.blockAtlas.canvas);
+    btex.magFilter = btex.minFilter = THREE.NearestFilter;
+    btex.generateMipmaps = false;
+    this.detailMat = blockMaterial(THREE, btex, this.blockAtlas.tileSize);
 
     this._prepare();
     this._buildWater();
@@ -115,6 +125,7 @@ class View3D {
   _resetChunks() {
     const { W, H } = this;
     for (const c of this.chunks?.values() || []) for (const m of Object.values(c.meshes)) if (m) this._dispose(m);
+    this._clearDetail();
     this.chunks = new Map();
     this.nx = Math.ceil(W / CHUNK); this.nz = Math.ceil(H / CHUNK);
     for (let j = 0; j < this.nz; j++) for (let i = 0; i < this.nx; i++) {
@@ -184,28 +195,6 @@ class View3D {
     const same = (r, a, b) => ht(r, a) === ht(r, b) && kind[rep(r, a)] === kind[rep(r, b)] && grid[rep(r, a)] === grid[rep(r, b)];
     const sameCol = (c, a, b) => ht(a, c) === ht(b, c) && kind[rep(a, c)] === kind[rep(b, c)] && grid[rep(a, c)] === grid[rep(b, c)];
     const topQuad = new Int32Array(cw * (r1 - r0)).fill(-1);
-    // Small buildings on settlement blocks, only at full detail: villages a hut, towns a
-    // red-roofed house, cities stone blocks of 1–3 storeys
-    const settle = L === 1 ? atlas.settlements : null;
-    const box = (x0, z0, x1, z1, y0, y1, roof, wallRGB) => {
-      quad(1, [x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0], roof, 1);
-      quad(1, [x1, y0, z0, x1, y1, z0, x0, y1, z0, x0, y0, z0], wallRGB, SHADE.ns);
-      quad(1, [x0, y0, z1, x0, y1, z1, x1, y1, z1, x1, y0, z1], wallRGB, SHADE.ns);
-      quad(1, [x0, y0, z0, x0, y1, z0, x0, y1, z1, x0, y0, z1], wallRGB, SHADE.ew);
-      quad(1, [x1, y0, z1, x1, y1, z1, x1, y1, z0, x1, y0, z0], wallRGB, SHADE.ew);
-    };
-    const buildings = () => {
-      if (!settle) return;
-      for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) {
-        const k = r * W + c, s = settlementShown(settle[k], this.layers);
-        if (!s || kind[k] === KIND.WATER) continue;
-        const h = hb[k], x = X(c), z = Z(r), j = h2(c, r, 71);
-        if (s === 1) box(x + .3, z + .3, x + .7, z + .7, h, h + .45, [120, 70, 40], [214, 190, 150]);
-        else if (s === 2) box(x + .15, z + .15, x + .85, z + .85, h, h + .7 + j * .4, [178, 64, 48], [226, 214, 190]);
-        else box(x + .1, z + .1, x + .9, z + .9, h, h + 1 + Math.floor(j * 3), [110, 110, 114], [168, 168, 172]);
-      }
-    };
-
     const pass = () => {
       count[0] = count[1] = 0;
       for (let r = r0; r < r1; r++) {
@@ -257,10 +246,10 @@ class View3D {
         }
       }
     };
-    pass(); buildings();
+    pass();
     const mk = (n, uv) => ({ n, pos: new Float32Array(n * 12), clr: new Float32Array(n * 12), uv: uv ? new Float32Array(n * 8) : null });
     buf = [mk(count[0], true), mk(count[1], false)];
-    pass(); buildings();
+    pass();
 
     const group = new T.Group();
     const geos = buf.map(b => {
@@ -280,6 +269,83 @@ class View3D {
     group.add(new T.Mesh(geos[0], this.topMat), new T.Mesh(geos[1], this.sideMat));
     return { L, group, geos, tops: buf[0], base: buf[0].clr.slice(), topQuad,
       r0, r1, c0, c1, cw, quads: count[0] + count[1], hl: '' };
+  }
+
+  /**
+   * Minecraft buildings and rail pieces on the blocks around the look-at point, rebuilt when the
+   * point moves; hidden when the camera is far away (they would be smaller than a pixel).
+   */
+  _updateDetail() {
+    const o = this.orbit;
+    if (o.dist > DETAIL_CAMERA) { if (this.detail) this.detail.group.visible = false; return; }
+    const c = Math.round(o.x + this.W / 2), r = Math.round(o.z + this.H / 2);
+    const d = this.detail;
+    if (d && Math.abs(d.c - c) < 6 && Math.abs(d.r - r) < 6) { d.group.visible = true; return; }
+    this._clearDetail();
+    this.detail = this._buildDetail(c, r);
+    this.scene.add(this.detail.group);
+  }
+
+  _clearDetail() {
+    if (this.detail) { this._dispose(this.detail); this.detail = null; }
+  }
+
+  _buildDetail(cc, rc) {
+    const { T, W, H, atlas } = this;
+    const hb = this.hb, roads = atlas.roads, settle = atlas.settlements;
+    const isRail = (r, c) => r >= 0 && c >= 0 && r < H && c < W && roads[r * W + c] === 5;
+    const parts = [];
+    let n = 0;
+    for (let r = Math.max(0, rc - DETAIL_RADIUS); r <= Math.min(H - 1, rc + DETAIL_RADIUS); r++) {
+      for (let c = Math.max(0, cc - DETAIL_RADIUS); c <= Math.min(W - 1, cc + DETAIL_RADIUS); c++) {
+        if ((r - rc) ** 2 + (c - cc) ** 2 > DETAIL_RADIUS ** 2) continue;
+        const k = r * W + c, h = hb[k];
+        if (h < 1) continue;
+        const s = settlementShown(settle?.[k], this.layers);
+        if (s) { const t = plotTemplate(s, c, r, VOXEL, this.blockAtlas); parts.push([t, c - W / 2, h, r - H / 2]); n += t.n; }
+        else if (this.layers.rails && roads?.[k] === 5) {
+          const kind = railKind(isRail(r - 1, c), isRail(r + 1, c), isRail(r, c + 1), isRail(r, c - 1));
+          parts.push([this._railTemplate(kind), c - W / 2, h + .02, r - H / 2]); n += 1;
+        }
+      }
+    }
+    const pos = new Float32Array(n * 12), uv = new Float32Array(n * 8), tile = new Float32Array(n * 8), shade = new Float32Array(n * 4);
+    let q = 0;
+    for (const [t, x, y, z] of parts) {
+      for (let i = 0; i < t.n * 12; i += 3) {
+        pos[q * 12 + i] = t.pos[i] + x; pos[q * 12 + i + 1] = t.pos[i + 1] + y; pos[q * 12 + i + 2] = t.pos[i + 2] + z;
+      }
+      uv.set(t.uv, q * 8); tile.set(t.tile, q * 8); shade.set(t.shade, q * 4);
+      q += t.n;
+    }
+    const idx = new Uint32Array(n * 6);
+    for (let i = 0; i < n; i++) {
+      const v = i * 4, o = i * 6;
+      idx[o] = v; idx[o + 1] = v + 1; idx[o + 2] = v + 2; idx[o + 3] = v; idx[o + 4] = v + 2; idx[o + 5] = v + 3;
+    }
+    const geo = new T.BufferGeometry();
+    geo.setAttribute('position', new T.BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new T.BufferAttribute(uv, 2));
+    geo.setAttribute('tile', new T.BufferAttribute(tile, 2));
+    geo.setAttribute('shade', new T.BufferAttribute(shade, 1));
+    geo.setIndex(new T.BufferAttribute(idx, 1));
+    geo.computeBoundingSphere();
+    const group = new T.Group();
+    group.add(new T.Mesh(geo, this.detailMat));
+    return { group, geos: [geo], quads: n, c: cc, r: rc };
+  }
+
+  /** One flat quad covering a block with a rail piece. */
+  _railTemplate(kind) {
+    this._rails ??= {};
+    if (!this._rails[kind]) {
+      const [u0, v0] = this.blockAtlas.uv(RAIL_TILE0 + RAIL_KINDS.indexOf(kind));
+      // corners (x, z) = (0,0) (0,1) (1,1) (1,0); texture rows run north (z = 0) to south
+      this._rails[kind] = { n: 1, pos: new Float32Array([0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0]),
+        uv: new Float32Array([0, .999, 0, 0, .999, 0, .999, .999]), tile: new Float32Array([u0, v0, u0, v0, u0, v0, u0, v0]),
+        shade: new Float32Array([1, 1, 1, 1]) };
+    }
+    return this._rails[kind];
   }
 
   _dispose(mesh) {
@@ -453,9 +519,9 @@ class View3D {
   /** Layers changed: the 2D terrain canvas (our top texture) was redrawn; rebuild buildings. */
   setLayers(layers) {
     this.topTex.needsUpdate = true;
-    const buildingsChanged = layers.towns !== this.layers.towns || layers.villages !== this.layers.villages;
+    const changed = ['towns', 'villages', 'rails'].some(k => layers[k] !== this.layers[k]);
     this.layers = { ...layers };
-    if (buildingsChanged) this._resetChunks();
+    if (changed) this._clearDetail();
   }
   setDistrictHover() {}
 
@@ -499,7 +565,7 @@ class View3D {
   }
 
   fit() { this._goTo({ ...this.home }); }
-  zoom(f) { this.tween = null; this.orbit.dist = Math.min(this.maxDist, Math.max(12, this.orbit.dist / f)); }
+  zoom(f) { this.tween = null; this.orbit.dist = Math.min(this.maxDist, Math.max(1.5, this.orbit.dist / f)); }
 
   _updateCamera() {
     const o = this.orbit;
@@ -564,7 +630,7 @@ class View3D {
       if (pinch && pts.size >= 2) {
         const [a, b] = [...pts.values()];
         const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        o.dist = Math.min(this.maxDist, Math.max(12, pinch.dist * pinch.d / d));
+        o.dist = Math.min(this.maxDist, Math.max(1.5, pinch.dist * pinch.d / d));
         this._pan(mx - pinch.mx, my - pinch.my);
         pinch.mx = mx; pinch.my = my;
         return;
@@ -612,7 +678,7 @@ class View3D {
     cv.addEventListener('wheel', e => {
       e.preventDefault();
       this.tween = null;
-      this.orbit.dist = Math.min(this.maxDist, Math.max(12, this.orbit.dist * Math.exp(e.deltaY * (e.deltaMode === 1 ? .04 : .0012))));
+      this.orbit.dist = Math.min(this.maxDist, Math.max(1.5, this.orbit.dist * Math.exp(e.deltaY * (e.deltaMode === 1 ? .04 : .0012))));
     }, { passive: false });
   }
 
@@ -641,6 +707,7 @@ class View3D {
     this.districtIcons.forEach((s, i) => { s.position.y = s.userData.base + bob(i) * .6; });
     this._updateCamera();
     this._updateLOD();
+    this._updateDetail();
     this.renderer.render(this.scene, this.camera);
     requestAnimationFrame(tt => this._loop(tt));
   }

@@ -10,6 +10,7 @@ import { ProvincePanel } from './panel.js';
 import { Tooltip, provinceTip, districtTip } from './tooltip.js';
 import { renderF3 } from './f3.js';
 import { renderCredits } from './credits.js';
+import { railTile } from './structures.js';
 
 const $ = id => document.getElementById(id);
 
@@ -162,6 +163,7 @@ if (document.fonts) document.fonts.ready.then(() => { map.dirty = true; });
 select(provinces.findIndex(p => p.slug === 'bangkok'), false);
 
 /* ---------- map layers ---------- */
+$('railIcon').style.backgroundImage = `url(${railTile('ns').toDataURL()})`;
 function loadLayers() {
   try { return { ...LAYERS, ...JSON.parse(localStorage.getItem('layers') || '{}') }; } catch { return { ...LAYERS }; }
 }
