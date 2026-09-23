@@ -188,6 +188,17 @@ body{
 .cr-author a{font-weight:600}
 .cr-notes{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
 .cr-count{font-size:12px;font-weight:400;color:var(--ink-soft)}
+.cr-section{margin-top:12px}
+.cr-section > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 6px;
+  background:#8b8b8b;box-shadow:inset 2px 2px 0 #373737,inset -2px -2px 0 #fff}
+.cr-section > summary::-webkit-details-marker{display:none}
+.cr-section > summary::before{content:"";border:5px solid transparent;border-left:6px solid #fff;margin-left:2px}
+.cr-section[open] > summary::before{transform:rotate(90deg);transform-origin:3px 5px}
+.cr-section > summary h3{margin:0;color:#fff;text-shadow:1px 1px 0 #3f3f3f}
+.cr-section > summary .cr-count{color:#ececec}
+.cr-section > summary:hover{background:#a0a0a0}
+.cr-section > summary:focus-visible{outline:2px solid var(--yellow);outline-offset:1px}
+.cr-section[open] > .cr-acc{margin-top:6px}
 .cr-acc{display:flex;flex-direction:column;gap:4px}
 .cr-acc details{background:#dcdcdc;border:2px solid #000;box-shadow:inset -2px -2px 0 #9a9a9a}
 .cr-acc details[open]{background:#ececec}

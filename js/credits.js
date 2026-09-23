@@ -16,7 +16,8 @@ export async function renderCredits(el) {
     <h2>Credits</h2>
     <p class="cr-author">Made by ${link(src.author.url, src.author.name)}
       · ${link(src.author.repo, 'source on GitHub')}</p>
-    <h3>Data references <span class="cr-count">${src.data.length}</span></h3>
+    <details class="cr-section">
+      <summary><h3>Data references <span class="cr-count">${src.data.length} sources</span></h3></summary>
     <div class="cr-acc">${src.data.map(d => `
       <details>
         <summary>${esc(d.title)}<span class="cr-lic">${esc(d.license)}</span></summary>
@@ -28,6 +29,7 @@ export async function renderCredits(el) {
         </div>
       </details>`).join('')}
     </div>
+    </details>
     <h3>Fonts</h3>
     <p class="cr-fonts">${src.fonts.map(f => `${link(f.url, f.title)} (${esc(f.license)})`).join(' · ')}</p>
     <ul class="cr-notes">${src.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`;
