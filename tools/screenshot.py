@@ -103,6 +103,8 @@ def main():
             r = ws.call('Runtime.evaluate', expression=js, awaitPromise=True, returnByValue=True)
             if 'exceptionDetails' in r:
                 print('JS error:', r['exceptionDetails'].get('exception', {}).get('description'), file=sys.stderr)
+            elif r.get('result', {}).get('value') is not None:
+                print('JS result:', r['result']['value'])
         time.sleep(wait)
         shot = ws.call('Page.captureScreenshot', format='png')
         with open(out, 'wb') as f:

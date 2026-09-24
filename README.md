@@ -64,6 +64,7 @@ data/
   tiles/<tx>_<ty>.a.png     per-tile layers for detailed countries: district, road, water  [generated]
   countries/<ISO>/areas.json  iconic item per state / region (hand-written)             [hand-written]
   countries/<ISO>.json      areas, items, label points, districts                      [generated]
+  countries/<ISO>/area-<id>.json  districts of one area: raster, items, places           [generated]
   elevation.png             real mean elevation / sea depth per block (R*256+G-32768)   [generated]
   sprites.json              shared 16×16 sprites for district items                   [hand-written]
   map.json                  Thai block grid (0.005° ≈ 550 m), anchors, neighbours, ASEAN + world backdrops  [generated]
@@ -106,20 +107,30 @@ their real average elevation, coastline and region.
 ## Other countries
 
 Countries are brought up to Thailand's level one sprint at a time (see
-[docs/ROADMAP.md](docs/ROADMAP.md)). So far: **Malaysia** (16 states, 159 districts),
-**Singapore** (5 regions, 55 planning areas) and **Brunei** (4 districts, 38 mukims), each with
-an iconic item per state / region / district, borders, roads, railways, rivers and lakes. Pick
-a country above the inventory; hover or click the map to inspect.
+[docs/ROADMAP.md](docs/ROADMAP.md)). So far, at district level: **Malaysia** (16 states, 160
+districts), **Singapore** (5 regions, 55 planning areas), **Brunei** (4 districts, 38 mukims),
+**Hong Kong** (3 regions, 18 districts) and **Macau** (4 areas, 8 parishes). Each has an iconic
+item per state / region, borders, roads, railways, rivers and lakes. Selecting a state works like
+selecting a Thai province: its districts are drawn on a finer grid than the blocks, each with its
+own item, a second landmark and a searchable list of its places (towns, suburbs, villages).
+Pick a country above the inventory; hover or click the map to inspect.
 
-Hand-written items live in `data/countries/<ISO>/areas.json` (keyed by the geoBoundaries ADM1
-name). Build a country group with:
+District items are, in order: a hand-picked item, else the best-known landmark in the district
+on OpenStreetMap (features with a Wikidata link, ranked by Wikipedia article and names in other
+languages), else an item from the district's terrain.
+
+Hand-written items live in `data/countries/<ISO>/areas.json`: `areas` keyed by the ADM1 name,
+optional `districts` keyed by the ADM2 name. Build countries with:
 
 ```sh
-python3 tools/build_countries.py MYS SGP BRN
+python3 tools/build_countries.py MYS SGP BRN HKG MAC
 ```
 
-It writes `data/countries/<ISO>.json`, `data/countries/index.json` and per-tile layers
-`data/tiles/<tx>_<ty>.a.png` (district id, road / railway / river / lake codes).
+Boundaries come from geoBoundaries, except Hong Kong and Macau, whose districts and parishes are
+OpenStreetMap boundary relations (listed in `OSM_ADMIN` in the script); their OpenStreetMap data
+is fetched from Overpass. It writes `data/countries/<ISO>.json`, `data/countries/<ISO>/area-<id>.json`
+(district raster, items, landmarks and places per state / region), `data/countries/index.json` and
+per-tile layers `data/tiles/<tx>_<ty>.a.png` (district id, road / railway / river / lake codes).
 
 `tools/screenshot.py` captures the page in headless Chrome (optionally after running some
 JavaScript against `window.atlasApp`), handy for release notes.

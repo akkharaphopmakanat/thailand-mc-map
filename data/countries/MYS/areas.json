@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName. tools/build_data.py merges this into data/countries/MYS.json.",
+  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName, and optional hand-picked district items keyed by the ADM2 shapeName. tools/build_countries.py merges this into data/countries/MYS.json.",
   "code": "MYS",
   "name": {
     "en": "Malaysia",
@@ -183,5 +183,114 @@
       },
       "lore": "Island territory off Borneo and an offshore oil and gas hub."
     }
-  }
+  },
+  "districts": {
+    "Kuala Lumpur": {
+      "item": "Petronas Twin Towers",
+      "sprite": "twinTowers",
+      "note": "The 452 m Petronas Twin Towers, the tallest twin skyscrapers in the world."
+    },
+    "Putrajaya": {
+      "item": "Putra Mosque",
+      "sprite": "pinkDome",
+      "note": "The rose-granite Putra Mosque on Putrajaya Lake, beside the Prime Minister's office."
+    },
+    "Gombak": {
+      "item": "Batu Caves",
+      "sprite": "cave",
+      "note": "The limestone Batu Caves temple, with its golden statue of Lord Murugan and 272 steps."
+    },
+    "Kuala Selangor": {
+      "item": "Fireflies",
+      "sprite": "fireflies",
+      "note": "Fireflies glow in the mangroves along the Selangor River at Kampung Kuantan."
+    },
+    "Kota Bharu": {
+      "item": "Siti Khadijah Market",
+      "sprite": "bundle",
+      "note": "The central market of Kota Bharu, where most traders are women."
+    },
+    "Johor Bahru": {
+      "item": "Sultan Abu Bakar Mosque",
+      "sprite": "mosque",
+      "note": "The state mosque of 1900, overlooking the Johor Strait."
+    },
+    "Pontian": {
+      "item": "Pineapple",
+      "sprite": "pineapple",
+      "note": "Pineapple farms on the peat soils of Pontian."
+    },
+    "Kinta": {
+      "item": "Ipoh White Coffee",
+      "sprite": "coffee",
+      "note": "Ipoh, in the Kinta Valley, is the home of white coffee; cave temples sit in the limestone hills around it."
+    },
+    "Larut dan Matang": {
+      "item": "Taiping Lake Gardens",
+      "sprite": "tree",
+      "note": "Rain trees over the old tin-mining ponds of the Taiping Lake Gardens."
+    },
+    "Cameron Highlands": {
+      "item": "Highland Tea",
+      "sprite": "tea",
+      "note": "Terraced tea plantations on the hills, around 1,500 m up."
+    },
+    "Raub": {
+      "item": "Musang King Durian",
+      "sprite": "durian",
+      "note": "Raub is famous for its Musang King durians."
+    },
+    "Rompin": {
+      "item": "Tioman Island",
+      "sprite": "palm",
+      "note": "Tioman Island, off the east coast, is part of Rompin district."
+    },
+    "Kuala Terengganu": {
+      "item": "Crystal Mosque",
+      "sprite": "mosque",
+      "note": "The steel-and-glass Crystal Mosque on Wan Man island in the Terengganu River."
+    },
+    "Besut": {
+      "item": "Perhentian Islands",
+      "sprite": "tropicalFish",
+      "note": "Boats leave Kuala Besut for the coral reefs of the Perhentian Islands."
+    },
+    "Langkawi": {
+      "item": "Langkawi Sky Bridge",
+      "sprite": "bridge",
+      "note": "The curved Sky Bridge hangs near the top of Gunung Mat Cincang."
+    },
+    "Sandakan": {
+      "item": "Orangutan",
+      "sprite": "monkey",
+      "note": "Sepilok Orangutan Rehabilitation Centre, in the forest outside Sandakan."
+    },
+    "Semporna": {
+      "item": "Sipadan Reef",
+      "sprite": "tropicalFish",
+      "note": "Semporna is the gateway to the reefs and turtles of Sipadan."
+    },
+    "Kinabatangan": {
+      "item": "Hornbill",
+      "sprite": "hornbill",
+      "note": "The floodplain forests of the Kinabatangan River shelter hornbills, proboscis monkeys and pygmy elephants."
+    },
+    "Kuching": {
+      "item": "Cat Statue",
+      "sprite": "cat",
+      "note": "Kuching's cat statues play on the city's name ('kucing' is Malay for cat)."
+    },
+    "Miri": {
+      "item": "Grand Old Lady",
+      "sprite": "pumpjack",
+      "note": "Malaysia's first oil well, drilled on Canada Hill in 1910."
+    },
+    "Labuan": {
+      "item": "Labuan War Cemetery",
+      "sprite": "monument",
+      "note": "The largest Commonwealth war cemetery in Malaysia, for soldiers of the Second World War."
+    }
+  },
+  "districtTerm": "district",
+  "placeTerm": "place"
 }

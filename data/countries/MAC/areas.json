@@ -1,0 +1,93 @@
+{
+  "_comment": "Hand-written: iconic item per area (keyed by the area name in tools/build_countries.py OSM_ADMIN) and per parish (keyed by the OpenStreetMap name). tools/build_countries.py merges this into data/countries/MAC.json and data/countries/MAC/area-*.json.",
+  "code": "MAC",
+  "name": {
+    "en": "Macau",
+    "local": "澳門"
+  },
+  "term": "area",
+  "districtTerm": "parish",
+  "placeTerm": "place",
+  "areas": {
+    "Macau Peninsula": {
+      "name": {
+        "en": "Macau Peninsula",
+        "local": "澳門半島"
+      },
+      "item": {
+        "name": "Macau Tower",
+        "sprite": "tower"
+      },
+      "lore": "The old city: five parishes, the Historic Centre of Macao (UNESCO) and the 338 m Macau Tower."
+    },
+    "Taipa": {
+      "name": {
+        "en": "Taipa",
+        "local": "氹仔"
+      },
+      "item": {
+        "name": "Almond Cookie",
+        "sprite": "cookie"
+      },
+      "lore": "Rua do Cunha in Taipa Village is lined with almond cookie shops; the airport is on the east side."
+    },
+    "Cotai": {
+      "name": {
+        "en": "Cotai",
+        "local": "路氹城"
+      },
+      "item": {
+        "name": "Casino Chip",
+        "sprite": "chip"
+      },
+      "lore": "Land reclaimed between Taipa and Coloane, now the Cotai Strip of resort casinos."
+    },
+    "Coloane": {
+      "name": {
+        "en": "Coloane",
+        "local": "路環"
+      },
+      "item": {
+        "name": "Egg Tart",
+        "sprite": "eggTart"
+      },
+      "lore": "Green hills, beaches and Coloane Village, where Lord Stow's Bakery made the Macanese egg tart famous."
+    }
+  },
+  "districts": {
+    "Santo António": {
+      "item": "Ruins of St. Paul's",
+      "sprite": "facade",
+      "note": "The stone façade of the 17th-century Church of St. Paul, the symbol of Macau."
+    },
+    "São Lourenço": {
+      "item": "A-Ma Temple",
+      "sprite": "redLantern",
+      "note": "A-Ma Temple at Barra, older than the city, which is said to take its name from it."
+    },
+    "Nossa Senhora de Fátima": {
+      "item": "Border Gate",
+      "sprite": "wall",
+      "note": "The Border Gate (Portas do Cerco) to Zhuhai, at the northern tip of the peninsula."
+    },
+    "Nossa Senhora do Carmo": {
+      "item": "Taipa Houses",
+      "sprite": "painting",
+      "note": "Macanese villas of the 1920s on Avenida da Praia, now the Taipa Houses–Museum."
+    },
+    "Cotai Landfill Zone": {
+      "item": "Cotai Strip",
+      "sprite": "chip",
+      "note": "Resort casinos on the reclaimed land between Taipa and Coloane.",
+      "name": {
+        "en": "Cotai",
+        "local": "路氹城"
+      }
+    },
+    "São Francisco Xavier": {
+      "item": "Chapel of St. Francis Xavier",
+      "sprite": "church",
+      "note": "The yellow chapel on the square of Coloane Village."
+    }
+  }
+}

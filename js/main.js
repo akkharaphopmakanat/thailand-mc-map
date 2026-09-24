@@ -1,6 +1,6 @@
 // Entry point: load data, build the world, and wire map ⇄ panels.
 import { h2 } from './noise.js';
-import { loadAtlas, loadDistricts, loadSubdistricts } from './data.js';
+import { loadAtlas, loadDistricts, loadSubdistricts, loadAreaDistricts } from './data.js';
 import { classifyCells, renderWorld, LAYERS } from './world.js';
 import { createView3D } from './view3d.js';
 import { renderBackdrop, TileLayer, Countries } from './backdrop.js';
@@ -9,7 +9,7 @@ import { buildDistrictLayer } from './districts.js';
 import { MapView } from './mapView.js';
 import { Inventory } from './inventory.js';
 import { ProvincePanel } from './panel.js';
-import { Tooltip, provinceTip, districtTip, areaTip, esc, renderF3, renderCredits } from './ui.js';
+import { Tooltip, provinceTip, districtTip, areaTip, areaDistrictTip, esc, renderF3, renderCredits } from './ui.js';
 import { railTile, N, S, makeBlockAtlas } from './pieces.js';
 import { spriteFromRows } from './sprites.js';
 
@@ -48,6 +48,9 @@ const handlers = {
   onHover(pick, e) {
     renderF3($('f3'), atlas, pick, layer);
     panel.highlightDistrict(pick && layer && pick.province === selected ? pick.district : -1);
+    if (layer?.foreign && pick?.district >= 0 && e.pointerType === 'mouse') {
+      return tooltip.show(areaDistrictTip(layer.foreign, layer.districts[pick.district], 'Click to list places'), e.clientX, e.clientY);
+    }
     if (pick?.detail && e.pointerType === 'mouse') return tooltip.show(areaTip(pick.detail, 'Click to inspect'), e.clientX, e.clientY);
     if (!pick || pick.province < 0 || e.pointerType !== 'mouse') return tooltip.hide();
     const p = provinces[pick.province];
@@ -58,6 +61,7 @@ const handlers = {
     }
   },
   onClick(pick) {
+    if (layer?.foreign && pick.district >= 0) return selectDistrict(pick.district, false);
     if (pick.detail) return selectArea(pick.detail.area, false);
     if (pick.province === selected && layer && pick.district >= 0) selectDistrict(pick.district, false);
     else select(pick.province, false);
@@ -117,9 +121,9 @@ async function select(i, fly = true) {
 
 function selectDistrict(k, fly) {
   map.setDistrictFocus(k);
-  view3d?.setDistrictFocus(k);
+  if (!layer?.foreign) view3d?.setDistrictFocus(k);     // other countries are 2D-only for now
   panel.openDistrict(k);
-  if (fly) active().focusDistrict(k);
+  if (fly) (layer?.foreign ? map : active()).focusDistrict(k);
 }
 
 $('zin').onclick = () => mode === '3d' ? view3d.zoom(1.5) : map.zoomAt(1.5, map.cw / 2, map.ch / 2);
@@ -175,15 +179,29 @@ select(provinces.findIndex(p => p.slug === 'bangkok'), false);
 window.atlasApp = { map, tiles, countries, select, selectArea, showCountry };
 
 /* ---------- other detailed countries (Sprint 2 on) ---------- */
-function selectArea(area, fly = true) {
+async function selectArea(area, fly = true) {
   areaSelected = area;
   selected = -1; layer = null;
   map.setSelected(-1);
+  view3d?.setSelected(-1);
+  inventory.setSelected(-1);
   map.foreignSelected = area;
   tiles.setSelected({ country: area.country, area });
   map.dirty = true;
   panel.showArea(area, { onArea: a => selectArea(a), onFly: a => map.focusArea(a) });
   if (fly) map.focusArea(area);
+  // its districts, drawn and listed like a Thai province's
+  try {
+    const d = await loadAreaDistricts(area.country.code, area.id);
+    if (areaSelected !== area) return;
+    layer = buildDistrictLayer(d, atlas.map);
+    layer.foreign = area;
+    map.setDistrictLayer(layer);
+    panel.setAreaDistricts(area, d);
+    if (fly && mode === '2d') map.focusArea(area);        // closer, now that the districts' extent is known
+  } catch (err) {
+    panel.setError(null, `Could not load districts: ${err.message}`);
+  }
 }
 function clearArea() {
   if (!areaSelected) return;

@@ -1,0 +1,138 @@
+{
+  "_comment": "Hand-written: iconic item per region (keyed by the area name in tools/build_countries.py OSM_ADMIN) and per district (keyed by the OpenStreetMap name:en). tools/build_countries.py merges this into data/countries/HKG.json and data/countries/HKG/area-*.json.",
+  "code": "HKG",
+  "name": {
+    "en": "Hong Kong",
+    "local": "香港"
+  },
+  "term": "region",
+  "districtTerm": "district",
+  "placeTerm": "place",
+  "areas": {
+    "Hong Kong Island": {
+      "name": {
+        "en": "Hong Kong Island",
+        "local": "香港島"
+      },
+      "item": {
+        "name": "Harbour Skyline",
+        "sprite": "tower"
+      },
+      "lore": "Towers of Central and Wan Chai between Victoria Harbour and the Peak, with double-decker trams along the north shore."
+    },
+    "Kowloon": {
+      "name": {
+        "en": "Kowloon",
+        "local": "九龍"
+      },
+      "item": {
+        "name": "Red-Sail Junk",
+        "sprite": "junk"
+      },
+      "lore": "Tsim Sha Tsui's waterfront faces the island across Victoria Harbour; behind it, the markets and neon of Mong Kok."
+    },
+    "New Territories": {
+      "name": {
+        "en": "New Territories",
+        "local": "新界"
+      },
+      "item": {
+        "name": "Tai Mo Shan",
+        "sprite": "mountainCloud"
+      },
+      "lore": "Most of Hong Kong's land: country parks, Tai Mo Shan (957 m), walled villages, new towns and the outlying islands."
+    }
+  },
+  "districts": {
+    "Central and Western District": {
+      "item": "Peak Tram",
+      "sprite": "minecart",
+      "note": "The Peak Tram has climbed from Central to Victoria Peak since 1888."
+    },
+    "Wan Chai District": {
+      "item": "Racehorse",
+      "sprite": "horse",
+      "note": "Night races at Happy Valley Racecourse, opened in 1846."
+    },
+    "Eastern District": {
+      "item": "Tram Bell",
+      "sprite": "bell",
+      "note": "Hong Kong's double-decker trams, nicknamed 'ding ding' after their bell, run east to Shau Kei Wan."
+    },
+    "Southern District": {
+      "item": "Ocean Park",
+      "sprite": "tropicalFish",
+      "note": "Ocean Park, the marine theme park above Aberdeen and Deep Water Bay."
+    },
+    "Yau Tsim Mong District": {
+      "item": "Goldfish",
+      "sprite": "fish",
+      "note": "Tung Choi Street's Goldfish Market in Mong Kok, fish sold in hanging bags."
+    },
+    "Sham Shui Po District": {
+      "item": "Fabric",
+      "sprite": "cloth",
+      "note": "The fabric and button stalls of Ki Lung Street and Yen Chow Street."
+    },
+    "Kowloon City District": {
+      "item": "Walled City Park",
+      "sprite": "wall",
+      "note": "Kowloon Walled City Park, on the site of the demolished walled city."
+    },
+    "Wong Tai Sin District": {
+      "item": "Wong Tai Sin Temple",
+      "sprite": "redLantern",
+      "note": "Sik Sik Yuen Wong Tai Sin Temple, known for fortune-telling with kau cim sticks."
+    },
+    "Kwun Tong District": {
+      "item": "Lei Yue Mun Seafood",
+      "sprite": "shrimp",
+      "note": "Seafood restaurants of Lei Yue Mun village, at the harbour's eastern gap."
+    },
+    "Kwai Tsing District": {
+      "item": "Shipping Container",
+      "sprite": "chest",
+      "note": "Kwai Tsing Container Terminals, one of the busiest ports in the world."
+    },
+    "Tsuen Wan District": {
+      "item": "Tsing Ma Bridge",
+      "sprite": "bridge",
+      "note": "The Tsing Ma Bridge carries road and rail from Ma Wan to Tsing Yi, on the way to the airport."
+    },
+    "Tuen Mun District": {
+      "item": "Castle Peak",
+      "sprite": "mountain",
+      "note": "Castle Peak (Tsing Shan) rises above Tuen Mun; Tsing Shan Monastery sits on its slope."
+    },
+    "Yuen Long District": {
+      "item": "Wife Cake",
+      "sprite": "cookie",
+      "note": "Yuen Long's bakeries are famous for wife cakes; the Mai Po wetlands are nearby."
+    },
+    "North District": {
+      "item": "Walled Village",
+      "sprite": "castle",
+      "note": "The Lung Yeuk Tau Heritage Trail in Fanling links walled villages of the Tang clan."
+    },
+    "Tai Po District": {
+      "item": "Wishing Tree",
+      "sprite": "tree",
+      "note": "The Lam Tsuen Wishing Trees, where people make wishes at Lunar New Year."
+    },
+    "Sha Tin District": {
+      "item": "Ten Thousand Buddhas",
+      "sprite": "stupa",
+      "note": "Ten Thousand Buddhas Monastery, on a hillside above Sha Tin."
+    },
+    "Sai Kung District": {
+      "item": "Hexagonal Columns",
+      "sprite": "canyon",
+      "note": "Volcanic rock columns of the Hong Kong UNESCO Global Geopark, at High Island."
+    },
+    "Islands District": {
+      "item": "Tian Tan Buddha",
+      "sprite": "buddha",
+      "note": "The 34 m bronze Big Buddha at Ngong Ping on Lantau Island."
+    }
+  }
+}

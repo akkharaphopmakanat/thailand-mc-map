@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName. tools/build_data.py merges this into data/countries/SGP.json.",
+  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName, and optional hand-picked district items keyed by the ADM2 shapeName. tools/build_countries.py merges this into data/countries/SGP.json.",
   "code": "SGP",
   "name": {
     "en": "Singapore",
@@ -62,5 +62,29 @@
       },
       "lore": "Jurong: the Jurong Lake District, industry on Jurong Island and the country's universities."
     }
-  }
+  },
+  "districts": {
+    "DOWNTOWN CORE": {
+      "item": "Merlion",
+      "sprite": "merlion",
+      "note": "The Merlion spouts water into Marina Bay at Merlion Park."
+    },
+    "MARINA SOUTH": {
+      "item": "Supertree",
+      "sprite": "tree",
+      "note": "The Supertree Grove of Gardens by the Bay."
+    },
+    "SOUTHERN ISLANDS": {
+      "item": "Sentosa",
+      "sprite": "palm",
+      "note": "Sentosa and the other islands south of the city."
+    },
+    "CHANGI": {
+      "item": "Changi Airport",
+      "sprite": "elytra",
+      "note": "Changi Airport and its Jewel waterfall; the old Changi Village is at the island's east tip."
+    }
+  },
+  "districtTerm": "planning area",
+  "placeTerm": "place"
 }

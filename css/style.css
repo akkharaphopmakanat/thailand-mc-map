@@ -18,7 +18,7 @@
   --water:#28419c;
   --ground:#1f150e;
   --pixel:'Pixelify Sans',ui-monospace,'Courier New',monospace;
-  --thai:'Kanit','Noto Sans Thai',Tahoma,sans-serif;
+  --thai:'Kanit','Noto Sans Thai',Tahoma,'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
 }
 html,body{height:100%}
 /* `hidden` must win over component display rules (.loading, .tlist, .tip) */

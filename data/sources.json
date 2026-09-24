@@ -71,12 +71,12 @@
     },
     {
       "id": "osm",
-      "title": "OpenStreetMap: roads, railways, rivers and lakes (Thailand; Malaysia, Singapore, Brunei)",
-      "author": "© OpenStreetMap contributors, extract by Geofabrik",
+      "title": "OpenStreetMap: roads, railways, rivers, lakes, landmarks and place names (Thailand; Malaysia, Singapore, Brunei; Hong Kong, Macau)",
+      "author": "© OpenStreetMap contributors, extracts by Geofabrik and the Overpass API",
       "url": "https://www.openstreetmap.org/copyright",
       "download": "https://download.geofabrik.de/asia.html",
       "license": "ODbL 1.0: data/blocks.json road and water layers are a derived database under the same licence",
-      "used_for": "Roads, railways, rivers, river labels and lakes: Thailand in data/blocks.json, other countries in the tile layers data/tiles/*.a.png"
+      "used_for": "Roads, railways, rivers, river labels and lakes: Thailand in data/blocks.json, other countries in the tile layers data/tiles/*.a.png. For other countries also: district landmarks and items (features with a Wikidata link), place names per district, and the district and parish boundaries of Hong Kong and Macau (data/countries)"
     },
     {
       "id": "textures",
@@ -119,6 +119,7 @@
   "notes": [
     "Trees and rice paddies are generated for looks; elevation is real but averaged over 550 m blocks.",
     "District items come from OTOP product data; hand-picked landmarks are shown alongside, and terrain is used only where a district has no rated OTOP products.",
+    "Outside Thailand, district items are hand-picked for well-known districts, else the best-known landmark on OpenStreetMap, else chosen from terrain.",
     "Province items, pixel sprites and descriptions are original to this project.",
     "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft. Minecraft textures are not used."
   ]

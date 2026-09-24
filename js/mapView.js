@@ -50,8 +50,13 @@ export class MapView {
   setDistrictFocus(k) { this.dFocus = k; this.dirty = true; }
   setBlockAtlas(blocks) { this.blocks = blocks; this.dirty = true; }
 
-  /** Fly to a state / region of another detailed country. */
+  /** Fly to a state / region of another detailed country (to its districts once they are loaded). */
   focusArea(area) {
+    const L = this.layer;
+    if (L?.foreign === area) {
+      const b = L.bb.reduce((m, q) => [Math.min(m[0], q[0]), Math.min(m[1], q[1]), Math.max(m[2], q[2]), Math.max(m[3], q[3])], [Infinity, Infinity, -Infinity, -Infinity]);
+      if (isFinite(b[0])) return this.focusBox(b[0], b[1], b[2], b[3], 1.4, MAX_SCALE);
+    }
     const C = this.tiles?.countries, p = C?.anchor(area);
     if (!p) return;
     const size = Math.max(Math.sqrt(area.blocks || 1600) * 1.2, 40);        // world px across, roughly
@@ -128,11 +133,14 @@ export class MapView {
     if (c < 0 || r < 0 || c >= W || r >= H) {
       const country = this._country(wx, wy);
       const detail = this.tiles?.at(wx, wy)?.detail || null;       // state / district of another detailed country
-      return { r, c, v: country ? -3 : -1, province: -1, district: -1, country, detail };
+      const district = this.layer?.foreign ? this.layer.hit(wx, wy) : -1;
+      return { r, c, v: country ? -3 : -1, province: -1, district, country, detail };
     }
     const v = this.atlas.grid[r * W + c];
     let province = v >= 0 ? v : -1, district = -1;
-    if (this.layer) {
+    if (this.layer?.foreign) {
+      if (v < 0) district = this.layer.hit(wx, wy);                  // another country's district, inside Thailand's frame
+    } else if (this.layer) {
       district = this.layer.hit(wx, wy);
       // the district raster is finer than the block grid, so trust it near borders
       if (district >= 0) province = this.selected;
@@ -439,6 +447,7 @@ export class MapView {
       if (!p) continue;
       const [sx, sy] = this._w2s(p[0], p[1]);
       if (sx < -60 || sy < -60 || sx > cw + 60 || sy > ch + 60) continue;
+      if (this.foreignSelected === a && districtIcons) continue;   // its districts' items are showing instead
       const big = this.foreignHover === a || this.foreignSelected === a;
       if (!big && Math.sqrt(a.blocks) * s < 14) continue;          // too small on screen: icons would pile up
       const sz = Math.round(big ? base * 1.45 : base);

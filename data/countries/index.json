@@ -26,6 +26,24 @@
       },
       "term": "district",
       "tileCountry": 11
+    },
+    {
+      "code": "HKG",
+      "name": {
+        "en": "Hong Kong",
+        "local": "香港"
+      },
+      "term": "region",
+      "tileCountry": 16
+    },
+    {
+      "code": "MAC",
+      "name": {
+        "en": "Macau",
+        "local": "澳門"
+      },
+      "term": "area",
+      "tileCountry": 29
     }
   ]
 }

@@ -1,5 +1,5 @@
 // Loads data/map.json, every data/provinces/<slug>/province.json, and (on demand)
-// each province's districts.json and subdistricts.json.
+// each province's districts.json and subdistricts.json, and other countries' area district files.
 import { decodeRows } from './rle.js';
 import { decodeBackdrop } from './backdrop.js';
 
@@ -85,6 +85,21 @@ export function loadDistricts(slug) {
     })).catch(e => { districtCache.delete(slug); throw e; }));
   }
   return districtCache.get(slug);
+}
+
+/**
+ * District raster of one state / region of another detailed country (same shape as a Thai
+ * province's districts.json; each district also lists its places).
+ */
+export function loadAreaDistricts(code, id) {
+  const key = `${code}:${id}`;
+  if (!districtCache.has(key)) {
+    districtCache.set(key, json(`data/countries/${code}/area-${id}.json`).then(d => ({
+      ...d,
+      grid: decodeRows(d.rows, d.w, d.h, d.chars, { '.': -1 }),
+    })).catch(e => { districtCache.delete(key); throw e; }));
+  }
+  return districtCache.get(key);
 }
 
 /** Tambon/khwaeng names and postcodes keyed by district id. */

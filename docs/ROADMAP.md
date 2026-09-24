@@ -10,7 +10,8 @@ announced on Discord, and the next one starts only after that.
 What "Thailand level" means for each country:
 
 - first-level areas (states / provinces / regions) and districts, with a country picker and the
-  same selection panel, tooltips and borders as Thailand;
+  same selection panel, tooltips and borders as Thailand; each district with its own item, a
+  landmark and its place names (Sprint 2b);
 - an iconic pixel item for every first-level area, on the map and in the inventory;
 - roads (main / medium), railways with Minecraft rail pieces, main and small rivers, lakes;
 - the textured 3D view.
@@ -19,13 +20,14 @@ What "Thailand level" means for each country:
 | --- | --- | --- | --- |
 | 1 | World backdrop + 550 m terrain tiles for all ASEAN, Hong Kong, Macau | — | done |
 | 2 | **Malaysia, Singapore, Brunei** + the shared engine: per-tile districts, roads, rails, rivers, lakes; country picker; iconic items | 16 states, 5 regions, 4 districts | done |
+| 2b | **District level** for Malaysia, Singapore, Brunei, plus **Hong Kong** and **Macau** (pulled forward from Sprint 9): district rasters finer than the blocks, an item and landmark per district, place names, district panel | 279 districts / planning areas / mukims / parishes | done |
 | 3 | **3D everywhere**: 3D chunks stream from the tiles, textured, for every country done so far and every one after | — | planned |
 | 4 | **Vietnam** | 63 provinces | planned |
 | 5 | **Laos** and **Cambodia** | 18 + 25 provinces | planned |
 | 6 | **Myanmar** | 14 states / regions | planned |
 | 7 | **Philippines** | 17 regions | planned |
 | 8 | **Indonesia** | 34 provinces | planned |
-| 9 | **Timor-Leste**, **Hong Kong**, **Macau** (HK/Macau districts from OpenStreetMap) | 13 + 18 + 7 | planned |
+| 9 | **Timor-Leste** (Hong Kong and Macau were done in Sprint 2b) | 13 | planned |
 | 10 | Local products for districts where open data exists (Vietnam OCOP, Philippines OTOP, …), polish | — | planned |
 
 Boundaries come from geoBoundaries (ADM1/ADM2, various open licences, credited per country);

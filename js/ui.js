@@ -36,6 +36,16 @@ export function areaTip(found, hint = '') {
     (hint ? `<div class="t-hint">${esc(hint)}</div>` : '');
 }
 
+/** Tooltip for a district of the selected state / region of another detailed country. */
+export function areaDistrictTip(area, d, hint = '') {
+  const c = area.country;
+  return `<div class="t-name">${esc(d.name.en)}</div>${d.name.local && d.name.local !== d.name.en ? `<div class="t-th">${esc(d.name.local)}</div>` : ''}` +
+    `<div class="t-item">✦ ${esc(d.item.name)}</div><div class="t-lore">${esc(d.item.note)}</div>` +
+    (d.landmark ? `<div class="t-lm">★ ${esc(d.landmark.name)}</div>` : '') +
+    `<div class="t-reg">${esc(c.districtTerm[0].toUpperCase() + c.districtTerm.slice(1))} of ${esc(area.name.en)}, ${esc(c.name.en)}</div>` +
+    (hint ? `<div class="t-hint">${esc(hint)}</div>` : '');
+}
+
 export function districtTip(p, d, hint = '') {
   return `<div class="t-name">${esc(d.name.en)}</div><div class="t-th">${esc(d.name.th)}</div>` +
     (d.item ? `<div class="t-item">✦ ${esc(d.item.name)}${d.item.kind === 'otop' ? ' <span class="t-otop">OTOP</span>' : ''}</div>` +
@@ -60,6 +70,10 @@ export function renderF3(el, atlas, pick, layer) {
     lines.push('Biome: ' + (p ? 'minecraft:' + REGIONS[p.region].biome : pick.country ? '(outside Thailand)' : 'minecraft:ocean'));
     if (!p && pick.country) lines.push(`Country: ${esc(pick.country)}`);
     if (pick.detail) lines.push(`${esc(pick.detail.country.term[0].toUpperCase() + pick.detail.country.term.slice(1))}: ${esc(pick.detail.area.name.en)} · ${esc(pick.detail.district.name)}`);
+    if (!p && layer?.foreign && pick.district >= 0) {
+      const d = layer.districts[pick.district];
+      lines.push(`Item: ${esc(d.item.name)} · ${d.placeCount} places`);
+    }
     if (p) lines.push(`Province: ${esc(p.name.en)} <span class="th">${esc(p.name.th)}</span>`);
     if (p && layer && pick.district >= 0) {
       const d = layer.districts[pick.district];
