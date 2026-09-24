@@ -21,7 +21,7 @@ What "Thailand level" means for each country:
 | 1 | World backdrop + 550 m terrain tiles for all ASEAN, Hong Kong, Macau | — | done |
 | 2 | **Malaysia, Singapore, Brunei** + the shared engine: per-tile districts, roads, rails, rivers, lakes; country picker; iconic items | 16 states, 5 regions, 4 districts | done |
 | 2b | **District level** for Malaysia, Singapore, Brunei, plus **Hong Kong** and **Macau** (pulled forward from Sprint 9): district rasters finer than the blocks, an item and landmark per district, place names, district panel | 279 districts / planning areas / mukims / parishes | done |
-| 3 | **3D everywhere**: 3D chunks stream from the tiles, textured, for every country done so far and every one after | — | planned |
+| 3 | **3D everywhere**: 3D chunks stream from the tiles, textured, for every country done so far and every one after (Minecraft rail pieces in 3D are still Thailand-only) | — | done |
 | 4 | **Vietnam** | 63 provinces | planned |
 | 5 | **Laos** and **Cambodia** | 18 + 25 provinces | planned |
 | 6 | **Myanmar** | 14 states / regions | planned |

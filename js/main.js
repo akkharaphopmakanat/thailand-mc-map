@@ -121,9 +121,9 @@ async function select(i, fly = true) {
 
 function selectDistrict(k, fly) {
   map.setDistrictFocus(k);
-  if (!layer?.foreign) view3d?.setDistrictFocus(k);     // other countries are 2D-only for now
+  view3d?.setDistrictFocus(k);
   panel.openDistrict(k);
-  if (fly) (layer?.foreign ? map : active()).focusDistrict(k);
+  if (fly) active().focusDistrict(k);
 }
 
 $('zin').onclick = () => mode === '3d' ? view3d.zoom(1.5) : map.zoomAt(1.5, map.cw / 2, map.ch / 2);
@@ -138,7 +138,7 @@ $('mode').onclick = async () => {
     if (!view3d) {
       btn.disabled = true; btn.textContent = 'Loading…';
       try {
-        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, world, backdrops, ...handlers });
+        view3d = await createView3D({ canvas: $('map3d'), wrap: $('mapWrap'), atlas, cells, world, backdrops, tiles, countries, ...handlers });
       } catch (err) {
         btn.disabled = false; btn.textContent = '3D';
         $('hint').textContent = `3D view unavailable: ${err.message}`;
@@ -148,6 +148,7 @@ $('mode').onclick = async () => {
       view3d.setSelected(selected);
       view3d.setLayers(layers);
       if (layer) view3d.setDistrictLayer(layer);
+      if (areaSelected) view3d.setForeignArea(areaSelected);
     }
     mode = '3d';
     $('map').hidden = true; $('map3d').hidden = false; $('vscale').hidden = false;
@@ -155,6 +156,7 @@ $('mode').onclick = async () => {
     $('hint').textContent = 'Drag to orbit · right-drag or shift-drag to pan · scroll to zoom';
     view3d.setActive(true);
     if (selected >= 0) view3d.focusProvince(selected);
+    else if (areaSelected) view3d.focusArea(areaSelected);
   } else {
     mode = '2d';
     view3d.setActive(false);
@@ -176,7 +178,7 @@ if (document.fonts) document.fonts.ready.then(() => { map.dirty = true; });
 select(provinces.findIndex(p => p.slug === 'bangkok'), false);
 
 // small handle for tools/screenshot.py and debugging in the console
-window.atlasApp = { map, tiles, countries, select, selectArea, showCountry };
+window.atlasApp = { map, tiles, countries, select, selectArea, showCountry, get view3d() { return view3d; } };
 
 /* ---------- other detailed countries (Sprint 2 on) ---------- */
 async function selectArea(area, fly = true) {
@@ -188,8 +190,9 @@ async function selectArea(area, fly = true) {
   map.foreignSelected = area;
   tiles.setSelected({ country: area.country, area });
   map.dirty = true;
-  panel.showArea(area, { onArea: a => selectArea(a), onFly: a => map.focusArea(a) });
-  if (fly) map.focusArea(area);
+  view3d?.setForeignArea(area);
+  panel.showArea(area, { onArea: a => selectArea(a), onFly: a => active().focusArea(a) });
+  if (fly) active().focusArea(area);
   // its districts, drawn and listed like a Thai province's
   try {
     const d = await loadAreaDistricts(area.country.code, area.id);
@@ -197,8 +200,9 @@ async function selectArea(area, fly = true) {
     layer = buildDistrictLayer(d, atlas.map);
     layer.foreign = area;
     map.setDistrictLayer(layer);
+    view3d?.setDistrictLayer(layer);
     panel.setAreaDistricts(area, d);
-    if (fly && mode === '2d') map.focusArea(area);        // closer, now that the districts' extent is known
+    if (fly) active().focusArea(area);                     // closer, now that the districts' extent is known
   } catch (err) {
     panel.setError(null, `Could not load districts: ${err.message}`);
   }
@@ -208,6 +212,7 @@ function clearArea() {
   areaSelected = null;
   map.foreignSelected = null;
   tiles.setSelected(null);
+  view3d?.setForeignArea(null);
   map.dirty = true;
 }
 /** Country picker above the inventory: Thailand's provinces or another country's areas. */

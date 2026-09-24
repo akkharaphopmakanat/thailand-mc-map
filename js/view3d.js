@@ -7,6 +7,7 @@ import { KIND } from './world.js';
 import { makeAtlas, maskAt, makeBlockAtlas, blockMaterial, blockTexture } from './pieces.js';
 import { h2 } from './noise.js';
 import { itemSprite } from './sprites.js';
+import { TileTerrain } from './tiles3d.js';
 
 const THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
 const SKY = 0x8fb8ff;
@@ -46,15 +47,16 @@ class View3D {
   /**
    * @param {object} THREE
    * @param {object} o  {canvas, wrap, atlas, cells, world (2D terrain, used as top texture),
-   *                    backdrops ([{data, canvas}] world and ASEAN, canvases used for colours), onHover, onClick}
+   *                    backdrops ([{data, canvas}] world and ASEAN, canvases used for colours),
+   *                    tiles + countries (the other detailed countries' 550 m tiles), onHover, onClick}
    */
-  constructor(THREE, { canvas, wrap, atlas, cells, world, backdrops = [], blocks, onHover, onClick }) {
-    Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, world, backdrops, blocks, onHover, onClick });
+  constructor(THREE, { canvas, wrap, atlas, cells, world, backdrops = [], blocks, tiles, countries, onHover, onClick }) {
+    Object.assign(this, { T: THREE, canvas, wrap, atlas, cells, world, backdrops, blocks, tiles, countries, onHover, onClick });
     const { W, H } = atlas.map;
     this.W = W; this.H = H;
     this.SC = .04 / atlas.map.S;                     // blocks per 0.04° (camera and icon sizes scale with it)
     this.metresPerBlock = 40;
-    this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1;
+    this.selected = -1; this.hover = -1; this.layer = null; this.dFocus = -1; this.foreign = null;
     this.active = false; this.tween = null;
     this.layers = { mainRoads: true, mediumRoads: true, rails: true, rivers: true, streams: false };
     this.home = { x: 0, z: 40 * this.SC, yaw: 0, pitch: .9, dist: 330 * this.SC };
@@ -92,6 +94,9 @@ class View3D {
     this.detailMat = new THREE.MeshBasicMaterial({ map: ptex, alphaTest: .5, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
 
     this._prepare();
+    this.districtIcons = [];
+    // other detailed countries, streamed from their tiles (not in builds without tiles)
+    if (tiles?.index && countries?.list.length) this.terrain = new TileTerrain(this, tiles, countries);
     this._buildBackdrop();
     this._buildWater();
     this._buildIcons();
@@ -543,6 +548,7 @@ class View3D {
     const X = lon => (lon - map.lon0) / map.S - W / 2, Z = lat => (map.lat1 - lat) / map.S - H / 2;
     const thai = [map.lon0, map.lat1 - map.H * map.S, map.lon0 + map.W * map.S, map.lat1];
     const box = a => [a.lon0, a.lat1 - a.H * a.S, a.lon0 + a.W * a.S, a.lat1];
+    const terrain = this.terrain;
     const inBox = (b, lon, lat) => b && lon > b[0] && lon < b[2] && lat > b[1] && lat < b[3];
     this.backQuads = 0;
     for (const { data: A, canvas } of this.backdrops) {
@@ -552,7 +558,10 @@ class View3D {
       const bx = [X(A.lon0), Z(A.lat1), X(A.lon0 + w * S), Z(A.lat1 - h * S)];
       this.bounds = [Math.min(this.bounds[0], bx[0]), Math.min(this.bounds[1], bx[1]), Math.max(this.bounds[2], bx[2]), Math.max(this.bounds[3], bx[3])];
       const colours = canvas.getContext('2d').getImageData(0, 0, A.W, A.H).data;
-      const inside = (r, c) => inBox(hole, A.lon0 + (c + .5) * S, A.lat1 - (r + .5) * S);
+      const inside = (r, c) => {
+        const lon = A.lon0 + (c + .5) * S, lat = A.lat1 - (r + .5) * S;
+        return inBox(hole, lon, lat) || (A === atlas.asean && !!terrain?.covers(lon, lat));    // detailed tiles drawn there
+      };
       const ht = new Int16Array(w * h);
       for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
         const k = (r * D + (D >> 1)) * A.W + c * D + (D >> 1);
@@ -653,7 +662,6 @@ class View3D {
       this.scene.add(s);
       return s;
     });
-    this.districtIcons = [];
     this._placeIcons();
   }
 
@@ -668,17 +676,22 @@ class View3D {
       s.visible = !(i === this.selected && this.districtIcons.length);
     });
     for (const s of this.districtIcons) {
-      const { r, c } = s.userData;
-      s.userData.base = Math.max(this.hb[r * W + c], 0) + 2.2 * this.SC;
-      const z = (s.userData.k === this.dFocus ? 3.4 : 2.4) * this.SC;
+      s.userData.base = Math.max(this._groundAt(s.position.x, s.position.z), 0) + Math.min(2.2 * this.SC, s.userData.cap);
+      const z = Math.min((s.userData.k === this.dFocus ? 3.4 : 2.4) * this.SC, s.userData.cap * (s.userData.k === this.dFocus ? 1.4 : 1));
       s.scale.set(z, z, 1);
     }
   }
 
   /* ---------------- state from main ---------------- */
   setSelected(i) {
-    this.selected = i; this.dFocus = -1;
+    this.selected = i; this.dFocus = -1; this.foreign = null;
     this.setDistrictLayer(null);
+  }
+
+  /** Highlight a state / region of another detailed country (null: none). */
+  setForeignArea(area) {
+    this.foreign = area;
+    this.terrain?.setSelected({ area, layer: this.layer, focus: this.dFocus });
   }
 
   setHover(i) {
@@ -698,7 +711,8 @@ class View3D {
         if (!a) return;
         const x = a[0] / B, z = a[1] / B;
         const s = new this.T.Sprite(this._spriteMat(layer.sprite(k).canvas));
-        s.userData = { k, r: Math.min(H - 1, Math.floor(z)), c: Math.min(W - 1, Math.floor(x)), base: 0 };
+        // no bigger than the district itself (Hong Kong's districts are a few blocks across)
+        s.userData = { k, base: 0, cap: Math.max(1.5, Math.sqrt(d.cells || 1) * layer.k / B * .6) };
         s.position.set(x - W / 2, 0, z - H / 2);
         this.scene.add(s);
         this.districtIcons.push(s);
@@ -706,9 +720,13 @@ class View3D {
     }
     this._placeIcons();
     this._applyHighlight();
+    this.terrain?.setSelected({ area: this.foreign, layer, focus: this.dFocus });
   }
 
-  setDistrictFocus(k) { this.dFocus = k; this._placeIcons(); this._applyHighlight(); }
+  setDistrictFocus(k) {
+    this.dFocus = k; this._placeIcons(); this._applyHighlight();
+    this.terrain?.setSelected({ area: this.foreign, layer: this.layer, focus: k });
+  }
 
   /** Layers changed: the 2D terrain canvas (our top texture) was redrawn; rebuild buildings. */
   setLayers(layers) {
@@ -716,6 +734,7 @@ class View3D {
     const keys = ['mainRoads', 'mediumRoads', 'rails', 'rivers', 'streams'];
     const changed = keys.some(k => layers[k] !== this.layers[k]);
     this.layers = { ...layers };
+    if (changed) this.terrain?.setLayers(layers);
     if (changed) {
       this._clearDetail();
       // textured close-up chunks bake roads, rails and rivers into their block choice
@@ -730,6 +749,7 @@ class View3D {
   setVerticalScale(metresPerBlock) {
     this.metresPerBlock = metresPerBlock;
     this._prepare();
+    this.terrain?.setVerticalScale();
     this._buildBackdrop();
     this._placeIcons();
   }
@@ -760,6 +780,23 @@ class View3D {
     this._goTo({ x: (b[0] + b[2] + 1) / 2 - this.W / 2, z: (b[1] + b[3] + 1) / 2 - this.H / 2 + size * .15, dist: size * 1.9 + 30 * this.SC });
   }
 
+  /** Fly to a state / region of another detailed country (its districts once loaded). */
+  focusArea(area) {
+    const m = this.atlas.map, L = this.layer;
+    let x0, z0, x1, z1;
+    if (L?.foreign === area) {
+      const b = L.bb.reduce((q, d) => [Math.min(q[0], d[0]), Math.min(q[1], d[1]), Math.max(q[2], d[2]), Math.max(q[3], d[3])], [Infinity, Infinity, -Infinity, -Infinity]);
+      if (isFinite(b[0])) [x0, z0, x1, z1] = b.map(v => v / B);
+    }
+    if (x0 === undefined) {
+      if (!area.anchor) return;
+      const x = (area.anchor[0] - m.lon0) / m.S, z = (m.lat1 - area.anchor[1]) / m.S, h = Math.sqrt(area.blocks || 1600) / 2;
+      [x0, z0, x1, z1] = [x - h, z - h, x + h, z + h];
+    }
+    const size = Math.max(x1 - x0, z1 - z0) + 1;
+    this._goTo({ x: (x0 + x1) / 2 - this.W / 2, z: (z0 + z1) / 2 - this.H / 2 + size * .15, dist: size * 1.9 + 30 * this.SC });
+  }
+
   focusDistrict(k) {
     const b = this.layer?.bb[k];
     if (!b || !isFinite(b[0])) return;
@@ -780,7 +817,7 @@ class View3D {
 
   _groundAt(x, z) {
     const c = Math.floor(x + this.W / 2), r = Math.floor(z + this.H / 2);
-    if (c < 0 || r < 0 || c >= this.W || r >= this.H) return 0;
+    if (c < 0 || r < 0 || c >= this.W || r >= this.H) return this.terrain?.heightAt(x, z) ?? 0;
     return this.hb[r * this.W + c];
   }
 
@@ -796,13 +833,26 @@ class View3D {
     for (let t = 0; t < 3000 * this.SC; t += Math.max(.35, t * .0015)) {
       const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
       const c = Math.floor(x + W / 2), r = Math.floor(z + H / 2);
-      if (c < 0 || r < 0 || c >= W || r >= H) { if (y < MIN_Y) return null; continue; }
+      const wx = (x + W / 2) * B, wy = (z + H / 2) * B;
+      // another detailed country's state / district and the country under a point outside Thailand
+      const abroad = v => {
+        const at = this.tiles?.at(wx, wy);
+        return { country: at?.country?.name || '', detail: at?.detail || null,
+          district: this.layer?.foreign ? this.layer.hit(wx, wy) : -1, v };
+      };
+      if (c < 0 || r < 0 || c >= W || r >= H) {
+        const th = this.terrain?.heightAt(x, z);
+        if (th == null) { if (y < MIN_Y) return null; continue; }
+        if (y <= Math.max(th, 0)) { const a = abroad(-1); return { r, c, province: -1, ...a, v: a.country ? -3 : -1 }; }
+        continue;
+      }
       const k = r * W + c;
       if (y <= Math.max(this.hb[k], 0)) {
         const v = this.atlas.grid[k];
+        if (v < 0 && this.terrain) return { r, c, province: -1, ...abroad(v) };
         let province = v >= 0 ? v : -1, district = -1;
-        if (this.layer) {
-          district = this.layer.hit((x + W / 2) * B, (z + H / 2) * B);
+        if (this.layer && !this.layer.foreign) {
+          district = this.layer.hit(wx, wy);
           if (district >= 0) province = this.selected;
         }
         return { r, c, v, province, district };
@@ -855,7 +905,7 @@ class View3D {
           this._hoverPending = false;
           const pk = this.pick(e.offsetX, e.offsetY);
           this.setHover(pk ? pk.province : -1);
-          cv.classList.toggle('over', !!pk && pk.province >= 0);
+          cv.classList.toggle('over', !!pk && (pk.province >= 0 || !!pk.detail));
           this.onHover(pk, e);
         });
       }
@@ -867,7 +917,7 @@ class View3D {
       if (pts.size === 0) {
         if (wasClick && e.type === 'pointerup' && e.button !== 2) {
           const pk = this.pick(e.offsetX, e.offsetY);
-          if (pk && pk.province >= 0) this.onClick(pk);
+          if (pk && (pk.province >= 0 || pk.detail || pk.district >= 0)) this.onClick(pk);
         }
         down = null;
       } else if (pts.size === 1) {
@@ -916,6 +966,7 @@ class View3D {
     const far = Math.max(3000 * this.SC, this.orbit.dist * 4);
     if (Math.abs(this.camera.far - far) > far * .1) { this.camera.far = far; this.camera.updateProjectionMatrix(); }
     this._updateLOD();
+    this.terrain?.update(t);
     this._updateDetail();
     this.renderer.render(this.scene, this.camera);
     requestAnimationFrame(tt => this._loop(tt));

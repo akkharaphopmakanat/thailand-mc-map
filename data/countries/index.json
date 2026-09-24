@@ -7,7 +7,31 @@
         "local": "Malaysia"
       },
       "term": "state",
-      "tileCountry": 2
+      "tileCountry": 2,
+      "tiles": [
+        "10_12",
+        "10_13",
+        "11_11",
+        "11_12",
+        "11_13",
+        "12_10",
+        "12_11",
+        "12_12",
+        "13_11",
+        "13_12",
+        "3_11",
+        "4_11",
+        "4_12",
+        "4_13",
+        "5_11",
+        "5_12",
+        "5_13",
+        "6_12",
+        "6_13",
+        "8_13",
+        "9_12",
+        "9_13"
+      ]
     },
     {
       "code": "SGP",
@@ -16,7 +40,11 @@
         "local": "Singapura"
       },
       "term": "region",
-      "tileCountry": 25
+      "tileCountry": 25,
+      "tiles": [
+        "5_13",
+        "6_13"
+      ]
     },
     {
       "code": "BRN",
@@ -25,7 +53,11 @@
         "local": "Brunei Darussalam"
       },
       "term": "district",
-      "tileCountry": 11
+      "tileCountry": 11,
+      "tiles": [
+        "11_11",
+        "11_12"
+      ]
     },
     {
       "code": "HKG",
@@ -34,7 +66,11 @@
         "local": "香港"
       },
       "term": "region",
-      "tileCountry": 16
+      "tileCountry": 16,
+      "tiles": [
+        "10_3",
+        "11_3"
+      ]
     },
     {
       "code": "MAC",
@@ -43,7 +79,10 @@
         "local": "澳門"
       },
       "term": "area",
-      "tileCountry": 29
+      "tileCountry": 29,
+      "tiles": [
+        "10_3"
+      ]
     }
   ]
 }

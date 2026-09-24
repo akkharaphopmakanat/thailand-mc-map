@@ -229,6 +229,9 @@ async function pixels(url) {
 
 const ROAD_RGB = { 2: [150, 122, 70], 3: [150, 122, 70], 4: [128, 128, 130] };
 
+/** Surface of a tile block (tile.surf, filled by paintTile). */
+export const SURF = { SEA: 0, GRASS: 1, TREE: 2, SAND: 3, STONE: 4, PADDY: 5 };
+
 /**
  * Paint a decoded tile into its canvas, one pixel per 550 m block: terrain, then (where the tile
  * has layers) rivers and lakes, roads and railways, and district / area borders.
@@ -238,6 +241,7 @@ export function paintTile(t, I, layers = {}, countries = null) {
   const x = canvas.getContext('2d');
   const img = x.createImageData(n, n), px = img.data;
   const level = i => Math.floor(Math.max(elev[i], 0) / 40);
+  const surf = t.surf ??= new Uint8Array(n * n);          // what each block is, for the 3D view (SURF)
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
     const i = r * n + c, v = country[i], e = elev[i];
     const gc = t.tx * n + c, gr = t.ty * n + r;           // global block coordinates, so noise joins across tiles
@@ -249,11 +253,11 @@ export function paintTile(t, I, layers = {}, countries = null) {
     } else {
       const coast = (r > 0 && !country[i - n]) || (r < n - 1 && !country[i + n]) || (c > 0 && !country[i - 1]) || (c < n - 1 && !country[i + 1]);
       tree = vn(gc / 24, gr / 24, 5) > .46 - Math.min(Math.max(e, 0), 1500) / 3000 && h2(gc, gr, 6) < .6;
-      if (coast && e < 40) rgb = [222, 208, 160];
-      else if (e > 1350 + h2(gc, gr, 7) * 250) rgb = [132, 132, 134];
-      else if (tree) rgb = [42, 96, 36];
-      else if (e < 60 && vn(gc / 20, gr / 20, 21) > .55) rgb = [126, 186, 78];     // paddy fields on the plains
-      else rgb = [80, 146, 56];
+      if (coast && e < 40) { rgb = [222, 208, 160]; surf[i] = SURF.SAND; }
+      else if (e > 1350 + h2(gc, gr, 7) * 250) { rgb = [132, 132, 134]; surf[i] = SURF.STONE; }
+      else if (tree) { rgb = [42, 96, 36]; surf[i] = SURF.TREE; }
+      else if (e < 60 && vn(gc / 20, gr / 20, 21) > .55) { rgb = [126, 186, 78]; surf[i] = SURF.PADDY; }   // paddy fields on the plains
+      else { rgb = [80, 146, 56]; surf[i] = SURF.GRASS; }
       const detail = I.countries[v - 1]?.detail;
       if (!detail) { const g = (rgb[0] + rgb[1] + rgb[2]) / 3; rgb = rgb.map(q => (q * .7 + g * .3) * .62); }
       if (r > 0 && country[i - n]) { const a = level(i) + (tree ? 1 : 0), b = level(i - n); rgb = rgb.map(q => q * (a > b ? 1.12 : a < b ? .84 : 1)); }
@@ -295,6 +299,7 @@ export class Countries {
       const idx = await (await fetch('data/countries/index.json')).json();
       this.list = await Promise.all(idx.countries.map(async c => {
         const full = await (await fetch(`data/countries/${c.code}.json`)).json();
+        full.tiles = c.tiles || [];                  // tiles it covers, for the 3D view
         for (const a of full.areas) a.country = full;
         for (const d of full.districts) d.country = full;
         return full;

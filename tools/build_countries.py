@@ -18,7 +18,7 @@ and writes:
   - data/countries/<ISO>/area-<id>.json
                                  Thailand-style district raster for one area (finer than the
                                  blocks), with every district's item, landmark and places
-  - data/countries/index.json    countries with detail so far
+  - data/countries/index.json    countries with detail so far, and the tiles each one covers (for 3D)
 
 Usage: python3 tools/build_countries.py MYS SGP BRN HKG MAC
 """
@@ -300,7 +300,7 @@ def build(isos):
                           'item': {'name': (hand.get('item') or {}).get('name', 'Town Bell'), 'id': sprite_id,
                                    'sprite': sprites.get(sprite_id, sprites['bell'])},
                           'lore': hand.get('lore', ''), 'anchor': anchor, 'blocks': int(s[2]) if s else 0})
-        built[iso] = (c, areas_file, areas, a2)
+        built[iso] = (c, areas_file, areas, a2, sorted(touched))
         print(f'{iso}: {len(areas)} areas, {len(a2)} districts, {len(touched)} tiles')
 
     # roads, railways, rivers, lakes, landmarks and place names from each extract
@@ -309,7 +309,7 @@ def build(isos):
         osm_layers(extract, lon0, lat1, tset, tile_of, base, mine, owner, pois, places)
 
     for iso in isos:
-        c, areas_file, areas, a2 = built[iso]
+        c, areas_file, areas, a2, _ = built[iso]
         curated = areas_file.get('districts', {})
         unknown = set(curated) - {n for n, *_ in a2}
         if unknown:
@@ -333,7 +333,7 @@ def build(isos):
     for iso in isos:
         info = json.load(open(os.path.join(bd.DATA, 'countries', f'{iso}.json')))
         done = [d for d in done if d['code'] != iso] + [{'code': iso, 'name': info['name'], 'term': info['term'],
-                                                          'tileCountry': info['tileCountry']}]
+                                                          'tileCountry': info['tileCountry'], 'tiles': built[iso][4]}]
     bd.dump(path, {'countries': done}, pretty=True)
     print(f'layers written for {len(layers)} tiles')
 

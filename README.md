@@ -14,7 +14,9 @@ bridges. Zoom in and railways become connected Minecraft rail pieces: straights,
 buffer stops, plus a special **rail junction block** (a gravel pad with the branching track and a
 switch lever) where lines meet. River names sit on the main rivers themselves. A **Layers** box
 switches main roads, medium roads, railways, main rivers and small rivers on and off. Switch to the **3D** view to fly over real terrain built from
-elevation data.
+elevation data: Thailand, and the other detailed countries (Malaysia, Singapore, Brunei, Hong Kong,
+Macau), whose 550 m tiles stream in as block columns, textured close up, with their items, the
+selected state's districts and the same hover and click as in 2D.
 
 ## Hosting
 
@@ -47,6 +49,7 @@ js/
   districts.js              builds the district layer for a selected province
   mapView.js                2D canvas camera, pan/zoom/pinch, picking, drawing
   view3d.js                 3D voxel view in chunks with 3 levels of detail (three.js from cdnjs, loaded on demand)
+  tiles3d.js                3D terrain of the other detailed countries, streamed from their tiles
   sprites.js                16×16 item sprite → canvas / data URL
   pieces.js                 rail pieces, junction block, block texture atlas + shader, block→texture rule
   inventory.js              creative-inventory grid with region tabs and search
