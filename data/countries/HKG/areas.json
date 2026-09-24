@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-written: iconic item per region (keyed by the area name in tools/build_countries.py OSM_ADMIN) and per district (keyed by the OpenStreetMap name:en). tools/build_countries.py merges this into data/countries/HKG.json and data/countries/HKG/area-*.json.",
+  "_comment": "Hand-written: iconic item and Minecraft biome (see BIOMES in js/config.js) per region (keyed by the area name in tools/build_countries.py OSM_ADMIN) and per district (keyed by the OpenStreetMap name:en). tools/build_countries.py merges this into data/countries/HKG.json and data/countries/HKG/area-*.json.",
   "code": "HKG",
   "name": {
     "en": "Hong Kong",
@@ -18,7 +18,8 @@
         "name": "Harbour Skyline",
         "sprite": "tower"
       },
-      "lore": "Towers of Central and Wan Chai between Victoria Harbour and the Peak, with double-decker trams along the north shore."
+      "lore": "Towers of Central and Wan Chai between Victoria Harbour and the Peak, with double-decker trams along the north shore.",
+      "biome": "windswept_hills"
     },
     "Kowloon": {
       "name": {
@@ -29,7 +30,8 @@
         "name": "Red-Sail Junk",
         "sprite": "junk"
       },
-      "lore": "Tsim Sha Tsui's waterfront faces the island across Victoria Harbour; behind it, the markets and neon of Mong Kok."
+      "lore": "Tsim Sha Tsui's waterfront faces the island across Victoria Harbour; behind it, the markets and neon of Mong Kok.",
+      "biome": "meadow"
     },
     "New Territories": {
       "name": {
@@ -40,7 +42,8 @@
         "name": "Tai Mo Shan",
         "sprite": "mountainCloud"
       },
-      "lore": "Most of Hong Kong's land: country parks, Tai Mo Shan (957 m), walled villages, new towns and the outlying islands."
+      "lore": "Most of Hong Kong's land: country parks, Tai Mo Shan (957 m), walled villages, new towns and the outlying islands.",
+      "biome": "sparse_jungle"
     }
   },
   "districts": {

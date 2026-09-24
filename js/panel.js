@@ -171,6 +171,7 @@ export class ProvincePanel {
       <p class="lore">${esc(area.lore)}</p>
       <div class="meta">
         <span class="tag">${esc(term)} of ${esc(c.name.en)}</span>
+        <span class="tag">minecraft:${esc(area.biome)}</span>
         <span class="tag">${area.blocks} blocks</span>
       </div>
       <div class="nb"><div class="nb-label">Other ${esc(c.term)}s of ${esc(c.name.en)}</div><div class="chips">${

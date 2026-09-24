@@ -4,7 +4,7 @@
 // - detailed 550 m tiles (2° × 2°) for ASEAN, Hong Kong and Macau, streamed as the map pans and zooms;
 // - the countries brought up to Thailand's level (Sprint 2 on): their states / provinces / regions
 //   with iconic items, and districts, which tile blocks refer to (tile country value + district id).
-import { B } from './config.js';
+import { B, BIOMES, BIOME_IDS } from './config.js';
 import { h2, vn } from './noise.js';
 import { decodeRows } from './rle.js';
 
@@ -242,6 +242,7 @@ export function paintTile(t, I, layers = {}, countries = null) {
   const img = x.createImageData(n, n), px = img.data;
   const level = i => Math.floor(Math.max(elev[i], 0) / 40);
   const surf = t.surf ??= new Uint8Array(n * n);          // what each block is, for the 3D view (SURF)
+  const bio = t.bio ??= new Uint8Array(n * n);            // its biome (1 + BIOME_IDS index; 0 = none), for the 3D view
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
     const i = r * n + c, v = country[i], e = elev[i];
     const gc = t.tx * n + c, gr = t.ty * n + r;           // global block coordinates, so noise joins across tiles
@@ -252,12 +253,15 @@ export function paintTile(t, I, layers = {}, countries = null) {
         : d <= 120 ? [50, 82, 192] : (((gr + gc) & 1) && d <= 600 ? [46, 74, 180] : [40, 64, 166]);
     } else {
       const coast = (r > 0 && !country[i - n]) || (r < n - 1 && !country[i + n]) || (c > 0 && !country[i - 1]) || (c < n - 1 && !country[i + 1]);
-      tree = vn(gc / 24, gr / 24, 5) > .46 - Math.min(Math.max(e, 0), 1500) / 3000 && h2(gc, gr, 6) < .6;
+      // the biome of the block's state / region, like Thailand's regions (none outside detailed countries)
+      const bm = district && countries && district[i] ? countries.byTile.get(v)?.districtBiome?.[district[i] - 1] : null;
+      bio[i] = bm ? BIOME_IDS.indexOf(bm.id) + 1 : 0;
+      tree = vn(gc / 24, gr / 24, 5) > (bm ? bm.forest : .46) - Math.min(Math.max(e, 0), 1500) / 3000 && h2(gc, gr, 6) < .6;
       if (coast && e < 40) { rgb = [222, 208, 160]; surf[i] = SURF.SAND; }
       else if (e > 1350 + h2(gc, gr, 7) * 250) { rgb = [132, 132, 134]; surf[i] = SURF.STONE; }
-      else if (tree) { rgb = [42, 96, 36]; surf[i] = SURF.TREE; }
-      else if (e < 60 && vn(gc / 20, gr / 20, 21) > .55) { rgb = [126, 186, 78]; surf[i] = SURF.PADDY; }   // paddy fields on the plains
-      else { rgb = [80, 146, 56]; surf[i] = SURF.GRASS; }
+      else if (tree) { rgb = bm ? [bm.base[0] * .66, bm.base[1] * .7, bm.base[2] * .66] : [42, 96, 36]; surf[i] = SURF.TREE; }
+      else if ((!bm || bm.paddy) && e < 60 && vn(gc / 20, gr / 20, 21) > .55) { rgb = [126, 186, 78]; surf[i] = SURF.PADDY; }   // paddy fields on the plains
+      else { rgb = bm ? bm.base.slice() : [80, 146, 56]; surf[i] = SURF.GRASS; }
       const detail = I.countries[v - 1]?.detail;
       if (!detail) { const g = (rgb[0] + rgb[1] + rgb[2]) / 3; rgb = rgb.map(q => (q * .7 + g * .3) * .62); }
       if (r > 0 && country[i - n]) { const a = level(i) + (tree ? 1 : 0), b = level(i - n); rgb = rgb.map(q => q * (a > b ? 1.12 : a < b ? .84 : 1)); }
@@ -300,7 +304,8 @@ export class Countries {
       this.list = await Promise.all(idx.countries.map(async c => {
         const full = await (await fetch(`data/countries/${c.code}.json`)).json();
         full.tiles = c.tiles || [];                  // tiles it covers, for the 3D view
-        for (const a of full.areas) a.country = full;
+        for (const a of full.areas) { a.country = full; a.biome = BIOMES[a.biome] ? a.biome : 'sparse_jungle'; }
+        full.districtBiome = full.districts.map(d => BIOMES[full.areas[d.area - 1].biome]);
         for (const d of full.districts) d.country = full;
         return full;
       }));

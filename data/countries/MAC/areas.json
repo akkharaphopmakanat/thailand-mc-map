@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-written: iconic item per area (keyed by the area name in tools/build_countries.py OSM_ADMIN) and per parish (keyed by the OpenStreetMap name). tools/build_countries.py merges this into data/countries/MAC.json and data/countries/MAC/area-*.json.",
+  "_comment": "Hand-written: iconic item and Minecraft biome (see BIOMES in js/config.js) per area (keyed by the area name in tools/build_countries.py OSM_ADMIN) and per parish (keyed by the OpenStreetMap name). tools/build_countries.py merges this into data/countries/MAC.json and data/countries/MAC/area-*.json.",
   "code": "MAC",
   "name": {
     "en": "Macau",
@@ -18,7 +18,8 @@
         "name": "Macau Tower",
         "sprite": "tower"
       },
-      "lore": "The old city: five parishes, the Historic Centre of Macao (UNESCO) and the 338 m Macau Tower."
+      "lore": "The old city: five parishes, the Historic Centre of Macao (UNESCO) and the 338 m Macau Tower.",
+      "biome": "meadow"
     },
     "Taipa": {
       "name": {
@@ -29,7 +30,8 @@
         "name": "Almond Cookie",
         "sprite": "cookie"
       },
-      "lore": "Rua do Cunha in Taipa Village is lined with almond cookie shops; the airport is on the east side."
+      "lore": "Rua do Cunha in Taipa Village is lined with almond cookie shops; the airport is on the east side.",
+      "biome": "meadow"
     },
     "Cotai": {
       "name": {
@@ -40,7 +42,8 @@
         "name": "Casino Chip",
         "sprite": "chip"
       },
-      "lore": "Land reclaimed between Taipa and Coloane, now the Cotai Strip of resort casinos."
+      "lore": "Land reclaimed between Taipa and Coloane, now the Cotai Strip of resort casinos.",
+      "biome": "meadow"
     },
     "Coloane": {
       "name": {
@@ -51,7 +54,8 @@
         "name": "Egg Tart",
         "sprite": "eggTart"
       },
-      "lore": "Green hills, beaches and Coloane Village, where Lord Stow's Bakery made the Macanese egg tart famous."
+      "lore": "Green hills, beaches and Coloane Village, where Lord Stow's Bakery made the Macanese egg tart famous.",
+      "biome": "sparse_jungle"
     }
   },
   "districts": {

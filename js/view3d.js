@@ -93,10 +93,12 @@ class View3D {
     ptex.generateMipmaps = false;
     this.detailMat = new THREE.MeshBasicMaterial({ map: ptex, alphaTest: .5, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
 
-    this._prepare();
     this.districtIcons = [];
-    // other detailed countries, streamed from their tiles (not in builds without tiles)
+    // other detailed countries, streamed from their tiles (not in builds without tiles); they also
+    // take over the foreign land inside Thailand's window, so it gets its own biome
     if (tiles?.index && countries?.list.length) this.terrain = new TileTerrain(this, tiles, countries);
+    this._prepare();
+    this.terrain?._placeIcons();
     this._buildBackdrop();
     this._buildWater();
     this._buildIcons();
@@ -119,6 +121,9 @@ class View3D {
     const N = W * H;
     const hb = this.hb = new Int16Array(N);
     for (let k = 0; k < N; k++) hb[k] = this._height(k);
+    // foreign land that the detailed tiles draw instead (northern Malaysia inside Thailand's window)
+    const hidden = this.hidden = new Uint8Array(N);
+    if (this.terrain) for (let k = 0; k < N; k++) if (this.atlas.grid[k] === -2 && this.terrain.coversBlock((k / W) | 0, k % W)) hidden[k] = 1;
     this.lod = {};
     for (const L of LODS) {
       const w = Math.ceil(W / L), h = Math.ceil(H / L);
@@ -208,8 +213,9 @@ class View3D {
         quad(1, verts(hn, h), side, f * jit);
       }
     };
-    const same = (r, a, b) => ht(r, a) === ht(r, b) && kind[rep(r, a)] === kind[rep(r, b)] && grid[rep(r, a)] === grid[rep(r, b)];
-    const sameCol = (c, a, b) => ht(a, c) === ht(b, c) && kind[rep(a, c)] === kind[rep(b, c)] && grid[rep(a, c)] === grid[rep(b, c)];
+    const hidden = this.hidden, hid = (r, c) => hidden[rep(r, c)];
+    const same = (r, a, b) => ht(r, a) === ht(r, b) && kind[rep(r, a)] === kind[rep(r, b)] && grid[rep(r, a)] === grid[rep(r, b)] && hid(r, a) === hid(r, b);
+    const sameCol = (c, a, b) => ht(a, c) === ht(b, c) && kind[rep(a, c)] === kind[rep(b, c)] && grid[rep(a, c)] === grid[rep(b, c)] && hid(a, c) === hid(b, c);
     const topQuad = new Int32Array(cw * (r1 - r0)).fill(-1);
     const pass = () => {
       count[0] = count[1] = 0;
@@ -218,6 +224,7 @@ class View3D {
         for (let c = c0; c < c1;) {                          // tops, merged along the row
           let e = c + 1;
           while (e < c1 && same(r, e, c)) e++;
+          if (hid(r, c)) { c = e; continue; }                // drawn by the detailed tiles
           const k = rep(r, c), h = ht(r, c), x0 = X(c), x1 = X(e);
           const v = [x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0];
           if (kind[k] === KIND.WATER) quad(1, v, topRGB(k, h), 1);
@@ -234,7 +241,7 @@ class View3D {
             const hn = neighbour(r, c, dr, 0);
             let e = c + 1;
             while (e < c1 && same(r, e, c) && neighbour(r, e, dr, 0) === hn) e++;
-            if (hn < ht(r, c)) {
+            if (hn < ht(r, c) && !hid(r, c)) {
               const xa = X(c), xb = X(e);
               wall(r, c, hn, SHADE.ns, dr < 0
                 ? (lo, hi) => [xb, lo, z, xb, hi, z, xa, hi, z, xa, lo, z]
@@ -251,7 +258,7 @@ class View3D {
             const hn = neighbour(r, c, 0, dc);
             let e = r + 1;
             while (e < r1 && sameCol(c, e, r) && neighbour(e, c, 0, dc) === hn) e++;
-            if (hn < ht(r, c)) {
+            if (hn < ht(r, c) && !hid(r, c)) {
               const za = Z(r), zb = Z(e);
               wall(r, c, hn, SHADE.ew, dc < 0
                 ? (lo, hi) => [x, lo, za, x, hi, za, x, hi, zb, x, lo, zb]
@@ -355,8 +362,9 @@ class View3D {
         quad(verts(hn, h), upper, rgb, f, [0, 0, 0, h - hn, len, h - hn, len, 0]);
       }
     };
-    const same = (r, a, b) => ht(r, a) === ht(r, b) && tileAt(r, a) === tileAt(r, b) && grid[rep(r, a)] === grid[rep(r, b)];
-    const sameCol = (c, a, b) => ht(a, c) === ht(b, c) && tileAt(a, c) === tileAt(b, c) && grid[rep(a, c)] === grid[rep(b, c)];
+    const hidden = this.hidden, hid = (r, c) => hidden[rep(r, c)];
+    const same = (r, a, b) => ht(r, a) === ht(r, b) && tileAt(r, a) === tileAt(r, b) && grid[rep(r, a)] === grid[rep(r, b)] && hid(r, a) === hid(r, b);
+    const sameCol = (c, a, b) => ht(a, c) === ht(b, c) && tileAt(a, c) === tileAt(b, c) && grid[rep(a, c)] === grid[rep(b, c)] && hid(a, c) === hid(b, c);
     const topQuad = new Int32Array(cw * (r1 - r0)).fill(-1);
     const pass = () => {
       count[0] = 0;
@@ -365,6 +373,7 @@ class View3D {
         for (let c = c0; c < c1;) {
           let e = c + 1;
           while (e < c1 && same(r, e, c)) e++;
+          if (hid(r, c)) { c = e; continue; }                // drawn by the detailed tiles
           const k = rep(r, c), h = ht(r, c), x0 = X(c), x1 = X(e);
           const q = quad([x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0], names[tileAt(r, c)], tint(k), 1,
             [0, 0, 0, z1 - z0, x1 - x0, z1 - z0, x1 - x0, 0]);
@@ -377,7 +386,7 @@ class View3D {
             const hn = neighbour(r, c, dr, 0);
             let e = c + 1;
             while (e < c1 && same(r, e, c) && neighbour(r, e, dr, 0) === hn) e++;
-            if (hn < ht(r, c)) {
+            if (hn < ht(r, c) && !hid(r, c)) {
               const xa = X(c), xb = X(e);
               wall(r, c, hn, SHADE.ns, dr < 0
                 ? (lo, hi) => [xb, lo, z, xb, hi, z, xa, hi, z, xa, lo, z]
@@ -394,7 +403,7 @@ class View3D {
             const hn = neighbour(r, c, 0, dc);
             let e = r + 1;
             while (e < r1 && sameCol(c, e, r) && neighbour(e, c, 0, dc) === hn) e++;
-            if (hn < ht(r, c)) {
+            if (hn < ht(r, c) && !hid(r, c)) {
               const za = Z(r), zb = Z(e);
               wall(r, c, hn, SHADE.ew, dc < 0
                 ? (lo, hi) => [x, lo, za, x, hi, za, x, hi, zb, x, lo, zb]

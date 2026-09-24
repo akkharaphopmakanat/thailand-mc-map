@@ -24,6 +24,20 @@ export const REGIONS = {
 };
 export const REGION_ORDER = ['N', 'NE', 'C', 'E', 'W', 'S'];
 
+/**
+ * Biomes by Minecraft id: the six Thai regions' plus a few for other countries. `base` grass
+ * colour, `forest` tree threshold (lower = more trees), `paddy` rice fields on the plains,
+ * `leaves` / `grass` block textures in 3D. Each state / region of another country names one.
+ */
+export const BIOMES = {
+  ...Object.fromEntries(Object.entries(REGIONS).map(([k, R]) => [R.biome, {
+    id: R.biome, base: R.base, forest: R.forest, paddy: k === 'C',
+    leaves: k === 'S' || k === 'E' ? 'jungleleaves' : 'leaves', grass: k === 'NE' ? 'dry_grass' : 'grass' }])),
+  mangrove_swamp: { id: 'mangrove_swamp', base: [70, 118, 58], forest: .42, paddy: false, leaves: 'jungleleaves', grass: 'grass' },
+  meadow: { id: 'meadow', base: [112, 178, 72], forest: .78, paddy: false, leaves: 'leaves', grass: 'grass' },
+};
+export const BIOME_IDS = Object.keys(BIOMES);          // tile.bio stores 1 + index into this
+
 /** Brightness per province shade index so neighbouring provinces differ. */
 export const SHADES = [1, .9, 1.1, .95, 1.05, .98, 1.02, .93];
 

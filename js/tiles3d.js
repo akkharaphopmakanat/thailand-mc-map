@@ -4,6 +4,7 @@
 // drawn with Minetest block textures close up. Tiles stream in as the camera needs them.
 import { paintTile, SURF } from './backdrop.js';
 import { h2 } from './noise.js';
+import { BIOMES, BIOME_IDS } from './config.js';
 import { spriteFromRows } from './sprites.js';
 
 const CH = 80;                                     // blocks per chunk side (5 × 5 chunks per 400-block tile)
@@ -14,8 +15,8 @@ const MIN_Y = -16;                                 // bottom of the world slab (
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SHADE = { ns: .8, ew: .62 };
 const DIRT = [134, 96, 67], LOG = [102, 76, 44];
-const SIDE = { grass: ['grass_side', 'dirt'], river_water: ['dirt', 'dirt'], dry_dirt: ['dirt', 'dirt'],
-  jungleleaves: ['jungleleaves', 'tree'] };
+const SIDE = { grass: ['grass_side', 'dirt'], dry_grass: ['dry_grass_side', 'dirt'], river_water: ['dirt', 'dirt'],
+  dry_dirt: ['dirt', 'dirt'], leaves: ['leaves', 'tree'], jungleleaves: ['jungleleaves', 'tree'] };
 
 export class TileTerrain {
   /**
@@ -36,6 +37,11 @@ export class TileTerrain {
     this._buildIcons();
   }
 
+  /** Is Thailand's grid block (r, c) inside a tile drawn here? */
+  coversBlock(r, c) {
+    return this.keys.has(`${Math.floor((c + this.OX) / this.n)}_${Math.floor((r + this.OY) / this.n)}`);
+  }
+
   /** Is this lon/lat inside a tile drawn here? (The ASEAN backdrop leaves a hole there.) */
   covers(lon, lat) {
     const I = this.tiles.index;
@@ -50,7 +56,7 @@ export class TileTerrain {
   /** Full-detail column height at global tile block (gr, gc): Thailand's inside its window, MIN_Y where nothing is drawn. */
   full(gr, gc) {
     const V = this.v, r = gr - this.OY, c = gc - this.OX;
-    if (r >= 0 && c >= 0 && r < V.H && c < V.W) return V.hb[r * V.W + c];
+    if (r >= 0 && c >= 0 && r < V.H && c < V.W) return V.hb[r * V.W + c];     // the same heights either side
     const tt = this.held.get(`${Math.floor(gc / this.n)}_${Math.floor(gr / this.n)}`);
     return tt ? tt.hb[(gr - tt.gr0) * this.n + (gc - tt.gc0)] : MIN_Y;
   }
@@ -88,7 +94,13 @@ export class TileTerrain {
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const i = r * n + c, R = tt.gr0 + r - this.OY, C = tt.gc0 + c - this.OX;
       hb[i] = this._h(t.elev[i], t.country[i] === 0);
-      if (R >= 0 && C >= 0 && R < V.H && C < V.W) skip[i] = 1;
+      if (R >= 0 && C >= 0 && R < V.H && C < V.W) {
+        // inside Thailand's window: Thailand's grid draws its provinces and sea, we draw the
+        // foreign land (at Thailand's heights, so the two meet without gaps)
+        const k = R * V.W + C;
+        hb[i] = V.hb[k];
+        if (V.atlas.grid[k] !== -2) skip[i] = 1;
+      }
     }
     tt.lod = {};
     for (const L of LODS) {
@@ -114,8 +126,8 @@ export class TileTerrain {
     if (rd === 5 && Ly.rails) return 'gravel';
     if (rd === 4 && Ly.mainRoads) return 'stone';
     if ((rd === 2 || rd === 3) && Ly.mediumRoads) return 'dry_dirt';
-    const s = t.surf[k];
-    return s === SURF.STONE ? 'stone' : s === SURF.SAND ? 'sand' : s === SURF.TREE ? 'jungleleaves' : 'grass';
+    const s = t.surf[k], bm = t.bio[k] ? BIOMES[BIOME_IDS[t.bio[k] - 1]] : null;
+    return s === SURF.STONE ? 'stone' : s === SURF.SAND ? 'sand' : s === SURF.TREE ? (bm ? bm.leaves : 'jungleleaves') : (bm ? bm.grass : 'grass');
   }
 
   /** One chunk at one level of detail: canvas-coloured (far) or block-textured (near). */
@@ -399,6 +411,7 @@ export class TileTerrain {
 
   _placeIcons() {
     const V = this.v, { area, layer } = this.sel;
+    if (!V.hb) return;                                      // Thailand's heights not ready yet
     for (const s of this.icons) {
       const a = s.userData.a;
       const big = a === area;

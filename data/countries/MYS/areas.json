@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName, and optional hand-picked district items keyed by the ADM2 shapeName. tools/build_countries.py merges this into data/countries/MYS.json.",
+  "_comment": "Hand-written: iconic item and Minecraft biome (see BIOMES in js/config.js) per first-level area, keyed by the geoBoundaries ADM1 shapeName, and optional hand-picked district items keyed by the ADM2 shapeName. tools/build_countries.py merges this into data/countries/MYS.json.",
   "code": "MYS",
   "name": {
     "en": "Malaysia",
@@ -16,7 +16,8 @@
         "name": "Pineapple",
         "sprite": "pineapple"
       },
-      "lore": "Malaysia's pineapple heartland around Pontian, at the southern tip of the peninsula; the causeway crosses to Singapore."
+      "lore": "Malaysia's pineapple heartland around Pontian, at the southern tip of the peninsula; the causeway crosses to Singapore.",
+      "biome": "sparse_jungle"
     },
     "Kedah": {
       "name": {
@@ -27,7 +28,8 @@
         "name": "Rice",
         "sprite": "rice"
       },
-      "lore": "The 'Rice Bowl of Malaysia', with paddy plains around Alor Setar and the islands of Langkawi offshore."
+      "lore": "The 'Rice Bowl of Malaysia', with paddy plains around Alor Setar and the islands of Langkawi offshore.",
+      "biome": "plains"
     },
     "Kelantan": {
       "name": {
@@ -38,7 +40,8 @@
         "name": "Wau Bulan Kite",
         "sprite": "wau"
       },
-      "lore": "Home of the wau bulan, the moon kite on the 50 sen coin, flown at kite festivals on the east coast."
+      "lore": "Home of the wau bulan, the moon kite on the 50 sen coin, flown at kite festivals on the east coast.",
+      "biome": "jungle"
     },
     "Malacca": {
       "name": {
@@ -49,7 +52,8 @@
         "name": "A Famosa Gate",
         "sprite": "wall"
       },
-      "lore": "UNESCO old port city; the Porta de Santiago gate of the Portuguese fort A Famosa still stands."
+      "lore": "UNESCO old port city; the Porta de Santiago gate of the Portuguese fort A Famosa still stands.",
+      "biome": "sparse_jungle"
     },
     "Negeri Sembilan": {
       "name": {
@@ -60,7 +64,8 @@
         "name": "Minangkabau Roof",
         "sprite": "minangRoof"
       },
-      "lore": "Minangkabau heritage: curved, horn-shaped roofs like the Istana Lama at Seri Menanti."
+      "lore": "Minangkabau heritage: curved, horn-shaped roofs like the Istana Lama at Seri Menanti.",
+      "biome": "sparse_jungle"
     },
     "Pahang": {
       "name": {
@@ -71,7 +76,8 @@
         "name": "Tea",
         "sprite": "tea"
       },
-      "lore": "Tea terraces of the Cameron Highlands, plus Taman Negara, one of the oldest rainforests in the world."
+      "lore": "Tea terraces of the Cameron Highlands, plus Taman Negara, one of the oldest rainforests in the world.",
+      "biome": "jungle"
     },
     "Penang": {
       "name": {
@@ -82,7 +88,8 @@
         "name": "Char Kway Teow",
         "sprite": "bowl"
       },
-      "lore": "Street food capital: char kway teow and the street art and shophouses of George Town (UNESCO)."
+      "lore": "Street food capital: char kway teow and the street art and shophouses of George Town (UNESCO).",
+      "biome": "sparse_jungle"
     },
     "Perak": {
       "name": {
@@ -93,7 +100,8 @@
         "name": "Tin Ore",
         "sprite": "tinOre"
       },
-      "lore": "The Kinta Valley once produced much of the world's tin; Ipoh grew rich on it."
+      "lore": "The Kinta Valley once produced much of the world's tin; Ipoh grew rich on it.",
+      "biome": "sparse_jungle"
     },
     "Perlis": {
       "name": {
@@ -104,7 +112,8 @@
         "name": "Harumanis Mango",
         "sprite": "mango"
       },
-      "lore": "Malaysia's smallest state, famous for the sweet Harumanis mango."
+      "lore": "Malaysia's smallest state, famous for the sweet Harumanis mango.",
+      "biome": "plains"
     },
     "Sabah": {
       "name": {
@@ -115,7 +124,8 @@
         "name": "Mount Kinabalu",
         "sprite": "mountain"
       },
-      "lore": "Mount Kinabalu (4,095 m), the highest peak in Malaysia, and Borneo's orangutans and reefs."
+      "lore": "Mount Kinabalu (4,095 m), the highest peak in Malaysia, and Borneo's orangutans and reefs.",
+      "biome": "jungle"
     },
     "Sarawak": {
       "name": {
@@ -126,7 +136,8 @@
         "name": "Hornbill",
         "sprite": "hornbill"
       },
-      "lore": "The 'Land of the Hornbills', with the Mulu caves and longhouses along its rivers."
+      "lore": "The 'Land of the Hornbills', with the Mulu caves and longhouses along its rivers.",
+      "biome": "jungle"
     },
     "Selangor": {
       "name": {
@@ -137,7 +148,8 @@
         "name": "Firefly Bush",
         "sprite": "fireflies"
       },
-      "lore": "Fireflies glow along the Selangor River at Kuala Selangor; Batu Caves is here too."
+      "lore": "Fireflies glow along the Selangor River at Kuala Selangor; Batu Caves is here too.",
+      "biome": "sparse_jungle"
     },
     "Terengganu": {
       "name": {
@@ -148,7 +160,8 @@
         "name": "Sea Turtle",
         "sprite": "turtle"
       },
-      "lore": "Turtles nest on its beaches, and the Perhentian and Redang islands lie offshore."
+      "lore": "Turtles nest on its beaches, and the Perhentian and Redang islands lie offshore.",
+      "biome": "jungle"
     },
     "Kuala Lumpur": {
       "name": {
@@ -159,7 +172,8 @@
         "name": "Twin Towers",
         "sprite": "twinTowers"
       },
-      "lore": "The capital, with the Petronas Twin Towers joined by their skybridge."
+      "lore": "The capital, with the Petronas Twin Towers joined by their skybridge.",
+      "biome": "meadow"
     },
     "Putrajaya": {
       "name": {
@@ -170,7 +184,8 @@
         "name": "Pink Dome",
         "sprite": "pinkDome"
       },
-      "lore": "The planned administrative capital; the rose-tinted dome of Putra Mosque rises over the lake."
+      "lore": "The planned administrative capital; the rose-tinted dome of Putra Mosque rises over the lake.",
+      "biome": "meadow"
     },
     "Labuan": {
       "name": {
@@ -181,7 +196,8 @@
         "name": "Oil Pumpjack",
         "sprite": "pumpjack"
       },
-      "lore": "Island territory off Borneo and an offshore oil and gas hub."
+      "lore": "Island territory off Borneo and an offshore oil and gas hub.",
+      "biome": "mangrove_swamp"
     }
   },
   "districts": {

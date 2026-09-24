@@ -299,7 +299,8 @@ def build(isos):
                           'name': hand.get('name', {'en': nice(shape), 'local': nice(shape)}),
                           'item': {'name': (hand.get('item') or {}).get('name', 'Town Bell'), 'id': sprite_id,
                                    'sprite': sprites.get(sprite_id, sprites['bell'])},
-                          'lore': hand.get('lore', ''), 'anchor': anchor, 'blocks': int(s[2]) if s else 0})
+                          'lore': hand.get('lore', ''), 'biome': hand.get('biome', 'sparse_jungle'),
+                          'anchor': anchor, 'blocks': int(s[2]) if s else 0})
         built[iso] = (c, areas_file, areas, a2, sorted(touched))
         print(f'{iso}: {len(areas)} areas, {len(a2)} districts, {len(touched)} tiles')
 

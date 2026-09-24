@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-written: iconic item per first-level area, keyed by the geoBoundaries ADM1 shapeName, and optional hand-picked district items keyed by the ADM2 shapeName. tools/build_countries.py merges this into data/countries/BRN.json.",
+  "_comment": "Hand-written: iconic item and Minecraft biome (see BIOMES in js/config.js) per first-level area, keyed by the geoBoundaries ADM1 shapeName, and optional hand-picked district items keyed by the ADM2 shapeName. tools/build_countries.py merges this into data/countries/BRN.json.",
   "code": "BRN",
   "name": {
     "en": "Brunei",
@@ -16,7 +16,8 @@
         "name": "Gold Dome",
         "sprite": "goldDome"
       },
-      "lore": "Bandar Seri Begawan: the gold dome of the Omar Ali Saifuddien Mosque and the water village Kampong Ayer."
+      "lore": "Bandar Seri Begawan: the gold dome of the Omar Ali Saifuddien Mosque and the water village Kampong Ayer.",
+      "biome": "sparse_jungle"
     },
     "Belait": {
       "name": {
@@ -27,7 +28,8 @@
         "name": "Oil Pumpjack",
         "sprite": "pumpjack"
       },
-      "lore": "Oil country: the Billionth Barrel Monument at Seria marks where Brunei's oil began."
+      "lore": "Oil country: the Billionth Barrel Monument at Seria marks where Brunei's oil began.",
+      "biome": "mangrove_swamp"
     },
     "Tutong": {
       "name": {
@@ -38,7 +40,8 @@
         "name": "Lily Pad",
         "sprite": "lilypad"
       },
-      "lore": "Tasek Merimbun, the largest natural lake in Brunei, ringed by peat swamp forest."
+      "lore": "Tasek Merimbun, the largest natural lake in Brunei, ringed by peat swamp forest.",
+      "biome": "sparse_jungle"
     },
     "Temburong": {
       "name": {
@@ -49,7 +52,8 @@
         "name": "Spruce Sapling",
         "sprite": "tree"
       },
-      "lore": "Ulu Temburong National Park: untouched rainforest and a canopy walk above it."
+      "lore": "Ulu Temburong National Park: untouched rainforest and a canopy walk above it.",
+      "biome": "jungle"
     }
   },
   "districts": {

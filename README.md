@@ -118,6 +118,12 @@ selecting a Thai province: its districts are drawn on a finer grid than the bloc
 own item, a second landmark and a searchable list of its places (towns, suburbs, villages).
 Pick a country above the inventory; hover or click the map to inspect.
 
+Like Thailand's six regions, every state / region has a Minecraft biome (`biome` in its
+`areas.json` entry; see `BIOMES` in `js/config.js`): jungle (Borneo, the east coast), sparse
+jungle (the west coast), plains with rice paddies (Kedah, Perlis), mangrove swamp (Labuan, Belait,
+western Singapore), windswept hills (Hong Kong Island) and meadow (the cities). It sets the grass
+colour, how dense the forest is, whether there are paddies, and the grass and leaf blocks in 3D.
+
 District items are, in order: a hand-picked item, else the best-known landmark in the district
 on OpenStreetMap (features with a Wikidata link, ranked by Wikipedia article and names in other
 languages), else an item from the district's terrain.
