@@ -3,10 +3,17 @@
 import { B, MAP_LABELS } from './config.js';
 import { itemSprite, spriteFromRows } from './sprites.js';
 import { railTile, maskAt, blockTexture } from './pieces.js';
-import { backdropRect, countryAt, labelPoint } from './backdrop.js';
+import { backdropRect, countryAt, labelPoint, tileTexture } from './backdrop.js';
 
 const MAX_SCALE = 24;          // screen px per world px (a 0.005° block is 1 world px)
 const TILE_MIN_SCALE = .45;    // below this the 5.5 km ASEAN backdrop is as sharp as the screen
+// Zoom levels of the other detailed countries, like Thailand's: state items → every state's
+// districts on screen (items and names) → river names → block textures → rail pieces
+const AREA_DISTRICT_SCALE = 1.1;   // from here the districts of every state on screen load and show
+const RIVER_LABEL_SCALE = .9, FOREIGN_RIVER_LABEL_SCALE = 2;
+const TEXTURE_PX = 12, RAIL_PX = 8;  // screen px per block for block textures / rail pieces
+const CHUNK = 25;                  // blocks per side of a cached textured piece of a tile
+const CHUNK_CACHE = 64;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export class MapView {
@@ -19,12 +26,15 @@ export class MapView {
    * @param {{data, canvas}[]} [o.backdrops]  low-detail world and ASEAN backdrops (see backdrop.js)
    * @param {object} [o.tiles]   detailed ASEAN / Hong Kong / Macau tiles (see backdrop.js)
    * @param {object} [o.cells]   block classification (world.js) for close-up textures
+   * @param {(area: object) => Promise<object>} [o.areaDistricts]  district layer of another country's state (districts.js)
    * @param {(pick: object|null, e: PointerEvent) => void} o.onHover
    * @param {(pick: object) => void} o.onClick
    */
-  constructor({ canvas, wrap, atlas, world, backdrops = [], tiles = null, cells, onHover, onClick }) {
-    Object.assign(this, { canvas, wrap, atlas, world, backdrops, tiles, cells, onHover, onClick });
+  constructor({ canvas, wrap, atlas, world, backdrops = [], tiles = null, cells, areaDistricts = null, onHover, onClick }) {
+    Object.assign(this, { canvas, wrap, atlas, world, backdrops, tiles, cells, areaDistricts, onHover, onClick });
     this.blocks = null;   // block texture atlas, set once loaded (see setBlockAtlas)
+    this.areaLayers = new Map();   // state of another country -> its district layer (or 'loading' / 'failed')
+    this.chunks = new Map();       // textured pieces of tiles, see _tileChunk
     for (const bd of backdrops) bd.rect = backdropRect(bd.data, atlas.map);
     this.backRect = atlas.asean ? backdropRect(atlas.asean, atlas.map) : null;
     this.worldRect = atlas.world ? backdropRect(atlas.world, atlas.map) : this.backRect;
@@ -282,6 +292,128 @@ export class MapView {
     }
   }
 
+  /**
+   * Close up on the other detailed countries' tiles: block textures (with the map on top at low
+   * opacity, as for Thailand) and connected rail pieces, drawn from cached chunks.
+   */
+  _drawTileDetail(blockPx) {
+    const { ctx, view, cw, ch, tiles } = this;
+    const s = view.s, textured = blockPx >= TEXTURE_PX && this.blocks;
+    const x0 = -view.x / s, y0 = -view.y / s, x1 = (cw - view.x) / s, y1 = (ch - view.y) / s;
+    ctx.imageSmoothingEnabled = false;
+    for (const [tx, ty] of tiles.visible(x0, y0, x1, y1)) {
+      const t = tiles.cache.get(`${tx}_${ty}`);
+      if (!t?.district) continue;                                     // no layers: not a detailed country's tile
+      const [rx, ry, rw] = tiles.rect(tx, ty), bw = rw / t.n;         // world px per block
+      const c0 = Math.max(0, Math.floor((x0 - rx) / bw)), c1 = Math.min(t.n - 1, Math.floor((x1 - rx) / bw));
+      const r0 = Math.max(0, Math.floor((y0 - ry) / bw)), r1 = Math.min(t.n - 1, Math.floor((y1 - ry) / bw));
+      if (c0 > c1 || r0 > r1) continue;
+      if (textured) {
+        for (let cy = Math.floor(r0 / CHUNK); cy <= Math.floor(r1 / CHUNK); cy++) {
+          for (let cx = Math.floor(c0 / CHUNK); cx <= Math.floor(c1 / CHUNK); cx++) {
+            const cv = this._tileChunk(t, cx, cy);
+            if (!cv) continue;
+            const wx = rx + cx * CHUNK * bw, wy = ry + cy * CHUNK * bw;
+            const sx = Math.floor(view.x + wx * s), sy = Math.floor(view.y + wy * s);
+            const ex = Math.floor(view.x + (wx + cv.blocksW * bw) * s), ey = Math.floor(view.y + (wy + cv.blocksH * bw) * s);
+            ctx.drawImage(cv, 0, 0, cv.width, cv.height, sx, sy, ex - sx + 1, ey - sy + 1);
+          }
+        }
+      } else if (tiles.layers.rails) {                                // rail pieces only
+        const z = Math.ceil(blockPx) + 1;
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+          if (t.road[r * t.n + c] !== 5 || !this._detailed(t, r * t.n + c)) continue;
+          ctx.drawImage(railTile(maskAt(r, c, (rr, cc) => this._tileRoad(t, rr, cc) === 5)),
+            Math.floor(view.x + (rx + c * bw) * s), Math.floor(view.y + (ry + r * bw) * s), z, z);
+        }
+      }
+      const hl = tiles.overlay(t);                                    // keep the selected state's outline on top
+      if (hl) ctx.drawImage(hl, view.x + rx * s, view.y + ry * s, rw * s, rw * s);
+    }
+  }
+
+  /** Is tile block k land of a detailed country (one with states and districts)? */
+  _detailed(t, k) { return t.country[k] !== 0 && this.tiles.countries.byTile.has(t.country[k]); }
+
+  /** Road code of block (r, c) of tile t, looking into the neighbouring tile past its edges. */
+  _tileRoad(t, r, c) {
+    const n = t.n;
+    if (r >= 0 && c >= 0 && r < n && c < n) return t.road[r * n + c];
+    const nt = this.tiles.cache.get(`${t.tx + Math.floor(c / n)}_${t.ty + Math.floor(r / n)}`);
+    const rr = ((r % n) + n) % n, cc = ((c % n) + n) % n;
+    return nt?.road ? nt.road[rr * n + cc] : 0;
+  }
+
+  /**
+   * CHUNK × CHUNK blocks of a tile, 16 px per block: block textures for the detailed countries'
+   * land, the tile map on top at 30 %, then rail pieces. Other blocks stay transparent (the
+   * map, or Thailand's own textures, show through).
+   */
+  _tileChunk(t, cx, cy) {
+    const key = `${t.tx}_${t.ty}_${cx}_${cy}`, stamp = JSON.stringify(this.tiles.layers);
+    let e = this.chunks.get(key);
+    if (e && e.t === t && e.stamp === stamp) { this.chunks.delete(key); this.chunks.set(key, e); return e.canvas; }
+    const { n } = t, blocks = this.blocks, L = this.tiles.layers;
+    const c0 = cx * CHUNK, r0 = cy * CHUNK, w = Math.min(CHUNK, n - c0), h = Math.min(CHUNK, n - r0);
+    const cv = document.createElement('canvas');
+    cv.width = w * 16; cv.height = h * 16; cv.blocksW = w; cv.blocksH = h;
+    const x = cv.getContext('2d');
+    x.imageSmoothingEnabled = false;
+    const bcv = blocks.canvas, bW = bcv.width, bH = bcv.height;
+    let any = false;
+    for (let r = r0; r < r0 + h; r++) for (let c = c0; c < c0 + w; c++) {
+      const k = r * n + c;
+      if (!this._detailed(t, k)) continue;                              // sea and other countries keep the map colour
+      const [u, v] = blocks.origin(blocks.tile(tileTexture(t, k, L)));
+      x.drawImage(bcv, u * bW, (1 - v) * bH - 16, 16, 16, (c - c0) * 16, (r - r0) * 16, 16, 16);
+      any = true;
+    }
+    if (any) {
+      x.globalCompositeOperation = 'source-atop';                     // the map's colours, borders and relief
+      x.globalAlpha = .3;
+      x.drawImage(t.canvas, c0, r0, w, h, 0, 0, cv.width, cv.height);
+      x.globalAlpha = 1;
+      x.globalCompositeOperation = 'source-over';
+      if (L.rails) for (let r = r0; r < r0 + h; r++) for (let c = c0; c < c0 + w; c++) {
+        const k = r * n + c;
+        if (t.road[k] !== 5 || !this._detailed(t, k)) continue;
+        x.drawImage(railTile(maskAt(r, c, (rr, cc) => this._tileRoad(t, rr, cc) === 5)), (c - c0) * 16, (r - r0) * 16, 16, 16);
+      }
+    }
+    e = { t, stamp, canvas: any ? cv : null };
+    this.chunks.set(key, e);
+    while (this.chunks.size > CHUNK_CACHE) this.chunks.delete(this.chunks.keys().next().value);
+    return e.canvas;
+  }
+
+  /**
+   * District layers of the other countries' states on screen once zoomed in to AREA_DISTRICT_SCALE
+   * (loaded on demand), so their districts' items and names show without selecting the state.
+   */
+  _areaLayersOnScreen() {
+    const C = this.tiles?.countries, s = this.view.s;
+    if (!C || !this.areaDistricts || s < AREA_DISTRICT_SCALE) return [];
+    const x0 = -this.view.x / s, y0 = -this.view.y / s, x1 = (this.cw - this.view.x) / s, y1 = (this.ch - this.view.y) / s;
+    const out = [];
+    for (const country of C.list) for (const a of country.areas) {
+      const L = this.areaLayers.get(a);
+      if (L && typeof L === 'object') {
+        const b = L.box ??= L.bb.reduce((m, q) => [Math.min(m[0], q[0]), Math.min(m[1], q[1]), Math.max(m[2], q[2]), Math.max(m[3], q[3])], [Infinity, Infinity, -Infinity, -Infinity]);
+        if (b[2] >= x0 && b[0] <= x1 && b[3] >= y0 && b[1] <= y1) out.push(L);
+        continue;
+      }
+      if (L) continue;                                                // loading, or failed
+      const p = C.anchor(a);
+      if (!p) continue;
+      const rad = Math.sqrt(a.blocks || 1) * 2 * B;                   // generous: states are rarely round
+      if (p[0] + rad < x0 || p[0] - rad > x1 || p[1] + rad < y0 || p[1] - rad > y1) continue;
+      this.areaLayers.set(a, 'loading');
+      this.areaDistricts(a).then(layer => { layer.foreign = a; this.areaLayers.set(a, layer); this.dirty = true; })
+        .catch(() => this.areaLayers.set(a, 'failed'));
+    }
+    return out;
+  }
+
   _w2s(wx, wy) { return [wx * this.view.s + this.view.x, wy * this.view.s + this.view.y]; }
 
   _text(txt, x, y, color, shadow = '#3f3f3f') {
@@ -323,7 +455,8 @@ export class MapView {
     // Close up: block textures, then connected Minecraft rail pieces
     const blockPx = s * B;
     if (blockPx >= 12 && this.blocks) this._drawTextures(blockPx);
-    if (blockPx >= 8) this._drawBlockDetail(blockPx);
+    if (blockPx >= RAIL_PX) this._drawBlockDetail(blockPx);
+    if (blockPx >= RAIL_PX && this.tiles?.index && this.tiles.countries) this._drawTileDetail(blockPx);
 
     // Province + district highlights, in world coordinates
     ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * view.x, dpr * view.y);
@@ -350,9 +483,13 @@ export class MapView {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
     // River names along the river once zoomed in
-    if (atlas.rivers?.labels && this.layers.rivers && s >= .9) {
+    if (this.layers.rivers && s >= RIVER_LABEL_SCALE) {
       ctx.font = 'italic 600 12px "Pixelify Sans", monospace';
-      for (const [name, lx, ly, angle] of atlas.rivers.labels) {
+      const labels = [...(atlas.rivers?.labels || [])];
+      if (s >= FOREIGN_RIVER_LABEL_SCALE) for (const c of this.tiles?.countries?.list || []) for (const [name, lon, lat, angle] of c.rivers || []) {
+        labels.push([name, (lon - map.lon0) / map.S * B, (map.lat1 - lat) / map.S * B, angle]);
+      }
+      for (const [name, lx, ly, angle] of labels) {
         const [sx, sy] = this._w2s(lx, ly);
         if (sx < -80 || sy < -20 || sx > cw + 80 || sy > ch + 20) continue;
         const r = { name };
@@ -376,6 +513,7 @@ export class MapView {
     const labelled = new Set(['THA']);
     if (atlas.asean) for (const c of atlas.asean.countries) {
       if (!c.detail || labelled.has(c.code) || !c.anchor || c.cells < 3) continue;
+      if (s >= 3 && this.tiles?.countries?.list.some(d => d.code === c.code)) continue;   // its districts are named instead
       labelled.add(c.code);
       const [sx, sy] = this._w2s(...labelPoint(atlas.asean, map, c));
       this._text(c.name.toUpperCase(), sx, sy, 'rgba(255,255,255,.9)', 'rgba(0,0,0,.6)');
@@ -391,31 +529,47 @@ export class MapView {
       }
     }
 
-    // District items and names when there is room
+    // District items and names when there is room: the selected province / state's, and once
+    // zoomed in, those of every other country's state on screen
     let districtIcons = false;
-    if (L) {
-      const cellPx = L.k * s;
+    const areaIcons = new Set();                         // states whose districts' items are showing
+    const placed = [];                                   // other countries' icons drawn so far, [x0, y0, x1, y1]
+    const free = (x, y, z) => {                          // room for an icon of size z at (x, y)? then take it
+      const b = [x - z * .5, y - z * .6, x + z * .5, y + z * .6];
+      if (placed.some(q => b[0] < q[2] && b[2] > q[0] && b[1] < q[3] && b[3] > q[1])) return false;
+      placed.push(b);
+      return true;
+    };
+    const drawDistricts = (D, active) => {
+      const cellPx = D.k * s;
+      let shown = false;
       ctx.font = '600 11px "Pixelify Sans", monospace';
-      L.districts.forEach((d, i) => {
-        const a = L.anchor(i);
+      D.districts.forEach((d, i) => {
+        const a = D.anchor(i);
         if (!a) return;
         const area = d.cells * cellPx * cellPx;
         const sz = Math.round(Math.min(34, Math.sqrt(area) * .42));
         const [sx, sy] = this._w2s(a[0], a[1]);
         if (sx < -40 || sy < -40 || sx > cw + 40 || sy > ch + 40) return;
-        const focus = i === this.dFocus || i === this.dHover;
-        if (sz >= 12 || focus) {
-          districtIcons = true;
+        const focus = active && (i === this.dFocus || i === this.dHover);
+        if ((sz >= 12 && (active || free(sx, sy, Math.max(sz, 18)))) || focus) {
+          shown = true;
           const z = Math.max(sz, 18) * (focus ? 1.3 : 1);
           ctx.fillStyle = 'rgba(0,0,0,.3)';
           ctx.beginPath(); ctx.ellipse(sx, sy + z * .42, z * .32, z * .09, 0, 0, Math.PI * 2); ctx.fill();
           ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(L.sprite(i).canvas, Math.round(sx - z / 2), Math.round(sy - z / 2 - z * .12), Math.round(z), Math.round(z));
-          if (area >= 2600 || focus) this._text(d.name.en, sx, Math.round(sy + z * .5 + 7), i === this.dFocus ? '#ffff55' : '#fff');
-        } else if (area >= 2600) {
+          ctx.drawImage(D.sprite(i).canvas, Math.round(sx - z / 2), Math.round(sy - z / 2 - z * .12), Math.round(z), Math.round(z));
+          if (area >= 2600 || focus) this._text(d.name.en, sx, Math.round(sy + z * .5 + 7), active && i === this.dFocus ? '#ffff55' : '#fff');
+        } else if (area >= 2600 && (active || free(sx, sy, 12))) {
           this._text(d.name.en, sx, sy, '#fff');
         }
       });
+      return shown;
+    };
+    for (const D of this._areaLayersOnScreen()) if (D.foreign !== L?.foreign && drawDistricts(D, false)) areaIcons.add(D.foreign);
+    if (L) {
+      districtIcons = drawDistricts(L, true);
+      if (districtIcons && L.foreign) areaIcons.add(L.foreign);
     }
 
     // Floating item icons
@@ -447,10 +601,11 @@ export class MapView {
       if (!p) continue;
       const [sx, sy] = this._w2s(p[0], p[1]);
       if (sx < -60 || sy < -60 || sx > cw + 60 || sy > ch + 60) continue;
-      if (this.foreignSelected === a && districtIcons) continue;   // its districts' items are showing instead
+      if (areaIcons.has(a)) continue;                              // its districts' items are showing instead
       const big = this.foreignHover === a || this.foreignSelected === a;
       if (!big && Math.sqrt(a.blocks) * s < 14) continue;          // too small on screen: icons would pile up
       const sz = Math.round(big ? base * 1.45 : base);
+      if (!big && !free(sx, sy, sz)) continue;                     // a district's item is already there
       const bob = reduced ? 0 : Math.sin(t / 520 + a.id * 2.3) * Math.max(1, sz * .06);
       ctx.fillStyle = 'rgba(0,0,0,.32)';
       ctx.beginPath(); ctx.ellipse(sx, sy + sz * .42, sz * .34, sz * .1, 0, 0, Math.PI * 2); ctx.fill();

@@ -71,7 +71,10 @@ const handlers = {
 const backdrops = [atlas.world, atlas.asean].filter(Boolean).map(b => ({ data: b, canvas: renderBackdrop(b) }));
 const countries = new Countries(atlas.map);
 const tiles = new TileLayer(atlas.map, countries);
-const map = new MapView({ canvas: $('map'), wrap: $('mapWrap'), atlas, world, backdrops, tiles, cells, ...handlers });
+const map = new MapView({
+  canvas: $('map'), wrap: $('mapWrap'), atlas, world, backdrops, tiles, cells, ...handlers,
+  areaDistricts: a => loadAreaDistricts(a.country.code, a.id).then(d => buildDistrictLayer(d, atlas.map)),
+});
 tiles.onLoad = () => { map.dirty = true; };
 // detailed tiles and the other detailed countries are optional (not in the artifact)
 countries.init().then(() => tiles.init()).then(() => { tiles.setLayers(layers); map.dirty = true; buildCountryTabs(); });

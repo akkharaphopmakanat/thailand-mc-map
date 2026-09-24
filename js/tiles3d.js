@@ -2,9 +2,8 @@
 // their 550 m tiles become block columns at real elevation, split into chunks with the same
 // levels of detail as Thailand's (view3d.js), coloured from the 2D tile canvas when far away and
 // drawn with Minetest block textures close up. Tiles stream in as the camera needs them.
-import { paintTile, SURF } from './backdrop.js';
+import { paintTile, tileTexture, SURF } from './backdrop.js';
 import { h2 } from './noise.js';
-import { BIOMES, BIOME_IDS } from './config.js';
 import { spriteFromRows } from './sprites.js';
 
 const CH = 80;                                     // blocks per chunk side (5 × 5 chunks per 400-block tile)
@@ -118,17 +117,7 @@ export class TileTerrain {
   }
 
   /* ---------------- chunk meshes ---------------- */
-  _texName(t, k, h) {
-    const Ly = this.v.layers;
-    if (t.country[k] === 0) return h > -3 ? 'sand' : 'gravel';
-    const w = t.water?.[k], rd = t.road?.[k];
-    if (w >= 2 ? Ly.rivers : w === 1 && Ly.streams) return 'river_water';
-    if (rd === 5 && Ly.rails) return 'gravel';
-    if (rd === 4 && Ly.mainRoads) return 'stone';
-    if ((rd === 2 || rd === 3) && Ly.mediumRoads) return 'dry_dirt';
-    const s = t.surf[k], bm = t.bio[k] ? BIOMES[BIOME_IDS[t.bio[k] - 1]] : null;
-    return s === SURF.STONE ? 'stone' : s === SURF.SAND ? 'sand' : s === SURF.TREE ? (bm ? bm.leaves : 'jungleleaves') : (bm ? bm.grass : 'grass');
-  }
+  _texName(t, k, h) { return tileTexture(t, k, this.v.layers, h); }
 
   /** One chunk at one level of detail: canvas-coloured (far) or block-textured (near). */
   _build(ch, L) {

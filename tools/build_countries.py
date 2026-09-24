@@ -70,6 +70,7 @@ N = round(bd.TILE_DEG / bd.S)              # blocks per tile side (400)
 MAIN_RIVER_KM = 80                         # a named river this long (all its pieces) counts as main
 PLACE_RANK = {'city': 0, 'town': 1, 'suburb': 2, 'quarter': 3, 'village': 4, 'neighbourhood': 5}
 MAX_PLACES = 60                            # place names listed per district
+RIVER_LABEL_GAP = 0.8                      # degrees between repeated labels of one river (Thailand: 0.9)
 URBAN = {'SGP', 'HKG', 'MAC'}              # city states: flat districts are city, not farmland
 
 
@@ -306,8 +307,9 @@ def build(isos):
 
     # roads, railways, rivers, lakes, landmarks and place names from each extract
     pois, places = {}, {}                                  # (country value, district id) -> [...]
+    river_labels = {}                                      # country value -> [[name, lon, lat, angle°]]
     for extract in sorted({GROUPS[i] for i in isos}):
-        osm_layers(extract, lon0, lat1, tset, tile_of, base, mine, owner, pois, places)
+        osm_layers(extract, lon0, lat1, tset, tile_of, base, mine, owner, pois, places, river_labels)
 
     for iso in isos:
         c, areas_file, areas, a2, _ = built[iso]
@@ -323,6 +325,7 @@ def build(isos):
             'districtTerm': areas_file.get('districtTerm', 'district'), 'placeTerm': areas_file.get('placeTerm', 'place'),
             'tileCountry': c, 'areas': areas,
             'districts': [{'id': k + 1, 'name': names[k]['en'], 'area': p + 1} for k, (_, p, _, _) in enumerate(a2)],
+            'rivers': river_labels.get(c, []),
         })
 
     for key, (dist, road, water) in layers.items():
@@ -518,10 +521,10 @@ def latin_name(t):
     return en.strip(), (loc if loc and loc != en else '')
 
 
-def osm_layers(extract, lon0, lat1, tset, tile_of, base, mine, owner, pois, places):
+def osm_layers(extract, lon0, lat1, tset, tile_of, base, mine, owner, pois, places, river_labels):
     """Rasterise one extract's roads, railways, rivers and lakes into the tile layers, only on cells
     of the countries being built (`mine`, tile country values); collect landmarks and place names
-    per (country value, district id)."""
+    per (country value, district id), and name labels along the main rivers per country value."""
     o = osmium()
     import numpy as np
     path = extract_path(extract)
@@ -607,9 +610,22 @@ def osm_layers(extract, lon0, lat1, tset, tile_of, base, mine, owner, pois, plac
         if name:
             total[name] = total.get(name, 0) + length
     main_names = {n for n, km in total.items() if km >= MAIN_RIVER_KM}
+    main_pts = {}                                          # river name -> [(lon, lat, angle°)]
     for name, _, coords in rivers:
         main = name in main_names
         line(coords, 2, 2 if main else 1, main)
+        if main and len(coords) >= 3:
+            for (x0, y0), (x1, y1) in zip(coords[::4], coords[2::4]):
+                main_pts.setdefault(name, []).append(((x0 + x1) / 2, (y0 + y1) / 2, math.degrees(math.atan2(y1 - y0, x1 - x0))))
+    # labels on the main rivers, repeated along a river at least RIVER_LABEL_GAP apart, in the country they fall in
+    for name, pts in sorted(main_pts.items()):
+        pts.sort(key=lambda p: bd.h2key(p[0], p[1]))                  # deterministic spread, not map order
+        kept = []
+        for lon, lat, ang in pts:
+            cv, d = owner(lon, lat)
+            if cv in mine and d and all(math.hypot(lon - a, lat - b) > RIVER_LABEL_GAP for a, b, _ in kept):
+                kept.append((lon, lat, ang))
+                river_labels.setdefault(cv, []).append([name, round(lon, 4), round(lat, 4), round(ang, 1)])
     # lakes and reservoirs over ~3 km² (~0.3 km² in the small city territories)
     small = extract in OVERPASS_QUERIES
     lakes = 0

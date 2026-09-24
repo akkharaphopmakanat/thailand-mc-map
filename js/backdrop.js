@@ -232,6 +232,18 @@ const ROAD_RGB = { 2: [150, 122, 70], 3: [150, 122, 70], 4: [128, 128, 130] };
 /** Surface of a tile block (tile.surf, filled by paintTile). */
 export const SURF = { SEA: 0, GRASS: 1, TREE: 2, SAND: 3, STONE: 4, PADDY: 5 };
 
+/** Block texture name for tile block k (as in the 3D view); h = its height, sea floor included. */
+export function tileTexture(t, k, layers, h = t.elev[k]) {
+  if (t.country[k] === 0) return h > -3 ? 'sand' : 'gravel';
+  const w = t.water?.[k], rd = t.road?.[k];
+  if (w >= 2 ? layers.rivers : w === 1 && layers.streams) return 'river_water';
+  if (rd === 5 && layers.rails) return 'gravel';
+  if (rd === 4 && layers.mainRoads) return 'stone';
+  if ((rd === 2 || rd === 3) && layers.mediumRoads) return 'dry_dirt';
+  const s = t.surf[k], bm = t.bio[k] ? BIOMES[BIOME_IDS[t.bio[k] - 1]] : null;
+  return s === SURF.STONE ? 'stone' : s === SURF.SAND ? 'sand' : s === SURF.TREE ? (bm ? bm.leaves : 'jungleleaves') : (bm ? bm.grass : 'grass');
+}
+
 /**
  * Paint a decoded tile into its canvas, one pixel per 550 m block: terrain, then (where the tile
  * has layers) rivers and lakes, roads and railways, and district / area borders.

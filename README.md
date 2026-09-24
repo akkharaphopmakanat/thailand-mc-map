@@ -13,7 +13,10 @@ blocks and **medium roads** (primary, secondary) are dirt path; roads over water
 bridges. Zoom in and railways become connected Minecraft rail pieces: straights, curves and
 buffer stops, plus a special **rail junction block** (a gravel pad with the branching track and a
 switch lever) where lines meet. River names sit on the main rivers themselves. A **Layers** box
-switches main roads, medium roads, railways, main rivers and small rivers on and off. Switch to the **3D** view to fly over real terrain built from
+switches main roads, medium roads, railways, main rivers and small rivers on and off.
+The other detailed countries (Malaysia, Singapore, Brunei, Hong Kong, Macau) have the same zoom
+levels in 2D: state items, then every state's district items and names on screen, then river
+names on the main rivers, then Minecraft block textures and connected rail pieces close up. Switch to the **3D** view to fly over real terrain built from
 elevation data: Thailand, and the other detailed countries (Malaysia, Singapore, Brunei, Hong Kong,
 Macau), whose 550 m tiles stream in as block columns, textured close up, with their items, the
 selected state's districts and the same hover and click as in 2D.
